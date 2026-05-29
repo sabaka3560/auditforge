@@ -399,7 +399,7 @@ if __name__ == "__main__":
             min_size=(480, 580),
             js_api=api,
         )
-        webview.start()
+        webview.start(gui="edgechromium")
     else:
         import webbrowser
 
