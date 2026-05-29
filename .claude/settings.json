@@ -1,0 +1,31 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -m ruff format $(jq -r '.tool_input.file_path // empty' 2>/dev/null) 2>/dev/null || true",
+            "timeout": 10,
+            "statusMessage": "ruff format"
+          },
+          {
+            "type": "command",
+            "command": "python -m ruff check --fix --silent $(jq -r '.tool_input.file_path // empty' 2>/dev/null) 2>/dev/null || true",
+            "timeout": 10,
+            "statusMessage": "ruff check"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest*)",
+      "Bash(python -m ruff*)",
+      "Bash(python main.py*)",
+      "Bash(pip install*)"
+    ]
+  }
+}

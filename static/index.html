@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AuditForge</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #111;
+      color: #d1d5db;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #1a1a1a;
+      border-bottom: 1px solid #2a2a2a;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { font-size: 15px; font-weight: 600; color: #f3f4f6; letter-spacing: 0.02em; }
+    header p  { font-size: 12px; color: #6b7280; margin-top: 2px; }
+
+    .admin-toggle {
+      font-size: 11px;
+      color: #6b7280;
+      background: none;
+      border: 1px solid #333;
+      border-radius: 3px;
+      padding: 5px 12px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: all 0.15s;
+    }
+    .admin-toggle:hover { color: #9ca3af; border-color: #555; }
+    .admin-toggle.active { color: #fbbf24; border-color: #92400e; background: #1c1200; }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px;
+      gap: 20px;
+    }
+
+    /* ── Audit form ── */
+    .card {
+      width: 100%;
+      max-width: 480px;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      padding: 28px;
+    }
+
+    .field { margin-bottom: 20px; }
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 6px;
+    }
+
+    select,
+    input[type="text"],
+    input[type="number"] {
+      display: block;
+      width: 100%;
+      padding: 9px 10px;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 4px;
+      color: #d1d5db;
+      font-size: 13px;
+    }
+    select { cursor: pointer; }
+    select:focus,
+    input[type="text"]:focus,
+    input[type="number"]:focus { outline: none; border-color: #555; }
+
+    input[type="file"] {
+      display: block;
+      width: 100%;
+      padding: 9px 10px;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 4px;
+      color: #d1d5db;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    input[type="file"]:focus { outline: none; border-color: #555; }
+    input[type="file"]::file-selector-button {
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 3px;
+      color: #d1d5db;
+      font-size: 12px;
+      padding: 4px 10px;
+      margin-right: 10px;
+      cursor: pointer;
+    }
+
+    .row { display: flex; gap: 14px; }
+    .row .field { flex: 1; }
+
+    .divider { border: none; border-top: 1px solid #2a2a2a; margin: 4px 0 20px; }
+
+    .hint { font-size: 11px; color: #4b5563; margin-top: 5px; }
+
+    button.primary {
+      width: 100%;
+      padding: 10px;
+      background: #374151;
+      border: 1px solid #4b5563;
+      border-radius: 4px;
+      color: #f3f4f6;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button.primary:hover:not(:disabled) { background: #4b5563; }
+    button.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .status {
+      margin-top: 14px;
+      font-size: 12px;
+      padding: 9px 10px;
+      border-radius: 4px;
+      display: none;
+    }
+    .status.loading { display: block; background: #1e2a3a; color: #93c5fd; border: 1px solid #1e3a5f; }
+    .status.success { display: block; background: #132113; color: #86efac; border: 1px solid #1a3a1a; }
+    .status.error   { display: block; background: #211313; color: #fca5a5; border: 1px solid #3a1a1a; }
+
+    /* ── Admin panel ── */
+    #adminPanel {
+      width: 100%;
+      max-width: 680px;
+      background: #1a1a1a;
+      border: 1px solid #92400e;
+      border-radius: 6px;
+      padding: 24px;
+      display: none;
+    }
+    #adminPanel.visible { display: block; }
+
+    #adminPanel h2 {
+      font-size: 11px;
+      font-weight: 700;
+      color: #fbbf24;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 18px;
+    }
+
+    .check-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 0;
+      border-bottom: 1px solid #222;
+    }
+    .check-row:last-child { border-bottom: none; }
+
+    .check-info { min-width: 0; }
+    .check-info strong { font-size: 13px; color: #e5e7eb; font-weight: 500; }
+    .check-info span   { font-size: 11px; color: #4b5563; margin-left: 6px; }
+
+    .btn-sm {
+      font-size: 11px;
+      padding: 5px 12px;
+      border-radius: 3px;
+      cursor: pointer;
+      border: 1px solid;
+      white-space: nowrap;
+      transition: background 0.15s;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-dl  { background: #0f1e30; color: #7dd3fc; border-color: #1e3a5f; }
+    .btn-dl:hover { background: #1e3a5f; }
+    .btn-up  { background: #0f200f; color: #86efac; border-color: #1a3a1a; }
+    .btn-up:hover:not(:disabled) { background: #1a3a1a; }
+    .btn-up:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .upload-wrap { display: flex; align-items: center; gap: 8px; }
+    .upload-wrap input[type="file"] {
+      width: 170px;
+      padding: 5px 8px;
+      font-size: 11px;
+    }
+    .upload-wrap input[type="file"]::file-selector-button {
+      padding: 2px 8px;
+      font-size: 11px;
+      margin-right: 6px;
+    }
+
+    .up-status { font-size: 11px; min-width: 40px; }
+    .up-status.ok  { color: #86efac; }
+    .up-status.err { color: #fca5a5; }
+
+    footer {
+      text-align: center;
+      font-size: 11px;
+      color: #2a2a2a;
+      padding: 16px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>AuditForge</h1>
+    <p>Deterministic configuration audit — no AI, no data retention</p>
+  </div>
+  <button class="admin-toggle" id="adminToggle" onclick="toggleAdmin()">Admin</button>
+</header>
+
+<main>
+
+  <!-- ── Audit form ── -->
+  <div class="card">
+
+    <div class="field">
+      <label>Audit Check</label>
+      <select id="checkSelect" onchange="onCheckChange()">
+        <option value="">— select a check —</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Client File</label>
+      <input type="file" id="actualInput" accept=".xlsx,.xls,.csv" onchange="checkReady()">
+    </div>
+
+    <hr class="divider">
+
+    <div class="row">
+      <div class="field">
+        <label>Sheet Name</label>
+        <input type="text" id="sheetName" placeholder="auto">
+        <p class="hint" id="sheetHint"></p>
+      </div>
+      <div class="field">
+        <label>Fuzzy Threshold</label>
+        <input type="number" id="fuzzyThreshold" value="80" min="50" max="100">
+      </div>
+    </div>
+
+    <button class="primary" id="runBtn" onclick="runAudit()" disabled>Run Audit</button>
+    <div class="status" id="status"></div>
+
+  </div>
+
+  <!-- ── Admin panel ── -->
+  <div id="adminPanel">
+    <h2>Manage Ideal Value Files</h2>
+    <div id="adminList"></div>
+  </div>
+
+</main>
+
+<footer>AuditForge</footer>
+
+<script>
+  let checks = [];
+
+  // ── Bootstrap: load checks from server ──
+  (async () => {
+    try {
+      checks = await fetch('/api/checks').then(r => r.json());
+      const sel = document.getElementById('checkSelect');
+      checks.forEach(c => {
+        const o = document.createElement('option');
+        o.value = c.id;
+        o.textContent = c.name;
+        o.dataset.sheet = c.default_sheet || '';
+        sel.appendChild(o);
+      });
+      buildAdminList();
+    } catch (e) {
+      console.error('Failed to load checks', e);
+    }
+  })();
+
+  // ── Audit form ──
+
+  function onCheckChange() {
+    const sel   = document.getElementById('checkSelect');
+    const sheet = sel.options[sel.selectedIndex]?.dataset.sheet || '';
+    document.getElementById('sheetName').value = sheet;
+    document.getElementById('sheetHint').textContent = sheet
+      ? 'Auto-filled from check — override if needed'
+      : 'Leave blank for CSV or single-sheet files';
+    checkReady();
+  }
+
+  function checkReady() {
+    const hasCheck = document.getElementById('checkSelect').value !== '';
+    const hasFile  = document.getElementById('actualInput').files.length > 0;
+    document.getElementById('runBtn').disabled = !(hasCheck && hasFile);
+  }
+
+  async function runAudit() {
+    const btn       = document.getElementById('runBtn');
+    const status    = document.getElementById('status');
+    const checkId   = document.getElementById('checkSelect').value;
+    const checkName = document.getElementById('checkSelect').options[document.getElementById('checkSelect').selectedIndex].textContent;
+    const sheet     = document.getElementById('sheetName').value.trim();
+    const threshold = document.getElementById('fuzzyThreshold').value || 80;
+
+    btn.disabled = true;
+    status.className = 'status loading';
+    status.textContent = `Running ${checkName}...`;
+
+    try {
+      if (window.pywebview && window.pywebview.api) {
+        // Exe mode — read file as base64, bypass HTTP entirely
+        const file = document.getElementById('actualInput').files[0];
+        const fileB64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload  = () => resolve(reader.result.split(',')[1]);
+          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.readAsDataURL(file);
+        });
+        const result = await window.pywebview.api.run_audit(
+          fileB64, file.name, checkId, sheet || '', parseInt(threshold) || 80
+        );
+        if (!result) throw new Error('Audit returned no response — try again.');
+        if (result.cancelled) {
+          status.className = 'status error';
+          status.textContent = 'Save cancelled.';
+        } else if (result.error) {
+          throw new Error(result.error);
+        } else {
+          status.className = 'status success';
+          status.textContent = `Saved: ${result.filename}`;
+        }
+      } else {
+        // Dev mode — standard HTTP fetch
+        const form = new FormData();
+        form.append('actual_file', document.getElementById('actualInput').files[0]);
+        let url = `/api/audit?check_id=${encodeURIComponent(checkId)}&fuzzy_threshold=${threshold}`;
+        if (sheet) url += `&sheet_name=${encodeURIComponent(sheet)}`;
+        const res = await fetch(url, { method: 'POST', body: form });
+        if (!res.ok) {
+          let detail = 'Processing failed';
+          try { detail = (await res.json()).detail; } catch {}
+          throw new Error(detail);
+        }
+        const data = await res.json();
+        const dl = await fetch(`/api/download/${data.token}`);
+        const blob = await dl.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = data.suggested_name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        status.className = 'status success';
+        status.textContent = 'Done. Report downloaded.';
+      }
+    } catch (err) {
+      status.className = 'status error';
+      status.textContent = err.message || String(err);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ── Admin ──
+
+  function toggleAdmin() {
+    const panel = document.getElementById('adminPanel');
+    const btn   = document.getElementById('adminToggle');
+    const on    = panel.classList.toggle('visible');
+    btn.classList.toggle('active', on);
+  }
+
+  function buildAdminList() {
+    const list = document.getElementById('adminList');
+    if (!checks.length) { list.textContent = 'No checks configured.'; return; }
+    list.innerHTML = checks.map(c => `
+      <div class="check-row">
+        <div class="check-info">
+          <strong>${c.name}</strong>
+          <span>${c.default_sheet || 'CSV / auto'}</span>
+        </div>
+        <button class="btn-sm btn-dl" id="dlBtn-${c.id}" onclick="downloadIdeal('${c.id}')">
+          Download
+        </button>
+        <div class="upload-wrap">
+          <input type="file" id="upFile-${c.id}" accept=".xlsx,.xls,.csv"
+                 onchange="document.getElementById('upBtn-${c.id}').disabled = !this.files.length">
+          <button class="btn-sm btn-up" id="upBtn-${c.id}"
+                  onclick="uploadIdeal('${c.id}')" disabled>Upload</button>
+        </div>
+        <span class="up-status" id="upSt-${c.id}"></span>
+      </div>
+    `).join('');
+  }
+
+  async function downloadIdeal(id) {
+    const btn      = document.getElementById(`dlBtn-${id}`);
+    const statusEl = document.getElementById(`upSt-${id}`);
+    btn.disabled = true;
+    statusEl.textContent = '...';
+    statusEl.className = 'up-status';
+    try {
+      if (window.pywebview && window.pywebview.api) {
+        // Exe mode — call Python directly, no HTTP round-trip
+        statusEl.textContent = '...';
+        statusEl.className = 'up-status';
+        const result = await window.pywebview.api.download_ideal(id);
+        if (!result) throw new Error('Download returned no response');
+        if (result.cancelled) {
+          statusEl.textContent = 'Cancelled';
+          statusEl.className = 'up-status';
+        } else if (result.error) {
+          throw new Error(result.error);
+        } else {
+          statusEl.textContent = 'Saved';
+          statusEl.className = 'up-status ok';
+        }
+      } else {
+        // Dev mode — fetch token then stream
+        const res = await fetch(`/api/admin/checks/${id}/download`);
+        if (!res.ok) throw new Error((await res.json()).detail || 'Failed');
+        const data = await res.json();
+        const dl = await fetch(`/api/download/${data.token}`);
+        const blob = await dl.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = data.suggested_name || `${id}_ideal.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        statusEl.textContent = 'Downloaded';
+        statusEl.className = 'up-status ok';
+      }
+    } catch (e) {
+      statusEl.textContent = e.message || String(e);
+      statusEl.className = 'up-status err';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function uploadIdeal(id) {
+    const fileInput = document.getElementById(`upFile-${id}`);
+    const statusEl  = document.getElementById(`upSt-${id}`);
+    const btn       = document.getElementById(`upBtn-${id}`);
+    if (!fileInput.files.length) return;
+
+    btn.disabled = true;
+    statusEl.textContent = '...';
+    statusEl.className = 'up-status';
+
+    const form = new FormData();
+    form.append('file', fileInput.files[0]);
+
+    try {
+      if (window.pywebview && window.pywebview.api) {
+        // Exe mode — read file as base64, bypass HTTP entirely
+        const fileB64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload  = () => resolve(reader.result.split(',')[1]);
+          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.readAsDataURL(fileInput.files[0]);
+        });
+        const result = await window.pywebview.api.upload_ideal(id, fileB64);
+        if (!result) throw new Error('Upload returned no response');
+        if (result.error) throw new Error(result.error);
+        statusEl.textContent = 'Saved';
+        statusEl.className = 'up-status ok';
+        fileInput.value = '';
+      } else {
+        // Dev mode — standard HTTP fetch
+        const res = await fetch(`/api/admin/checks/${id}/upload`, { method: 'POST', body: form });
+        if (!res.ok) {
+          let detail = 'Upload failed';
+          try { detail = (await res.json()).detail; } catch {}
+          throw new Error(detail);
+        }
+        statusEl.textContent = 'Saved';
+        statusEl.className = 'up-status ok';
+        fileInput.value = '';
+      }
+    } catch (e) {
+      statusEl.textContent = e.message || String(e);
+      statusEl.className = 'up-status err';
+    } finally {
+      btn.disabled = fileInput.files.length === 0;
+    }
+  }
+</script>
+
+</body>
+</html>
