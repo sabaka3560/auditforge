@@ -1,0 +1,32 @@
+{
+  "inv_organization_parameters": {
+    "name": "INV Organization Parameters",
+    "file": "inv_organization_parameters.xlsx",
+    "default_sheet": "INV_ORGANIZATION_PARAMETER",
+    "description": "Oracle Fusion INV Organization Parameters"
+  },
+  "receiving_parameters": {
+    "name": "Receiving Parameters",
+    "file": "receiving_parameters.xlsx",
+    "default_sheet": "RCV_OPTIONS",
+    "description": "Oracle Fusion RCV Organization Parameters"
+  },
+  "invoice_options": {
+    "name": "Invoice Options",
+    "file": "invoice_options.xlsx",
+    "default_sheet": null,
+    "description": "Oracle Fusion AP Invoice Options"
+  },
+  "invoice_tolerances": {
+    "name": "Invoice Tolerances",
+    "file": "invoice_tolerances.xlsx",
+    "default_sheet": "AP_TOLERANCE_TEMPLATE",
+    "description": "Oracle Fusion AP Invoice Tolerance Templates"
+  },
+  "common_pay_proc_options": {
+    "name": "Common Pay Proc Options",
+    "file": "common_pay_proc_options.xlsx",
+    "default_sheet": "AP_FINANCIAL_SYS_PARAM",
+    "description": "Oracle Fusion AP Common Options (Financial System Parameters)"
+  }
+}

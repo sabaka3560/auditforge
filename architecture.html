@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AuditForge — Architecture</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, monospace; background: #0d0d0d; color: #c9d1d9; min-height: 100vh; }
+
+/* ── layout ── */
+header { background: #111; border-bottom: 1px solid #222; padding: 16px 28px; display: flex; align-items: baseline; gap: 16px; }
+header h1 { font-size: 14px; font-weight: 700; color: #f0f6fc; letter-spacing: 0.04em; text-transform: uppercase; }
+header span { font-size: 11px; color: #484f58; }
+.page { max-width: 1200px; margin: 0 auto; padding: 28px 24px 60px; }
+
+/* ── section titles ── */
+.section-title { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #484f58; margin-bottom: 14px; padding-bottom: 6px; border-bottom: 1px solid #1c1c1c; }
+
+/* ── pipeline ── */
+.pipeline { display: flex; align-items: center; gap: 0; margin-bottom: 40px; flex-wrap: wrap; row-gap: 8px; }
+.pipe-box { background: #161b22; border: 1px solid #30363d; border-radius: 4px; padding: 8px 14px; font-size: 11px; color: #c9d1d9; white-space: nowrap; cursor: pointer; transition: border-color .15s, background .15s; }
+.pipe-box:hover, .pipe-box.active { border-color: #58a6ff; background: #1c2a3d; color: #58a6ff; }
+.pipe-box.boundary { border-color: #3d2b1f; color: #e6a84a; }
+.pipe-box.boundary:hover { border-color: #e6a84a; background: #2a1f10; }
+.pipe-box.output { border-color: #1f3d2b; color: #56d364; }
+.pipe-box.output:hover { border-color: #56d364; background: #0f2a1a; }
+.pipe-arrow { color: #30363d; font-size: 13px; padding: 0 4px; user-select: none; }
+
+/* ── module grid ── */
+.module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-bottom: 40px; }
+.module-card { background: #161b22; border: 1px solid #21262d; border-radius: 5px; padding: 14px 16px; cursor: pointer; transition: border-color .15s; position: relative; }
+.module-card:hover { border-color: #58a6ff; }
+.module-card.active { border-color: #58a6ff; background: #161f2d; }
+.module-card .file { font-size: 12px; font-weight: 600; color: #58a6ff; font-family: monospace; margin-bottom: 4px; }
+.module-card .layer-tag { display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 1px 5px; border-radius: 2px; margin-bottom: 8px; }
+.layer-http    { background: #2d1b69; color: #a78bfa; }
+.layer-engine  { background: #0f2a1a; color: #56d364; }
+.layer-shared  { background: #3d2b00; color: #e6a84a; }
+.layer-output  { background: #1f3a1a; color: #3fb950; }
+.module-card .desc { font-size: 11px; color: #8b949e; line-height: 1.5; margin-bottom: 10px; }
+.module-card .fns { font-size: 10px; font-family: monospace; }
+.module-card .fn  { display: block; color: #79c0ff; padding: 1px 0; }
+.module-card .fn .ret { color: #56d364; }
+.detail-panel { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #21262d; font-size: 11px; color: #8b949e; }
+.detail-panel.open { display: block; }
+.detail-panel h4 { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #484f58; margin: 8px 0 4px; }
+.detail-panel ul { padding-left: 14px; }
+.detail-panel li { margin-bottom: 2px; }
+.code-snippet { background: #0d1117; border: 1px solid #21262d; border-radius: 3px; padding: 8px 10px; font-family: monospace; font-size: 10px; color: #c9d1d9; margin-top: 6px; white-space: pre; overflow-x: auto; }
+
+/* ── matching stages ── */
+.stages { display: flex; gap: 0; margin-bottom: 40px; flex-wrap: wrap; }
+.stage { flex: 1; min-width: 120px; padding: 12px 14px; background: #161b22; border: 1px solid #21262d; position: relative; }
+.stage:not(:last-child)::after { content: '→'; position: absolute; right: -12px; top: 50%; transform: translateY(-50%); color: #30363d; font-size: 14px; z-index: 1; }
+.stage:first-child { border-radius: 4px 0 0 4px; }
+.stage:last-child  { border-radius: 0 4px 4px 0; }
+.stage .num    { font-size: 9px; color: #484f58; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.stage .name   { font-size: 12px; font-weight: 600; color: #f0f6fc; margin: 3px 0; }
+.stage .detail { font-size: 10px; color: #8b949e; line-height: 1.4; }
+.stage.s1 { border-left: 3px solid #58a6ff; }
+.stage.s2 { border-left: 3px solid #a78bfa; }
+.stage.s3 { border-left: 3px solid #e6a84a; }
+.stage.s4 { border-left: 3px solid #56d364; }
+.stage.s5 { border-left: 3px solid #f85149; }
+
+/* ── data types ── */
+.types-row { display: flex; gap: 12px; margin-bottom: 40px; flex-wrap: wrap; }
+.type-card { flex: 1; min-width: 200px; background: #161b22; border: 1px solid #21262d; border-radius: 4px; padding: 14px 16px; }
+.type-card .type-name { font-family: monospace; font-size: 12px; font-weight: 600; color: #e6a84a; margin-bottom: 8px; }
+.type-card .field { font-family: monospace; font-size: 10px; padding: 2px 0; }
+.type-card .field .fname { color: #79c0ff; }
+.type-card .field .ftype { color: #56d364; }
+.type-card .field .fcomment { color: #484f58; }
+
+/* ── rules panel ── */
+.rules-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.rule { background: #161b22; border: 1px solid #21262d; border-radius: 4px; padding: 12px 14px; display: flex; gap: 10px; }
+.rule-num { font-size: 11px; font-weight: 700; color: #58a6ff; font-family: monospace; flex-shrink: 0; min-width: 20px; }
+.rule-text { font-size: 11px; color: #8b949e; line-height: 1.5; }
+.rule-text strong { color: #c9d1d9; display: block; margin-bottom: 2px; }
+
+/* ── detail panel (right side) ── */
+#detail-panel { background: #161b22; border: 1px solid #21262d; border-radius: 5px; padding: 18px; margin-top: 12px; display: none; }
+#detail-panel.open { display: block; }
+#detail-panel h3 { font-size: 13px; font-weight: 600; color: #f0f6fc; margin-bottom: 4px; font-family: monospace; }
+#detail-panel .dp-meta { font-size: 10px; color: #484f58; margin-bottom: 12px; }
+#detail-panel .dp-section { margin-bottom: 12px; }
+#detail-panel .dp-section h4 { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #484f58; margin-bottom: 5px; }
+#detail-panel .dp-section p, #detail-panel .dp-section li { font-size: 11px; color: #8b949e; line-height: 1.6; }
+#detail-panel .dp-section ul { padding-left: 14px; }
+#detail-panel pre { background: #0d1117; border: 1px solid #21262d; border-radius: 3px; padding: 10px; font-size: 10px; color: #c9d1d9; overflow-x: auto; }
+
+.gap { margin-bottom: 36px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>AuditForge — Architecture</h1>
+  <span>Low Level Design &nbsp;·&nbsp; Click any module or stage for details</span>
+</header>
+
+<div class="page">
+
+<!-- ── REQUEST PIPELINE ── -->
+<div class="gap">
+  <div class="section-title">Request Pipeline</div>
+  <div class="pipeline">
+    <div class="pipe-box boundary" onclick="showPipe('browser')">Browser</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box boundary" onclick="showPipe('fastapi')">POST /api/audit</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box" onclick="highlight('reader')">read_actual()</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box" onclick="highlight('reader')">read_ideal()</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box" onclick="highlight('matcher')">build_mapping()</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box" onclick="highlight('comparator')">compare()</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box" onclick="highlight('writer')">build_report()</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-box output" onclick="showPipe('response')">AuditForge_Report.xlsx</div>
+  </div>
+</div>
+
+<!-- ── MATCHING STAGES ── -->
+<div class="gap">
+  <div class="section-title">Header Matching — 4-Stage Waterfall (engine/matcher.py)</div>
+  <div class="stages">
+    <div class="stage s1" onclick="showStage(1)">
+      <div class="num">Stage 1</div>
+      <div class="name">Exact</div>
+      <div class="detail">ideal_name in actual_headers — string equality, case-sensitive</div>
+    </div>
+    <div class="stage s2" onclick="showStage(2)">
+      <div class="num">Stage 2</div>
+      <div class="name">Normalized</div>
+      <div class="detail">strip spaces/underscores/hyphens, lowercase both sides</div>
+    </div>
+    <div class="stage s3" onclick="showStage(3)">
+      <div class="num">Stage 3</div>
+      <div class="name">Manual Alias</div>
+      <div class="detail">7 known Oracle Fusion renames in engine/aliases.py</div>
+    </div>
+    <div class="stage s4" onclick="showStage(4)">
+      <div class="num">Stage 4</div>
+      <div class="name">Fuzzy</div>
+      <div class="detail">token_sort_ratio ≥ threshold (default 80)</div>
+    </div>
+    <div class="stage s5" onclick="showStage(5)">
+      <div class="num">Result</div>
+      <div class="name">Unmatched</div>
+      <div class="detail">No row produced. Appears in mapping sheet as warning.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODULE GRID ── -->
+<div class="gap">
+  <div class="section-title">Engine Modules — click to expand</div>
+  <div class="module-grid">
+
+    <div class="module-card" id="card-types" onclick="expandModule('types')">
+      <div class="file">engine/types.py</div>
+      <span class="layer-tag layer-shared">Shared Types</span>
+      <div class="desc">Shared dataclasses. No logic, no I/O. Everything else imports from here.</div>
+      <div class="fns">
+        <span class="fn">@dataclass <span class="ret">MappingResult</span></span>
+        <span class="fn">@dataclass <span class="ret">AuditRow</span></span>
+      </div>
+      <div class="detail-panel" id="dp-types">
+        <h4>Why separate?</h4>
+        <p>Prevents circular imports. matcher.py and comparator.py both need these types but must not import each other.</p>
+        <h4>Rule</h4>
+        <p>Never add logic here. If you need a method on a dataclass, write a standalone function in the relevant module.</p>
+      </div>
+    </div>
+
+    <div class="module-card" id="card-aliases" onclick="expandModule('aliases')">
+      <div class="file">engine/aliases.py</div>
+      <span class="layer-tag layer-shared">Shared Config</span>
+      <div class="desc">One dict. Oracle Fusion exports use different column names than ITAC ideal files use. This maps them.</div>
+      <div class="fns">
+        <span class="fn"><span class="ret">MANUAL_ALIASES</span>: dict[str, str]</span>
+      </div>
+      <div class="detail-panel" id="dp-aliases">
+        <h4>Current aliases (7)</h4>
+        <div class="code-snippet">AllowItemSubstitutionsFlag → AllowItemSubstitutions
+BusinessUnitId             → BusinessUnitName
+MasterOrganizationId       → MasterOrgCode
+ProfitCenterBuId           → ProfitCenterBuName
+SupplierId                 → SupplierName
+SupplierSiteId             → SupplierSiteName
+OrganizationId             → OrganizationCode</div>
+        <h4>How to extend</h4>
+        <p>Add to MANUAL_ALIASES and write a test in test_matcher.py. No other file changes needed.</p>
+      </div>
+    </div>
+
+    <div class="module-card" id="card-normalizer" onclick="expandModule('normalizer')">
+      <div class="file">engine/normalizer.py</div>
+      <span class="layer-tag layer-shared">Normalization</span>
+      <div class="desc">All string normalization lives here. strip_header for headers, normalize_value for comparison, is_capture for capture detection.</div>
+      <div class="fns">
+        <span class="fn">strip_header(s) <span class="ret">→ str</span></span>
+        <span class="fn">normalize_value(v) <span class="ret">→ str</span></span>
+        <span class="fn">is_capture(ideal) <span class="ret">→ bool</span></span>
+        <span class="fn">detect_ideal_columns(df) <span class="ret">→ (str, str)</span></span>
+      </div>
+      <div class="detail-panel" id="dp-normalizer">
+        <h4>Boolean synonym map</h4>
+        <div class="code-snippet">Y / y / yes / Yes / YES / true / 1 / enabled / on → "y"
+N / n / no  / No  / NO  / false/ 0 / disabled/ off → "n"</div>
+        <h4>Capture phrases</h4>
+        <div class="code-snippet">"capture", "record the value", "extract",
+"document the actual", "note the value",
+"for information only", "informational"</div>
+      </div>
+    </div>
+
+    <div class="module-card" id="card-reader" onclick="expandModule('reader')">
+      <div class="file">engine/reader.py</div>
+      <span class="layer-tag layer-engine">Ingestion</span>
+      <div class="desc">File I/O only. Reads client file and ideal value file into DataFrames. No comparison, no matching.</div>
+      <div class="fns">
+        <span class="fn">read_actual(file_obj, sheet) <span class="ret">→ DataFrame</span></span>
+        <span class="fn">read_ideal(file_obj) <span class="ret">→ DataFrame</span></span>
+      </div>
+      <div class="detail-panel" id="dp-reader">
+        <h4>read_actual</h4>
+        <ul>
+          <li>Raises ValueError if sheet_name not found (returns available sheets)</li>
+          <li>Renames column A to BU_NAME regardless of original header</li>
+          <li>Drops rows where BU_NAME is blank or NaN</li>
+        </ul>
+        <h4>read_ideal</h4>
+        <ul>
+          <li>Tries openpyxl first, falls back to CSV parser</li>
+          <li>Auto-detects name/value columns via normalizer.detect_ideal_columns()</li>
+          <li>Returns exactly 2 columns: config_name, ideal_value</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="module-card" id="card-matcher" onclick="expandModule('matcher')">
+      <div class="file">engine/matcher.py</div>
+      <span class="layer-tag layer-engine">Matching</span>
+      <div class="desc">Resolves each ideal config name to an actual column header using the 4-stage waterfall. Returns one MappingResult per ideal row.</div>
+      <div class="fns">
+        <span class="fn">build_mapping(ideal_df, headers, threshold) <span class="ret">→ list[MappingResult]</span></span>
+      </div>
+      <div class="detail-panel" id="dp-matcher">
+        <h4>Internal functions</h4>
+        <div class="code-snippet">_match_one()   — runs the 4 stages for a single ideal name
+_best_fuzzy()  — scans all actuals, returns (score, header)</div>
+        <h4>Fuzzy scorer</h4>
+        <p>Uses <code>token_sort_ratio</code>, not <code>ratio</code>. ERP config names are token bags — AllowItemSubstitutionsFlag vs AllowItemSubstitutions works correctly with token_sort but fails with plain ratio.</p>
+      </div>
+    </div>
+
+    <div class="module-card" id="card-comparator" onclick="expandModule('comparator')">
+      <div class="file">engine/comparator.py</div>
+      <span class="layer-tag layer-engine">Comparison</span>
+      <div class="desc">The only module that touches actual cell values. For each BU × matched config: capture check → normalize → compare → classify.</div>
+      <div class="fns">
+        <span class="fn">compare(actual_df, mapping) <span class="ret">→ (cip, gaps, extra)</span></span>
+      </div>
+      <div class="detail-panel" id="dp-comparator">
+        <h4>Classification order</h4>
+        <div class="code-snippet">1. is_capture(ideal_value)      → additional data
+2. normalize(actual) == normalize(ideal) → controls in place
+3. else                          → control gaps</div>
+        <h4>Null handling</h4>
+        <p>NaN/None actual → empty string after normalize_value(). Empty string ≠ any ideal value → control gap.</p>
+      </div>
+    </div>
+
+    <div class="module-card" id="card-styles" onclick="expandModule('styles')">
+      <div class="file">engine/styles.py</div>
+      <span class="layer-tag layer-output">Output</span>
+      <div class="desc">openpyxl style constants only. Change colors in one place.</div>
+      <div class="fns">
+        <span class="fn"><span class="ret">HEADER_FILL</span> — #1F4E79 dark blue</span>
+        <span class="fn"><span class="ret">GREEN_FILL</span>  — #C6EFCE controls in place</span>
+        <span class="fn"><span class="ret">RED_FILL</span>    — #FFC7CE control gaps</span>
+        <span class="fn"><span class="ret">BLUE_FILL</span>   — #DDEBF7 additional data</span>
+        <span class="fn"><span class="ret">YELLOW_FILL</span> — #FFEB9C unmatched rows</span>
+      </div>
+      <div class="detail-panel" id="dp-styles">
+        <h4>Why separate?</h4>
+        <p>writer.py imports from here. Centralizing styles means you change colors in one file, not scattered through sheet-writing code.</p>
+      </div>
+    </div>
+
+    <div class="module-card" id="card-writer" onclick="expandModule('writer')">
+      <div class="file">engine/writer.py</div>
+      <span class="layer-tag layer-output">Output</span>
+      <div class="desc">Builds the 5-sheet Excel workbook entirely in memory. Returns bytes — nothing touches disk.</div>
+      <div class="fns">
+        <span class="fn">build_report(cip, gaps, extra, mapping, ...) <span class="ret">→ bytes</span></span>
+      </div>
+      <div class="detail-panel" id="dp-writer">
+        <h4>Why openpyxl over pandas.to_excel?</h4>
+        <p>pandas.to_excel gives no per-cell styling control. Audit outputs require color-coded rows (green/red/blue), styled headers, and auto-fit columns — all requiring openpyxl PatternFill and Font APIs directly.</p>
+        <h4>Internal helpers</h4>
+        <div class="code-snippet">_data_sheet()    — writes Controls in place / gaps / extra
+_mapping_sheet() — writes Header Mapping and Exc
+_summary_sheet() — writes Audit Summary
+_header_row()    — styled header (shared)
+_fill_row()      — applies fill to current row
+_autofit()       — auto-fit column widths</div>
+      </div>
+    </div>
+
+  </div>
+  <div id="detail-panel"></div>
+</div>
+
+<!-- ── DATA TYPES ── -->
+<div class="gap">
+  <div class="section-title">Data Types (engine/types.py)</div>
+  <div class="types-row">
+    <div class="type-card">
+      <div class="type-name">MappingResult</div>
+      <div class="field"><span class="fname">ideal_name</span>:      <span class="ftype">str</span>           <span class="fcomment">— from ideal file</span></div>
+      <div class="field"><span class="fname">ideal_value</span>:     <span class="ftype">str</span>           <span class="fcomment">— from ideal file</span></div>
+      <div class="field"><span class="fname">matched_header</span>:  <span class="ftype">Optional[str]</span> <span class="fcomment">— None = Unmatched</span></div>
+      <div class="field"><span class="fname">match_method</span>:    <span class="ftype">str</span>           <span class="fcomment">— Exact|Normalized|Manual Alias|Fuzzy|Unmatched</span></div>
+      <div class="field"><span class="fname">similarity_score</span>:<span class="ftype">float</span>         <span class="fcomment">— 0.0–1.0</span></div>
+      <div class="field"><span class="fname">status</span>:          <span class="ftype">str</span>           <span class="fcomment">— Matched|Unmatched</span></div>
+      <div class="field"><span class="fname">remarks</span>:         <span class="ftype">str</span>           <span class="fcomment">— for mapping sheet</span></div>
+    </div>
+    <div class="type-card">
+      <div class="type-name">AuditRow</div>
+      <div class="field"><span class="fname">bu_name</span>:       <span class="ftype">str</span> <span class="fcomment">— from column A of client file</span></div>
+      <div class="field"><span class="fname">config_name</span>:   <span class="ftype">str</span> <span class="fcomment">— ideal name (not actual header)</span></div>
+      <div class="field"><span class="fname">actual_value</span>:  <span class="ftype">str</span> <span class="fcomment">— raw display value</span></div>
+      <div class="field"><span class="fname">ideal_value</span>:   <span class="ftype">str</span> <span class="fcomment">— for reference in output</span></div>
+      <div class="field"><span class="fname">comment</span>:       <span class="ftype">str</span> <span class="fcomment">— Controls in place|Controls gaps|Actual config captured</span></div>
+    </div>
+    <div class="type-card">
+      <div class="type-name">Output Sheets</div>
+      <div class="field"><span class="fname" style="color:#56d364">Controls in place</span>    <span class="fcomment">— actual == ideal</span></div>
+      <div class="field"><span class="fname" style="color:#f85149">Control gaps</span>         <span class="fcomment">— actual != ideal</span></div>
+      <div class="field"><span class="fname" style="color:#58a6ff">Controls additional data</span> <span class="fcomment">— captured only</span></div>
+      <div class="field"><span class="fname" style="color:#e6a84a">Header Mapping and Exc</span>  <span class="fcomment">— full match log</span></div>
+      <div class="field"><span class="fname" style="color:#8b949e">Audit Summary</span>        <span class="fcomment">— 14 aggregate metrics</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── KARPATHY RULES ── -->
+<div class="gap">
+  <div class="section-title">Karpathy Rules — Applied to This Codebase</div>
+  <div class="rules-grid">
+    <div class="rule"><span class="rule-num">01</span><div class="rule-text"><strong>Read before write</strong>Never edit a file without reading it. Always read the diff before committing.</div></div>
+    <div class="rule"><span class="rule-num">02</span><div class="rule-text"><strong>Stay close to the data</strong>Run the tool against real Excel files after every non-trivial change. Unit tests on toy data miss real bugs.</div></div>
+    <div class="rule"><span class="rule-num">03</span><div class="rule-text"><strong>One file, one purpose</strong>reader.py reads files. matcher.py matches. Nothing else. Parsing logic in comparator.py is a bug.</div></div>
+    <div class="rule"><span class="rule-num">04</span><div class="rule-text"><strong>Explicit over implicit</strong>No magic, no metaprogramming. If a function surprises on re-read, simplify it.</div></div>
+    <div class="rule"><span class="rule-num">05</span><div class="rule-text"><strong>Functions should be boring</strong>Fits on a screen. Typed input/output. No side effects. That's a good function.</div></div>
+    <div class="rule"><span class="rule-num">06</span><div class="rule-text"><strong>Delete code as a feature</strong>The best refactor removes lines. If you added something "just in case", remove it.</div></div>
+    <div class="rule"><span class="rule-num">07</span><div class="rule-text"><strong>Test with production-like data</strong>Tests use real Oracle Fusion BU names and config patterns. Don't replace with foo/bar.</div></div>
+    <div class="rule"><span class="rule-num">08</span><div class="rule-text"><strong>Commit after each green test</strong>Small commits are reviewable. Large commits are not.</div></div>
+    <div class="rule"><span class="rule-num">09</span><div class="rule-text"><strong>Type hints are not optional</strong>Every public function must be typed. Any is a code smell.</div></div>
+    <div class="rule"><span class="rule-num">10</span><div class="rule-text"><strong>Comments explain WHY</strong>The code says what it does. Comments explain why a surprising decision was made. Obvious things need no comments.</div></div>
+    <div class="rule"><span class="rule-num">11</span><div class="rule-text"><strong>No global mutable state</strong>All state flows through function parameters. Nothing shared between requests.</div></div>
+    <div class="rule"><span class="rule-num">12</span><div class="rule-text"><strong>The diff is the product</strong>Every PR reviewable in under 5 minutes. If it isn't, it's too big.</div></div>
+  </div>
+</div>
+
+</div><!-- .page -->
+
+<script>
+const MODULE_DATA = {
+  types: {
+    title: "engine/types.py",
+    meta: "Shared Types · no dependencies",
+    responsibilities: ["Defines MappingResult and AuditRow dataclasses", "Zero logic, zero I/O", "Imported by matcher.py, comparator.py, writer.py"],
+    rules: ["Never add methods here — functions belong in the relevant module", "Prevents circular imports between matcher and comparator"],
+    code: `@dataclass\nclass MappingResult:\n    ideal_name: str\n    ideal_value: str\n    matched_header: Optional[str]\n    match_method: str\n    similarity_score: float\n    status: str\n    remarks: str\n\n@dataclass\nclass AuditRow:\n    bu_name: str\n    config_name: str\n    actual_value: str\n    ideal_value: str\n    comment: str`
+  },
+  aliases: {
+    title: "engine/aliases.py",
+    meta: "Shared Config · no dependencies",
+    responsibilities: ["One dict: MANUAL_ALIASES", "Maps Oracle Fusion column names that differ from ITAC ideal file names", "Used only by matcher.py Stage 3"],
+    rules: ["Adding an alias = add a key + write a test in test_matcher.py", "No logic here — just data"],
+    code: `MANUAL_ALIASES: dict[str, str] = {\n    "AllowItemSubstitutionsFlag": "AllowItemSubstitutions",\n    "BusinessUnitId":             "BusinessUnitName",\n    "MasterOrganizationId":       "MasterOrgCode",\n    "ProfitCenterBuId":           "ProfitCenterBuName",\n    "SupplierId":                 "SupplierName",\n    "SupplierSiteId":             "SupplierSiteName",\n    "OrganizationId":             "OrganizationCode",\n}`
+  },
+  normalizer: {
+    title: "engine/normalizer.py",
+    meta: "Shared Normalization · imports pandas",
+    responsibilities: ["strip_header() — for header matching (removes spaces/underscores/hyphens)", "normalize_value() — for value comparison (boolean synonyms)", "is_capture() — detects capture-mode ideal values", "detect_ideal_columns() — auto-detects name/value columns in ideal file"],
+    rules: ["All comparison logic runs through normalize_value()", "Capture detection is substring — not startswith, not exact"],
+    code: `def normalize_value(v) -> str:\n    if v is None or pd.isna(v): return ""\n    s = str(v).strip().lower()\n    return _BOOL_MAP.get(s, s)\n\n# Y/y/yes/true/1/enabled/on → "y"\n# N/n/no/false/0/disabled/off → "n"`
+  },
+  reader: {
+    title: "engine/reader.py",
+    meta: "Ingestion Layer · imports pandas, normalizer",
+    responsibilities: ["read_actual() reads the client Oracle Fusion XLSX", "read_ideal() reads the ideal value file (XLSX or CSV)", "Normalizes column A to BU_NAME", "Auto-detects ideal file columns via normalizer"],
+    rules: ["File I/O only — no comparison, no matching", "Raises ValueError with actionable message on bad input", "Returns clean DataFrames — callers don't need to handle NaN in BU column"],
+    code: `def read_actual(file_obj, sheet_name="INV_ORGANIZATION_PARAMETER"):\n    xl = pd.ExcelFile(file_obj, engine="openpyxl")\n    if sheet_name not in xl.sheet_names:\n        raise ValueError(f"Sheet not found. Available: {xl.sheet_names}")\n    df = xl.parse(sheet_name)\n    df = df.rename(columns={df.columns[0]: "BU_NAME"})\n    return df`
+  },
+  matcher: {
+    title: "engine/matcher.py",
+    meta: "Matching Layer · imports types, aliases, normalizer, thefuzz",
+    responsibilities: ["build_mapping() returns one MappingResult per ideal config row", "4-stage waterfall: exact → normalized → alias → fuzzy", "Uses token_sort_ratio (not ratio) for fuzzy — ERP names are token bags"],
+    rules: ["First hit wins — exact match is never overridden by fuzzy", "Fuzzy score < _FUZZY_LOW_CONFIDENCE (90) gets a 'verify' remark", "Unmatched configs appear in mapping sheet but produce zero audit rows"],
+    code: `def _match_one(ideal, ideal_val, actuals, norm_map, threshold):\n    # Stage 1 — exact\n    if ideal in actuals: return MappingResult(..., "Exact", ...)\n    # Stage 2 — normalized\n    if _norm(ideal) in norm_map: return MappingResult(..., "Normalized", ...)\n    # Stage 3 — alias\n    alias = MANUAL_ALIASES.get(ideal)\n    if alias and alias in actuals: return MappingResult(..., "Manual Alias", ...)\n    # Stage 4 — fuzzy\n    score, header = _best_fuzzy(ideal, actuals)\n    if score >= threshold: return MappingResult(..., "Fuzzy", ...)\n    return MappingResult(..., "Unmatched", ...)`
+  },
+  comparator: {
+    title: "engine/comparator.py",
+    meta: "Comparison Layer · imports types, normalizer",
+    responsibilities: ["compare() iterates every BU × every matched config", "Three buckets: controls_in_place, control_gaps, additional_data", "Unmatched configs (matched_header is None) produce no rows"],
+    rules: ["Only module that reads actual cell values", "NaN/None actual → empty string → gap (not skipped)", "Capture check runs before value comparison"],
+    code: `for m in matched:\n    for _, row in actual_df.iterrows():\n        raw = row.get(m.matched_header)\n        display = "" if is_null(raw) else str(raw).strip()\n\n        if is_capture(m.ideal_value):\n            extra.append(AuditRow(..., "Actual config captured"))\n        elif normalize_value(raw) == normalize_value(m.ideal_value):\n            cip.append(AuditRow(..., "Controls in place"))\n        else:\n            gaps.append(AuditRow(..., "Controls gaps"))`
+  },
+  styles: {
+    title: "engine/styles.py",
+    meta: "Output Config · imports openpyxl",
+    responsibilities: ["openpyxl PatternFill and Font constants only", "Single source of truth for all Excel colors and fonts"],
+    rules: ["Change colors here, not in writer.py", "Never put logic here"],
+    code: `HEADER_FILL = PatternFill("solid", fgColor="1F4E79")\nGREEN_FILL  = PatternFill("solid", fgColor="C6EFCE")  # in place\nRED_FILL    = PatternFill("solid", fgColor="FFC7CE")  # gaps\nBLUE_FILL   = PatternFill("solid", fgColor="DDEBF7")  # captured\nYELLOW_FILL = PatternFill("solid", fgColor="FFEB9C")  # unmatched`
+  },
+  writer: {
+    title: "engine/writer.py",
+    meta: "Output Layer · imports styles, types, openpyxl",
+    responsibilities: ["build_report() builds 5-sheet Excel workbook in memory", "Returns bytes — no temp files, no disk writes", "Auto-fits column widths, applies fills, styles header rows"],
+    rules: ["Uses openpyxl directly (not pandas.to_excel) for per-cell styling", "All helpers are module-private (prefixed _)", "BytesIO in → BytesIO out — caller owns the bytes"],
+    code: `def build_report(cip, gaps, extra, mapping, ...) -> bytes:\n    wb = Workbook()\n    _data_sheet(wb.active, "Controls in place", cip, GREEN_FILL)\n    _data_sheet(wb.create_sheet(...), "Control gaps", gaps, RED_FILL)\n    _data_sheet(wb.create_sheet(...), "Controls additional data", extra, BLUE_FILL)\n    _mapping_sheet(wb.create_sheet(...))\n    _summary_sheet(wb.create_sheet(...))\n    buf = BytesIO(); wb.save(buf); return buf.getvalue()`
+  }
+};
+
+const PIPE_DATA = {
+  browser: { title: "Browser", detail: "Drag-drop two files into static/index.html. On submit, Fetch API sends a multipart/form-data POST to /api/audit. On 200, triggers auto-download of the response blob as AuditForge_Report.xlsx." },
+  fastapi: { title: "POST /api/audit", detail: "FastAPI endpoint in main.py. Reads UploadFile bytes into BytesIO (never touches disk). Validates files with read_actual/read_ideal — returns HTTP 400 with the exact error message on bad input. On success, returns StreamingResponse with xlsx content-type." },
+  response: { title: "AuditForge_Report.xlsx", detail: "5-sheet Excel workbook: Controls in place (green), Control gaps (red), Controls additional data (blue), Header Mapping and Exc (with yellow unmatched rows), Audit Summary (14 metrics)." }
+};
+
+const STAGE_DATA = [null,
+  { title: "Stage 1 — Exact", detail: "String equality. AllowNegOnhandCcTxns in actual headers → matched. Case-sensitive — AllowNeg ≠ allowneg at this stage." },
+  { title: "Stage 2 — Normalized", detail: "Both sides: strip spaces, underscores, hyphens, lowercase. FaBookTypeCode normalizes to fabooktypecode. FABookTypeCode also normalizes to fabooktypecode → match." },
+  { title: "Stage 3 — Manual Alias", detail: "Hard-coded dict in engine/aliases.py. AllowItemSubstitutionsFlag → AllowItemSubstitutions. Covers 7 known Oracle Fusion column renames. Extend by adding to the dict." },
+  { title: "Stage 4 — Fuzzy", detail: "Uses thefuzz token_sort_ratio. token_sort_ratio handles ERP names correctly — AllowItemSubstitutionsFlag vs AllowItemSubstitutions scores ~95, plain ratio would score ~88. Default threshold: 80. Low confidence (80–89): adds 'verify mapping' remark." },
+  { title: "Unmatched", detail: "No stage matched. Config appears in Header Mapping sheet with yellow fill and best-candidate remark. Produces zero rows in any audit sheet. Known permanent unmatch: LastUpdateDate, LastUpdateLogin, LastUpdatedBy, SourceOrganizationId, SourceSubinventory." }
+];
+
+function expandModule(id) {
+  const card = document.getElementById('card-' + id);
+  const dp   = document.getElementById('dp-' + id);
+  const isOpen = dp.classList.contains('open');
+
+  // Close all
+  document.querySelectorAll('.detail-panel').forEach(p => p.classList.remove('open'));
+  document.querySelectorAll('.module-card').forEach(c => c.classList.remove('active'));
+
+  if (!isOpen) {
+    dp.classList.add('open');
+    card.classList.add('active');
+    showDetailPanel(MODULE_DATA[id]);
+  } else {
+    document.getElementById('detail-panel').classList.remove('open');
+  }
+}
+
+function showDetailPanel(data) {
+  const panel = document.getElementById('detail-panel');
+  panel.innerHTML = `
+    <h3>${data.title}</h3>
+    <div class="dp-meta">${data.meta}</div>
+    <div class="dp-section">
+      <h4>Responsibilities</h4>
+      <ul>${data.responsibilities.map(r => `<li>${r}</li>`).join('')}</ul>
+    </div>
+    <div class="dp-section">
+      <h4>Rules</h4>
+      <ul>${data.rules.map(r => `<li>${r}</li>`).join('')}</ul>
+    </div>
+    <div class="dp-section">
+      <h4>Code</h4>
+      <pre>${data.code}</pre>
+    </div>
+  `;
+  panel.classList.add('open');
+}
+
+function highlight(id) {
+  document.querySelectorAll('.module-card').forEach(c => c.classList.remove('active'));
+  const card = document.getElementById('card-' + id);
+  if (card) { card.classList.add('active'); card.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+}
+
+function showPipe(id) {
+  const data = PIPE_DATA[id];
+  const panel = document.getElementById('detail-panel');
+  panel.innerHTML = `<h3>${data.title}</h3><div class="dp-meta">&nbsp;</div><div class="dp-section"><p>${data.detail}</p></div>`;
+  panel.classList.add('open');
+}
+
+function showStage(n) {
+  const data = STAGE_DATA[n];
+  const panel = document.getElementById('detail-panel');
+  panel.innerHTML = `<h3>${data.title}</h3><div class="dp-meta">&nbsp;</div><div class="dp-section"><p>${data.detail}</p></div>`;
+  panel.classList.add('open');
+}
+</script>
+</body>
+</html>
