@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AuditForge — Enterprise Global (Multi-Region)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #050810;
+  --bg2: #080d1a;
+  --us-accent: #3b82f6;
+  --us-glow: rgba(59,130,246,0.18);
+  --us-border: rgba(59,130,246,0.45);
+  --eu-west-accent: #22c55e;
+  --eu-west-glow: rgba(34,197,94,0.15);
+  --eu-west-border: rgba(34,197,94,0.4);
+  --eu-central-accent: #f59e0b;
+  --eu-central-glow: rgba(245,158,11,0.15);
+  --eu-central-border: rgba(245,158,11,0.4);
+  --ai-accent: #a855f7;
+  --ai-border: rgba(168,85,247,0.4);
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --text-bright: #f8fafc;
+  --card: rgba(15,20,40,0.8);
+  --card-border: rgba(255,255,255,0.06);
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── Star field ─────────────────────────────────── */
+#stars {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── Page layout ─────────────────────────────────── */
+.page {
+  position: relative;
+  z-index: 1;
+  max-width: 1640px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+}
+
+/* ─── Header ──────────────────────────────────────── */
+.header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+.header-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--us-accent);
+  background: rgba(59,130,246,0.1);
+  border: 1px solid rgba(59,130,246,0.3);
+  border-radius: 100px;
+  padding: 4px 14px;
+  margin-bottom: 14px;
+}
+.header h1 {
+  font-size: clamp(22px, 3.6vw, 40px);
+  font-weight: 900;
+  color: var(--text-bright);
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  margin-bottom: 10px;
+}
+.header h1 span { color: var(--us-accent); }
+.header-sub {
+  font-size: 13.5px;
+  color: var(--text-dim);
+  margin-bottom: 18px;
+}
+.kpi-row {
+  display: inline-flex;
+  gap: 0;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.kpi-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 26px;
+  border-right: 1px solid rgba(255,255,255,0.07);
+}
+.kpi-item:last-child { border-right: none; }
+.kpi-label {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.kpi-val {
+  font-size: 16px;
+  font-weight: 900;
+  color: #86efac;
+  letter-spacing: -0.02em;
+}
+.cost-tag {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--eu-central-accent);
+  background: rgba(245,158,11,0.08);
+  border: 1px solid rgba(245,158,11,0.25);
+  border-radius: 8px;
+  padding: 5px 18px;
+  font-weight: 600;
+}
+
+/* ─── Controls row ────────────────────────────────── */
+.controls-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 26px;
+  flex-wrap: wrap;
+}
+.btn {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 22px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  letter-spacing: 0.01em;
+  user-select: none;
+}
+.btn-failover {
+  background: linear-gradient(135deg, #dc2626, #9b1c1c);
+  color: #fff;
+  box-shadow: 0 0 24px rgba(220,38,38,0.3);
+}
+.btn-failover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 36px rgba(220,38,38,0.55);
+}
+.btn-failover:active { transform: translateY(0); }
+.btn-failover:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.btn-reset {
+  background: rgba(255,255,255,0.06);
+  color: var(--text-dim);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.btn-reset:hover {
+  background: rgba(255,255,255,0.1);
+  color: var(--text);
+}
+
+/* ─── World map ───────────────────────────────────── */
+.world-map-wrap {
+  background: rgba(6,10,24,0.95);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 18px;
+  padding: 18px 20px;
+  margin-bottom: 26px;
+  position: relative;
+  overflow: hidden;
+}
+.world-map-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 55% 60% at 18% 55%, rgba(59,130,246,0.06) 0%, transparent 65%),
+    radial-gradient(ellipse 35% 55% at 49% 30%, rgba(34,197,94,0.05) 0%, transparent 65%),
+    radial-gradient(ellipse 25% 50% at 60% 28%, rgba(245,158,11,0.05) 0%, transparent 65%);
+  pointer-events: none;
+}
+.world-map-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  text-align: center;
+}
+#worldSvg {
+  width: 100%;
+  height: 200px;
+  display: block;
+}
+
+/* ─── Regions grid ────────────────────────────────── */
+.regions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 18px;
+  align-items: start;
+}
+
+.region-col {
+  border-radius: 18px;
+  border: 1.5px solid;
+  padding: 20px 16px 18px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.35s ease, opacity 0.35s ease, filter 0.35s ease;
+}
+.region-col::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+/* US primary */
+.region-col.us {
+  border-color: var(--us-border);
+  background: linear-gradient(155deg, rgba(59,130,246,0.08) 0%, rgba(5,8,16,0.97) 55%);
+}
+.region-col.us::before {
+  content: '';
+  position: absolute;
+  top: -60px; left: 50%;
+  transform: translateX(-50%);
+  width: 340px; height: 160px;
+  background: radial-gradient(ellipse, rgba(59,130,246,0.16) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* EU-West DR */
+.region-col.eu-west {
+  border-color: var(--eu-west-border);
+  background: linear-gradient(155deg, rgba(34,197,94,0.07) 0%, rgba(5,8,16,0.97) 55%);
+}
+.region-col.eu-west::before {
+  content: '';
+  position: absolute;
+  top: -60px; left: 50%;
+  transform: translateX(-50%);
+  width: 320px; height: 150px;
+  background: radial-gradient(ellipse, rgba(34,197,94,0.14) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* EU-Central GDPR */
+.region-col.eu-central {
+  border-color: var(--eu-central-border);
+  background: linear-gradient(155deg, rgba(245,158,11,0.08) 0%, rgba(5,8,16,0.97) 55%);
+}
+.region-col.eu-central::before {
+  content: '';
+  position: absolute;
+  top: -60px; left: 50%;
+  transform: translateX(-50%);
+  width: 300px; height: 140px;
+  background: radial-gradient(ellipse, rgba(245,158,11,0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ─── Region header ───────────────────────────────── */
+.region-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+}
+.region-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.us .region-icon    { background: rgba(59,130,246,0.15); }
+.eu-west .region-icon   { background: rgba(34,197,94,0.12); }
+.eu-central .region-icon { background: rgba(245,158,11,0.13); }
+
+.region-title { flex: 1; min-width: 0; }
+.region-name {
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
+  color: var(--text-bright);
+}
+.us .region-name      { color: #93c5fd; }
+.eu-west .region-name   { color: #86efac; }
+.eu-central .region-name { color: #fcd34d; }
+.region-sub {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 2px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+.region-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 100px;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+.us .region-tag      { background: rgba(59,130,246,0.18); color: #93c5fd; border: 1px solid rgba(59,130,246,0.3); }
+.eu-west .region-tag   { background: rgba(34,197,94,0.14); color: #86efac; border: 1px solid rgba(34,197,94,0.28); }
+.eu-central .region-tag { background: rgba(245,158,11,0.14); color: #fcd34d; border: 1px solid rgba(245,158,11,0.28); }
+
+/* ─── Service groups ──────────────────────────────── */
+.service-group {
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
+}
+.group-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 5px;
+  padding-left: 2px;
+  opacity: 0.75;
+}
+.service-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.045);
+  border-radius: 8px;
+  padding: 7px 10px;
+  margin-bottom: 4px;
+  transition: border-color 0.2s, background 0.2s;
+  cursor: default;
+}
+.service-row:hover {
+  border-color: rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.048);
+}
+.svc-icon {
+  font-size: 15px;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.svc-text { flex: 1; min-width: 0; }
+.svc-name {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-bright);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.svc-detail {
+  font-size: 9.5px;
+  color: var(--text-dim);
+  line-height: 1.3;
+  margin-top: 1px;
+}
+.svc-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.b-blue   { background: rgba(59,130,246,0.2);  color: #93c5fd; }
+.b-green  { background: rgba(34,197,94,0.15);  color: #86efac; }
+.b-gold   { background: rgba(245,158,11,0.15); color: #fcd34d; }
+.b-red    { background: rgba(239,68,68,0.2);   color: #fca5a5; }
+.b-purple { background: rgba(168,85,247,0.2);  color: #d8b4fe; }
+.b-orange { background: rgba(249,115,22,0.18); color: #fdba74; }
+
+.flow-arrow {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-dim);
+  opacity: 0.45;
+  margin: 1px 0;
+  user-select: none;
+}
+
+/* ─── GDPR banner ─────────────────────────────────── */
+.gdpr-banner {
+  background: linear-gradient(90deg, rgba(245,158,11,0.1), rgba(245,158,11,0.04));
+  border: 1px solid rgba(245,158,11,0.28);
+  border-radius: 9px;
+  padding: 8px 12px;
+  margin-bottom: 11px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  position: relative;
+  z-index: 1;
+}
+.gdpr-flag { font-size: 20px; flex-shrink: 0; }
+.gdpr-text { font-size: 10.5px; font-weight: 800; color: #fcd34d; line-height: 1.3; }
+.gdpr-sub  { font-size: 9px; color: var(--text-dim); font-weight: 400; margin-top: 1px; line-height: 1.4; }
+
+/* ─── AI/ML band ──────────────────────────────────── */
+.ai-band {
+  background: linear-gradient(135deg, rgba(88,28,135,0.12) 0%, rgba(30,12,60,0.85) 100%);
+  border: 1.5px solid rgba(168,85,247,0.38);
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+  position: relative;
+  overflow: hidden;
+}
+.ai-band::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; right: -100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 10%, #a855f7 40%, #3b82f6 60%, transparent 90%);
+  animation: topShimmer 3.5s linear infinite;
+}
+@keyframes topShimmer {
+  0%   { transform: translateX(-60%); }
+  100% { transform: translateX(60%); }
+}
+.ai-band-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.ai-band-icon { font-size: 22px; }
+.ai-band-info {}
+.ai-band-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #d8b4fe;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.ai-band-sub {
+  font-size: 10.5px;
+  color: var(--text-dim);
+  margin-top: 1px;
+}
+.ai-services {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.ai-card {
+  background: rgba(168,85,247,0.065);
+  border: 1px solid rgba(168,85,247,0.2);
+  border-radius: 10px;
+  padding: 13px 15px;
+}
+.ai-card-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #d8b4fe;
+  margin-bottom: 5px;
+}
+.ai-card-desc {
+  font-size: 10.5px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+/* ─── Compliance band ─────────────────────────────── */
+.compliance-band {
+  background: linear-gradient(135deg, rgba(55,20,120,0.12) 0%, rgba(20,10,45,0.9) 100%);
+  border: 1.5px solid rgba(139,92,246,0.32);
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+.compliance-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #c4b5fd;
+  margin-bottom: 16px;
+  text-align: center;
+}
+.compliance-certs {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cert-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  background: rgba(139,92,246,0.09);
+  border: 1px solid rgba(139,92,246,0.28);
+  border-radius: 12px;
+  padding: 12px 20px;
+  min-width: 78px;
+  transition: transform 0.2s, border-color 0.2s;
+  cursor: default;
+}
+.cert-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(139,92,246,0.55);
+}
+.cert-icon { font-size: 22px; }
+.cert-name { font-size: 11.5px; font-weight: 800; color: #c4b5fd; letter-spacing: 0.04em; }
+.cert-desc { font-size: 9px; color: var(--text-dim); }
+.also-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.also-chip {
+  font-size: 10px;
+  color: var(--text-dim);
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-weight: 600;
+}
+
+/* ─── Failover overlay elements ───────────────────── */
+#alertBox {
+  position: fixed;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-16px);
+  background: linear-gradient(135deg, #1c0505, #2d0c0c);
+  border: 1.5px solid #dc2626;
+  border-radius: 14px;
+  padding: 14px 26px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 0 50px rgba(220,38,38,0.45);
+  opacity: 0;
+  transition: opacity 0.4s cubic-bezier(.175,.885,.32,1.275), transform 0.4s cubic-bezier(.175,.885,.32,1.275);
+  z-index: 200;
+  pointer-events: none;
+}
+#alertBox.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+#alertBox .alert-icon { font-size: 26px; animation: alertPulse 0.7s ease infinite alternate; }
+@keyframes alertPulse { from { transform: scale(1); } to { transform: scale(1.25); } }
+#alertBox .alert-text { font-size: 14.5px; font-weight: 800; color: #fca5a5; }
+#alertBox .alert-sub  { font-size: 10.5px; color: #f87171; margin-top: 2px; }
+
+#timerBox {
+  position: fixed;
+  top: 28px;
+  right: 32px;
+  background: rgba(5,10,22,0.96);
+  border: 1.5px solid rgba(34,197,94,0.45);
+  border-radius: 14px;
+  padding: 13px 22px;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.4s;
+  z-index: 200;
+  pointer-events: none;
+  min-width: 120px;
+}
+#timerBox.show { opacity: 1; }
+#timerBox .t-label { font-size: 9.5px; color: var(--text-dim); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+#timerBox .t-val { font-size: 30px; font-weight: 900; color: #86efac; font-variant-numeric: tabular-nums; line-height: 1.1; margin: 2px 0; }
+#timerBox .t-unit { font-size: 10px; color: var(--text-dim); }
+
+#successBox {
+  position: fixed;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #031a0d, #072617);
+  border: 1.5px solid #22c55e;
+  border-radius: 14px;
+  padding: 14px 26px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 0 50px rgba(34,197,94,0.4);
+  opacity: 0;
+  transition: opacity 0.5s;
+  z-index: 200;
+  pointer-events: none;
+}
+#successBox.show { opacity: 1; }
+#successBox .s-icon { font-size: 26px; }
+#successBox .s-text { font-size: 14.5px; font-weight: 800; color: #86efac; }
+#successBox .s-sub  { font-size: 10.5px; color: #4ade80; margin-top: 2px; }
+
+/* ─── Per-column failover states ──────────────────── */
+.region-col.fo-dim {
+  opacity: 0.28;
+  filter: brightness(0.45) saturate(0.2);
+}
+.region-col.fo-pulse {
+  animation: rPulseRed 0.85s ease infinite alternate;
+}
+@keyframes rPulseRed {
+  from { box-shadow: 0 0 8px  rgba(220,38,38,0.15); border-color: rgba(220,38,38,0.4); }
+  to   { box-shadow: 0 0 44px rgba(220,38,38,0.75); border-color: rgba(220,38,38,0.95); }
+}
+.region-col.fo-active {
+  animation: rPulseGreen 1.1s ease infinite alternate;
+  filter: brightness(1.1);
+}
+@keyframes rPulseGreen {
+  from { box-shadow: 0 0 8px  rgba(34,197,94,0.15); }
+  to   { box-shadow: 0 0 55px rgba(34,197,94,0.65); }
+}
+
+/* ─── Promoted badge ──────────────────────────────── */
+.promoted-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: linear-gradient(135deg, #14532d, #166534);
+  border: 1px solid #22c55e;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #86efac;
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 0.4s cubic-bezier(.175,.885,.32,1.275), transform 0.4s cubic-bezier(.175,.885,.32,1.275);
+  z-index: 10;
+  pointer-events: none;
+}
+.promoted-badge.show {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ─── Footer label ────────────────────────────────── */
+.diagram-num {
+  position: fixed;
+  bottom: 16px;
+  right: 20px;
+  font-size: 10.5px;
+  color: rgba(255,255,255,0.18);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  z-index: 1;
+}
+
+/* ─── Responsive ──────────────────────────────────── */
+@media (max-width: 960px) {
+  .regions-grid { grid-template-columns: 1fr; }
+  .ai-services { grid-template-columns: 1fr; }
+  .compliance-certs { gap: 8px; }
+}
+@media (max-width: 600px) {
+  .kpi-item { padding: 10px 14px; }
+  .kpi-val { font-size: 14px; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+
+<div class="page">
+
+  <!-- ─────────────────────────────────── HEADER -->
+  <div class="header">
+    <div class="header-badge">Diagram 4 of 6 &nbsp;&middot;&nbsp; Enterprise Architecture</div>
+    <h1>AuditForge &mdash; <span>Enterprise Global</span> (Multi-Region)</h1>
+    <div class="header-sub">Oracle Fusion ERP Audit Compliance &nbsp;&middot;&nbsp; Banks &nbsp;&middot;&nbsp; Healthcare &nbsp;&middot;&nbsp; Manufacturing &nbsp;&middot;&nbsp; Data Residency</div>
+    <div class="kpi-row">
+      <div class="kpi-item">
+        <span class="kpi-label">Recovery Time</span>
+        <span class="kpi-val">RTO &lt;1 min</span>
+      </div>
+      <div class="kpi-item">
+        <span class="kpi-label">Recovery Point</span>
+        <span class="kpi-val">RPO &lt;5 sec</span>
+      </div>
+      <div class="kpi-item">
+        <span class="kpi-label">SLA Uptime</span>
+        <span class="kpi-val">99.99%</span>
+      </div>
+      <div class="kpi-item">
+        <span class="kpi-label">Regions</span>
+        <span class="kpi-val">3 Active</span>
+      </div>
+    </div>
+    <br>
+    <span class="cost-tag">&#128176; $8,000 &ndash; $25,000 / month &nbsp;&middot;&nbsp; scales with tenant count</span>
+  </div>
+
+  <!-- ─────────────────────────────── WORLD MAP -->
+  <div class="world-map-wrap">
+    <div class="world-map-title">Live Global Traffic Routing &mdash; Click a region node to highlight</div>
+    <svg id="worldSvg" viewBox="0 0 960 200" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Glow filters -->
+        <filter id="gBlue" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="gGreen" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="gGold" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <!-- Arrowheads -->
+        <marker id="arrB" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+          <path d="M0,0 L0,7 L7,3.5 z" fill="#3b82f6" opacity="0.85"/>
+        </marker>
+        <marker id="arrG" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+          <path d="M0,0 L0,7 L7,3.5 z" fill="#22c55e" opacity="0.85"/>
+        </marker>
+        <marker id="arrGold" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+          <path d="M0,0 L0,7 L7,3.5 z" fill="#f59e0b" opacity="0.75"/>
+        </marker>
+        <marker id="arrPurple" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+          <path d="M0,0 L0,7 L7,3.5 z" fill="#a855f7" opacity="0.65"/>
+        </marker>
+        <!-- Reroute arrow (bigger, bright green) -->
+        <marker id="arrReroute" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+          <path d="M0,0 L0,9 L9,4.5 z" fill="#22c55e"/>
+        </marker>
+      </defs>
+
+      <!-- Ocean background -->
+      <rect width="960" height="200" fill="rgba(5,8,18,0.5)" rx="12"/>
+
+      <!-- Lat/lon grid -->
+      <g opacity="0.06" stroke="#cbd5e1" stroke-width="0.5">
+        <line x1="0" y1="67"  x2="960" y2="67"/>
+        <line x1="0" y1="100" x2="960" y2="100"/>
+        <line x1="0" y1="133" x2="960" y2="133"/>
+        <line x1="160" y1="0" x2="160" y2="200"/>
+        <line x1="320" y1="0" x2="320" y2="200"/>
+        <line x1="480" y1="0" x2="480" y2="200"/>
+        <line x1="640" y1="0" x2="640" y2="200"/>
+        <line x1="800" y1="0" x2="800" y2="200"/>
+      </g>
+
+      <!-- ── Simplified continent fills ── -->
+      <!-- North America -->
+      <path d="M55,28 L195,22 L225,38 L235,68 L218,96 L200,118 L172,123 L148,112 L136,90 L96,78 L58,58 Z"
+            fill="rgba(255,255,255,0.042)" stroke="rgba(255,255,255,0.10)" stroke-width="0.9"/>
+      <!-- Central America nub -->
+      <path d="M175,122 L196,120 L200,134 L182,142 L168,135 Z"
+            fill="rgba(255,255,255,0.035)" stroke="rgba(255,255,255,0.08)" stroke-width="0.7"/>
+      <!-- South America -->
+      <path d="M150,148 L190,142 L210,158 L210,188 L185,196 L155,188 L138,172 L132,154 Z"
+            fill="rgba(255,255,255,0.038)" stroke="rgba(255,255,255,0.09)" stroke-width="0.8"/>
+      <!-- Greenland -->
+      <path d="M205,8 L250,6 L258,22 L242,32 L210,28 Z"
+            fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.07)" stroke-width="0.6"/>
+      <!-- Europe -->
+      <path d="M398,18 L470,16 L492,28 L488,55 L464,68 L428,65 L408,56 L392,40 Z"
+            fill="rgba(255,255,255,0.045)" stroke="rgba(255,255,255,0.11)" stroke-width="0.9"/>
+      <!-- Scandinavia -->
+      <path d="M430,8 L465,6 L470,18 L452,24 L432,20 Z"
+            fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.07)" stroke-width="0.6"/>
+      <!-- Africa -->
+      <path d="M408,72 L462,70 L482,88 L478,138 L452,162 L418,162 L396,142 L384,105 L392,82 Z"
+            fill="rgba(255,255,255,0.038)" stroke="rgba(255,255,255,0.09)" stroke-width="0.8"/>
+      <!-- Middle East -->
+      <path d="M490,58 L545,55 L555,72 L538,88 L498,82 Z"
+            fill="rgba(255,255,255,0.032)" stroke="rgba(255,255,255,0.07)" stroke-width="0.6"/>
+      <!-- Asia (main) -->
+      <path d="M508,14 L740,10 L762,28 L752,62 L700,78 L624,72 L558,64 L512,48 Z"
+            fill="rgba(255,255,255,0.038)" stroke="rgba(255,255,255,0.09)" stroke-width="0.8"/>
+      <!-- India -->
+      <path d="M570,78 L610,74 L622,98 L595,120 L568,105 Z"
+            fill="rgba(255,255,255,0.032)" stroke="rgba(255,255,255,0.07)" stroke-width="0.6"/>
+      <!-- SE Asia -->
+      <path d="M700,80 L752,76 L758,96 L724,108 L698,98 Z"
+            fill="rgba(255,255,255,0.028)" stroke="rgba(255,255,255,0.07)" stroke-width="0.6"/>
+      <!-- Australia -->
+      <path d="M748,122 L836,118 L855,140 L845,170 L800,178 L758,165 L740,148 Z"
+            fill="rgba(255,255,255,0.038)" stroke="rgba(255,255,255,0.09)" stroke-width="0.8"/>
+      <!-- Japan -->
+      <path d="M820,36 L838,32 L845,50 L825,56 L814,46 Z"
+            fill="rgba(255,255,255,0.025)" stroke="rgba(255,255,255,0.06)" stroke-width="0.6"/>
+
+      <!-- ── Traffic paths ── -->
+      <!-- US → EU-West (primary replication + user traffic) -->
+      <path id="p-us-euwest"
+            d="M170,85 Q310,38 448,50"
+            fill="none" stroke="#3b82f6" stroke-width="2" stroke-dasharray="9,6" opacity="0.72"
+            marker-end="url(#arrB)">
+        <animate attributeName="stroke-dashoffset" from="0" to="-30" dur="1.6s" repeatCount="indefinite"/>
+      </path>
+      <!-- US → EU-Central (global replication) -->
+      <path id="p-us-eucentral"
+            d="M170,83 Q330,28 552,47"
+            fill="none" stroke="#f59e0b" stroke-width="1.4" stroke-dasharray="6,9" opacity="0.52"
+            marker-end="url(#arrGold)">
+        <animate attributeName="stroke-dashoffset" from="0" to="-30" dur="2.2s" repeatCount="indefinite"/>
+      </path>
+      <!-- EU-West ↔ EU-Central (replication sync) -->
+      <path id="p-euwest-eucentral"
+            d="M455,52 Q503,36 548,49"
+            fill="none" stroke="#22c55e" stroke-width="1.8" stroke-dasharray="6,5" opacity="0.72"
+            marker-end="url(#arrG)">
+        <animate attributeName="stroke-dashoffset" from="0" to="-22" dur="1.3s" repeatCount="indefinite"/>
+      </path>
+      <!-- Asia → EU-Central (EU user traffic) -->
+      <path d="M700,55 Q640,28 556,48"
+            fill="none" stroke="#a855f7" stroke-width="1.2" stroke-dasharray="5,8" opacity="0.4"
+            marker-end="url(#arrGold)">
+        <animate attributeName="stroke-dashoffset" from="0" to="-26" dur="2.0s" repeatCount="indefinite"/>
+      </path>
+      <!-- Asia → US (Americas user traffic) -->
+      <path d="M740,40 Q560,10 178,74"
+            fill="none" stroke="#3b82f6" stroke-width="1.1" stroke-dasharray="5,9" opacity="0.32"
+            marker-end="url(#arrB)">
+        <animate attributeName="stroke-dashoffset" from="0" to="-28" dur="2.8s" repeatCount="indefinite"/>
+      </path>
+
+      <!-- ── Reroute path (hidden until failover) ── -->
+      <path id="reroutePath"
+            d="M170,85 Q310,32 445,51"
+            fill="none" stroke="#22c55e" stroke-width="3.5" stroke-dasharray="12,6" opacity="0"
+            marker-end="url(#arrReroute)">
+        <animate attributeName="stroke-dashoffset" from="0" to="-36" dur="0.7s" repeatCount="indefinite"/>
+      </path>
+
+      <!-- ── Region nodes ── -->
+      <!-- US node -->
+      <g id="nodeUs" style="cursor:pointer" onclick="highlightCol('col-us')">
+        <circle cx="170" cy="85" r="16" fill="rgba(59,130,246,0.1)" stroke="rgba(59,130,246,0.25)" stroke-width="1">
+          <animate attributeName="r" values="16;21;16" dur="3s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="1;0.45;1" dur="3s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="170" cy="85" r="6.5" fill="#3b82f6" filter="url(#gBlue)"/>
+        <text x="170" y="112" text-anchor="middle" fill="#93c5fd" font-size="10.5" font-family="Inter,sans-serif" font-weight="700">us-east-1</text>
+        <text x="170" y="124" text-anchor="middle" fill="#475569" font-size="9" font-family="Inter,sans-serif">PRIMARY</text>
+      </g>
+      <!-- EU-West node -->
+      <g id="nodeEuWest" style="cursor:pointer" onclick="highlightCol('col-euwest')">
+        <circle cx="448" cy="50" r="16" fill="rgba(34,197,94,0.09)" stroke="rgba(34,197,94,0.22)" stroke-width="1">
+          <animate attributeName="r" values="16;21;16" dur="3s" begin="1.1s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="1;0.45;1" dur="3s" begin="1.1s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="448" cy="50" r="6.5" fill="#22c55e" filter="url(#gGreen)"/>
+        <text x="448" y="76" text-anchor="middle" fill="#86efac" font-size="10.5" font-family="Inter,sans-serif" font-weight="700">eu-west-1</text>
+        <text x="448" y="88" text-anchor="middle" fill="#475569" font-size="9" font-family="Inter,sans-serif">DR</text>
+      </g>
+      <!-- EU-Central node -->
+      <g id="nodeEuCentral" style="cursor:pointer" onclick="highlightCol('col-eucentral')">
+        <circle cx="553" cy="48" r="16" fill="rgba(245,158,11,0.09)" stroke="rgba(245,158,11,0.22)" stroke-width="1">
+          <animate attributeName="r" values="16;21;16" dur="3s" begin="2.2s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="1;0.45;1" dur="3s" begin="2.2s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="553" cy="48" r="6.5" fill="#f59e0b" filter="url(#gGold)"/>
+        <text x="553" y="74" text-anchor="middle" fill="#fcd34d" font-size="10.5" font-family="Inter,sans-serif" font-weight="700">eu-central-1</text>
+        <text x="553" y="86" text-anchor="middle" fill="#475569" font-size="9" font-family="Inter,sans-serif">GDPR</text>
+      </g>
+
+      <!-- Legend -->
+      <g transform="translate(862, 12)">
+        <text x="0" y="13" fill="#475569" font-size="9.5" font-family="Inter,sans-serif" font-weight="700">TRAFFIC</text>
+        <line x1="0" y1="21" x2="30" y2="21" stroke="#3b82f6" stroke-width="1.6" stroke-dasharray="5,4"/>
+        <text x="34" y="25" fill="#475569" font-size="9" font-family="Inter,sans-serif">Primary</text>
+        <line x1="0" y1="36" x2="30" y2="36" stroke="#22c55e" stroke-width="1.6" stroke-dasharray="5,4"/>
+        <text x="34" y="40" fill="#475569" font-size="9" font-family="Inter,sans-serif">DR / EU</text>
+        <line x1="0" y1="51" x2="30" y2="51" stroke="#f59e0b" stroke-width="1.3" stroke-dasharray="4,5"/>
+        <text x="34" y="55" fill="#475569" font-size="9" font-family="Inter,sans-serif">Replication</text>
+        <line x1="0" y1="66" x2="30" y2="66" stroke="#a855f7" stroke-width="1.1" stroke-dasharray="3,5"/>
+        <text x="34" y="70" fill="#475569" font-size="9" font-family="Inter,sans-serif">User (Asia)</text>
+      </g>
+    </svg>
+  </div>
+
+  <!-- ─────────────────────────────── CONTROLS -->
+  <div class="controls-row">
+    <button class="btn btn-failover" id="btnFailover" onclick="simulateFailover()">
+      &#9889; Simulate Failover
+    </button>
+    <button class="btn btn-reset" onclick="resetFailover()">
+      &#8635; Reset State
+    </button>
+  </div>
+
+  <!-- ─────────────────────────────── THREE REGIONS -->
+  <div class="regions-grid" id="regionsGrid">
+
+    <!-- PRIMARY: us-east-1 -->
+    <div class="region-col us" id="col-us">
+      <div class="region-header">
+        <div class="region-icon">&#127482;&#127480;</div>
+        <div class="region-title">
+          <div class="region-name">PRIMARY &mdash; us-east-1</div>
+          <div class="region-sub">N. Virginia &nbsp;&middot;&nbsp; Active Writer</div>
+        </div>
+        <div class="region-tag">PRIMARY</div>
+      </div>
+
+      <div class="service-group">
+        <div class="group-label">Edge &amp; DDoS Protection</div>
+        <div class="service-row">
+          <span class="svc-icon">&#128737;</span>
+          <div class="svc-text">
+            <div class="svc-name">WAF + Shield Advanced</div>
+            <div class="svc-detail">L3/L4/L7 DDoS mitigation &middot; Managed rules</div>
+          </div>
+          <span class="svc-badge b-red">Always on</span>
+        </div>
+        <div class="flow-arrow">&#8595;</div>
+        <div class="service-row">
+          <span class="svc-icon">&#127760;</span>
+          <div class="svc-text">
+            <div class="svc-name">CloudFront CDN</div>
+            <div class="svc-detail">Static assets &middot; TLS offload &middot; Edge caching</div>
+          </div>
+          <span class="svc-badge b-blue">300+ PoPs</span>
+        </div>
+        <div class="flow-arrow">&#8595;</div>
+        <div class="service-row">
+          <span class="svc-icon">&#9878;</span>
+          <div class="svc-text">
+            <div class="svc-name">Application Load Balancer</div>
+            <div class="svc-detail">HTTPS termination &middot; Sticky sessions</div>
+          </div>
+          <span class="svc-badge b-blue">Multi-AZ</span>
+        </div>
+      </div>
+
+      <div class="service-group">
+        <div class="group-label">Compute</div>
+        <div class="service-row">
+          <span class="svc-icon">&#128230;</span>
+          <div class="svc-text">
+            <div class="svc-name">ECS Fargate &mdash; Web</div>
+            <div class="svc-detail">FastAPI + Uvicorn &middot; Serverless</div>
+          </div>
+          <span class="svc-badge b-blue">4&ndash;20 tasks</span>
+        </div>
+        <div class="flow-arrow">&#8595;</div>
+        <div class="service-row">
+          <span class="svc-icon">&#128203;</span>
+          <div class="svc-text">
+            <div class="svc-name">SQS FIFO &mdash; Per-Tenant</div>
+            <div class="svc-detail">Isolated audit job queues per org</div>
+          </div>
+          <span class="svc-badge b-orange">FIFO + DLQ</span>
+        </div>
+        <div class="flow-arrow">&#8595;</div>
+        <div class="service-row">
+          <span class="svc-icon">&#9881;</span>
+          <div class="svc-text">
+            <div class="svc-name">ECS Fargate &mdash; Workers</div>
+            <div class="svc-detail">Excel comparison engine &middot; Report builder</div>
+          </div>
+          <span class="svc-badge b-blue">1&ndash;50 tasks</span>
+        </div>
+      </div>
+
+      <div class="service-group">
+        <div class="group-label">Data Layer</div>
+        <div class="service-row">
+          <span class="svc-icon">&#128451;</span>
+          <div class="svc-text">
+            <div class="svc-name">Aurora Global DB (Writer)</div>
+            <div class="svc-detail">PostgreSQL &middot; Multi-AZ &middot; &lt;1s replication lag</div>
+          </div>
+          <span class="svc-badge b-blue">WRITER</span>
+        </div>
+        <div class="service-row">
+          <span class="svc-icon">&#9889;</span>
+          <div class="svc-text">
+            <div class="svc-name">ElastiCache Global Datastore</div>
+            <div class="svc-detail">Redis 7 &middot; Session state &middot; Job cache</div>
+          </div>
+          <span class="svc-badge b-blue">Primary</span>
+        </div>
+        <div class="service-row">
+          <span class="svc-icon">&#129695;</span>
+          <div class="svc-text">
+            <div class="svc-name">S3 + Cross-Region Replication</div>
+            <div class="svc-detail">Excel uploads &middot; Generated reports &middot; Backups</div>
+          </div>
+          <span class="svc-badge b-orange">CRR live</span>
+        </div>
+      </div>
+
+      <div class="service-group">
+        <div class="group-label">Security &amp; Compliance</div>
+        <div class="service-row">
+          <span class="svc-icon">&#128269;</span>
+          <div class="svc-text">
+            <div class="svc-name">Amazon Macie</div>
+            <div class="svc-detail">PII / sensitive data detection in uploaded Excel</div>
+          </div>
+          <span class="svc-badge b-red">PII scan</span>
+        </div>
+        <div class="service-row">
+          <span class="svc-icon">&#128273;</span>
+          <div class="svc-text">
+            <div class="svc-name">KMS &mdash; Per-Tenant CMK</div>
+            <div class="svc-detail">Customer-managed keys &middot; Automatic rotation</div>
+          </div>
+          <span class="svc-badge b-purple">CMK</span>
+        </div>
+        <div class="service-row">
+          <span class="svc-icon">&#128202;</span>
+          <div class="svc-text">
+            <div class="svc-name">CloudTrail + AWS Config</div>
+            <div class="svc-detail">Immutable API audit trail &middot; Config rules</div>
+          </div>
+          <span class="svc-badge b-purple">All APIs</span>
+        </div>
+        <div class="service-row">
+          <span class="svc-icon">&#128274;</span>
+          <div class="svc-text">
+            <div class="svc-name">Security Hub + GuardDuty</div>
+            <div class="svc-detail">CSPM &middot; Threat intelligence &middot; Auto-remediate</div>
+          </div>
+          <span class="svc-badge b-red">Active</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- DR: eu-west-1 -->
+    <div class="region-col eu-west" id="col-euwest">
+      <div class="promoted-badge" id="promotedBadge">&#11014; Promoted to PRIMARY</div>
+      <div class="region-header">
+        <div class="region-icon">&#127757;</div>
+        <div class="region-title">
+          <div class="region-name">DR &mdash; eu-west-1</div>
+          <div class="region-sub">Ireland &nbsp;&middot;&nbsp; Warm Standby</div>
+        </div>
+        <div class="region-tag">STANDBY</div>
+      </div>
+
+      <div class="service-group">
+        <div class="group-label">Compute (warm standby)</div>
+        <div class="service-row">
+          <span class="svc-icon">&#128230;</span>
+          <div class="svc-text">
+            <div class="svc-name">ECS Fargate &mdash; Standby</div>
+            <div class="svc-detail">2 tasks idle, scales to 4&ndash;20 on promote</div>
+          </div>
+          <span class="svc-badge b-green">2 warm</span>
+        </div>
+      </div>
+
+      <div class="service-group">
+        <div class="group-label">Data (replicated from primary)</div>
+        <div class="service-row">
+          <span class="svc-icon">&#128451;</span>
+          <div class="svc-text">
+            <div class="svc-name">Aurora Global &mdash; Read Replica</div>
+            <div class="svc-detail">Lag &lt;1s &middot; Promotes to writer in &lt;47s</div>
+          </div>
+          <span class="svc-badge b-green">RTO &lt;1 min</span>
+        </div>
+        <div class="service-row">
+          <span class="svc-icon">&#9889;</span>
+          <div class="svc-text">
+            <div class="svc-name">ElastiCache Replica</div>
+            <div class="svc-detail">Async sync from us-east-1 primary</div>
+          </div>
+          <span class="svc-badge b-green">Replica</span>
+        </div>
+        <div class="service-row">
+          <span class="svc-icon">&#129695;</span>
+          <div class="svc-text">
+            <div class="svc-name">S3 Replica Bucket</div>
+            <div class="svc-detail">CRR destination &middot; Versioned</div>
+          </div>
+          <span class="svc-badge b-green">CRR target</span>
+        </div>
+      </div>
+
+      <div class="service-group">
+        <div class="group-label">DNS &amp; Failover Automation</div>
+        <div class="service-row">
+          <span class="svc-icon">&#127758;</span>
+          <div class="svc-text">
+            <div class="svc-name">Route 53 Failover Routing</div>
+            <div class="svc-detail">Health checks on /health &middot; 15s TTL</div>
+          </div>
+          <span class="svc-badge b-green">15s TTL</span>
+        </div>
+        <div class="service-row">
+          <span class="svc-icon">&#128138;</span>
+          <div class="svc-text">
+            <div class="svc-name">Health Check + SNS + Lambda</div>
+            <div class="svc-detail">Auto-promotes Aurora on consecutive failures</div>
+          </div>
+          <span class="svc-badge b-green">Automated</span>
+        </div>
+      </div>
+
+      <div class="service-group">
+        <div class="group-label">On Failover (automated)</div>
+        <div class="service-row">
+          <span class="svc-icon">&#9889;</span>
+          <div class="svc-text">
+            <div class="svc-name">Aurora Promotion &lt;47s</div>
+            <div class="svc-detail">Read replica becomes global write endpoint</div>
+          </div>
+          <span class="svc-badge b-green">Auto</span>
+        </div>
+        <div class="service-row">
+          <span class="svc-icon">&#128200;</span>
+          <div class="svc-text">
+            <div class="svc-name">ECS Auto-Scale Out</div>
+            <div class="svc-detail">Scales to handle full production load</div>
+          </div>
+          <span class="svc-badge b-green">4&ndash;20 tasks</span>
+        </div>
+        <div class="service-row">
+          <span class="svc-icon">&#128260;</span>
+          <div class="svc-text">
+            <div class="svc-name">SQS Replay via DLQ</div>
+            <div class="svc-detail">In-flight jobs re-queued, no data loss</div>
+          </div>
+          <span class="svc-badge b-green">RPO &lt;5s</span>
+        </div>
+      </div>
+
+      <div class="service-group">
+        <div class="group-label">Security (mirror)</div>
+        <div class="service-row">
+          <span class="svc-icon">&#128273;</span>
+          <div class="svc-text">
+            <div class="svc-name">KMS Multi-Region Keys</div>
+            <div class="svc-detail">CMKs replicated &middot; Same key material</div>
+          </div>
+          <span class="svc-badge b-purple">MRK</span>
+        </div>
+        <div class="service-row">
+          <span class="svc-icon">&#128202;</span>
+          <div class="svc-text">
+            <div class="svc-name">CloudTrail + GuardDuty</div>
+            <div class="svc-detail">Independent trail, aggregated to Security Hub</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EU GDPR: eu-central-1 -->
+    <div class="region-col eu-central" id="col-eucentral">
+      <div class="region-header">
+        <div class="region-icon">&#127465;&#127466;</div>
+        <div class="region-title">
+          <div class="region-name">EU RESIDENCY &mdash; eu-central-1</div>
+          <div class="region-sub">Frankfurt &nbsp;&middot;&nbsp; EU Tenants Only</div>
+        </div>
+        <div class="region-tag">GDPR</div>
+      </div>
+
+      <div class="gdpr-banner">
+        <span class="gdpr-flag">&#127466;&#127482;</span>
+        <div>
+          <div class="gdpr-text">Data Never Leaves the EU</div>
+          <div class="gdpr-sub">GDPR Art. 44 &middot; tenant_region=EU routes here &middot; Fully independent cluster &mdash; NOT a global replica of us-east-1</div>
+        </div>
+      </div>
+
+      <div class="service-group">
+        <div class="group-label">Compute (independent)</div>
+        <div class="service-row">
+          <span class="svc-icon">&#128230;</span>
+          <div class="svc-text">
+            <div class="svc-name">ECS Fargate &mdash; EU Cluster</div>
+            <div class="svc-detail">Separate task defs, EU-only container registry</div>
+          </div>
+          <span class="svc-badge b-gold">2&ndash;12 tasks</span>
+        </div>
+        <div class="service-row">
+          <span class="svc-icon">&#128203;</span>
+          <div class="svc-text">
+            <div class="svc-name">SQS FIFO &mdash; EU Queues</div>
+            <div class="svc-detail">eu-central-1 queues only, no cross-region</div>
+          </div>
+          <span class="svc-badge b-gold">EU-only</span>
+        </div>
+      </div>
+
+      <div class="service-group">
+        <div class="group-label">Data (fully independent)</div>
+        <div class="service-row">
+          <span class="svc-icon">&#128451;</span>
+          <div class="svc-text">
+            <div class="svc-name">Aurora &mdash; EU Writer</div>
+            <div class="svc-detail">Independent cluster, NOT a global replica</div>
+          </div>
+          <span class="svc-badge b-gold">WRITER</span>
+        </div>
+        <div class="service-row">
+          <span class="svc-icon">&#9889;</span>
+          <div class="svc-text">
+            <div class="svc-name">ElastiCache &mdash; EU Instance</div>
+            <div class="svc-detail">Standalone Redis, no replication to US</div>
+          </div>
+          <span class="svc-badge b-gold">EU-only</span>
+        </div>
+        <div class="service-row">
+          <span class="svc-icon">&#129695;</span>
+          <div class="svc-text">
+            <div class="svc-name">S3 &mdash; EU Bucket</div>
+            <div class="svc-detail">No CRR to US &middot; Bucket policy: deny cross-region</div>
+          </div>
+          <span class="svc-badge b-gold">EU-locked</span>
+        </div>
+      </div>
+
+      <div class="service-group">
+        <div class="group-label">Security (EU-sovereign)</div>
+        <div class="service-row">
+          <span class="svc-icon">&#128273;</span>
+          <div class="svc-text">
+            <div class="svc-name">KMS &mdash; EU CMK</div>
+            <div class="svc-detail">Keys created &amp; managed in eu-central-1 only</div>
+          </div>
+          <span class="svc-badge b-gold">EU KMS</span>
+        </div>
+        <div class="service-row">
+          <span class="svc-icon">&#128202;</span>
+          <div class="svc-text">
+            <div class="svc-name">CloudTrail &mdash; EU Trail</div>
+            <div class="svc-detail">Logs stored in EU-only S3 &middot; No export to US</div>
+          </div>
+          <span class="svc-badge b-gold">EU-only</span>
+        </div>
+        <div class="service-row">
+          <span class="svc-icon">&#128269;</span>
+          <div class="svc-text">
+            <div class="svc-name">Macie + GuardDuty EU</div>
+            <div class="svc-detail">PII detection stays within eu-central-1</div>
+          </div>
+          <span class="svc-badge b-red">PII scan</span>
+        </div>
+        <div class="service-row">
+          <span class="svc-icon">&#128203;</span>
+          <div class="svc-text">
+            <div class="svc-name">DPA + Standard Contractual Clauses</div>
+            <div class="svc-detail">GDPR Art. 28 DPA &middot; EU SCCs executed</div>
+          </div>
+          <span class="svc-badge b-gold">Legal</span>
+        </div>
+      </div>
+
+      <div class="service-group">
+        <div class="group-label">Routing</div>
+        <div class="service-row">
+          <span class="svc-icon">&#127758;</span>
+          <div class="svc-text">
+            <div class="svc-name">Route 53 Geolocation Routing</div>
+            <div class="svc-detail">EU traffic always → eu-central-1, enforced</div>
+          </div>
+          <span class="svc-badge b-gold">Geo-lock</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /regions-grid -->
+
+  <!-- ─────────────────────────────── AI/ML BAND -->
+  <div class="ai-band">
+    <div class="ai-band-header">
+      <div class="ai-band-icon">&#129504;</div>
+      <div class="ai-band-info">
+        <div class="ai-band-title">AI / ML Enhancement Layer &mdash; Primary Region</div>
+        <div class="ai-band-sub">Intelligent audit insights &nbsp;&middot;&nbsp; Anomaly detection &nbsp;&middot;&nbsp; Natural language explanations &nbsp;&middot;&nbsp; Tenant opt-in</div>
+      </div>
+    </div>
+    <div class="ai-services">
+      <div class="ai-card">
+        <div class="ai-card-title">&#129504; Amazon Bedrock &mdash; Audit Narration</div>
+        <div class="ai-card-desc">
+          Calls Claude via Bedrock after each report generation. Translates raw audit rows into plain-English summaries:
+          &ldquo;3 BUs missing Locator Alias &mdash; likely caused by Oracle Fusion patch 24B changing the export column name.&rdquo;
+          Results cached in ElastiCache per report hash. Data never sent to Anthropic training.
+          Tenant opt-in toggle in admin console.
+        </div>
+      </div>
+      <div class="ai-card">
+        <div class="ai-card-title">&#128200; SageMaker Endpoint &mdash; Anomaly Detection</div>
+        <div class="ai-card-desc">
+          Isolation Forest trained on rolling 90-day history per tenant.
+          Flags statistically anomalous audit results: &ldquo;EMEA_MFG has 40% more Control Gaps than the same quarter last year.&rdquo;
+          Endpoint auto-scales to zero when idle. Retrained weekly via SageMaker Pipeline.
+          Feature store backed by S3 + Athena.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────── COMPLIANCE BAND -->
+  <div class="compliance-band">
+    <div class="compliance-title">&#127885; Compliance &amp; Certifications</div>
+    <div class="compliance-certs">
+      <div class="cert-card">
+        <span class="cert-icon">&#127942;</span>
+        <span class="cert-name">SOC 2</span>
+        <span class="cert-desc">Type II</span>
+      </div>
+      <div class="cert-card">
+        <span class="cert-icon">&#127760;</span>
+        <span class="cert-name">ISO 27001</span>
+        <span class="cert-desc">ISMS Certified</span>
+      </div>
+      <div class="cert-card">
+        <span class="cert-icon">&#127973;</span>
+        <span class="cert-name">HIPAA</span>
+        <span class="cert-desc">BAA Available</span>
+      </div>
+      <div class="cert-card">
+        <span class="cert-icon">&#128209;</span>
+        <span class="cert-name">SOX</span>
+        <span class="cert-desc">IT Controls</span>
+      </div>
+      <div class="cert-card">
+        <span class="cert-icon">&#127466;&#127482;</span>
+        <span class="cert-name">GDPR</span>
+        <span class="cert-desc">Art. 44 + DPA</span>
+      </div>
+      <div class="cert-card">
+        <span class="cert-icon">&#128274;</span>
+        <span class="cert-name">FedRAMP</span>
+        <span class="cert-desc">Roadmap 2026</span>
+      </div>
+    </div>
+    <div class="also-row">
+      <span class="also-chip">&#128270; Pen-tested quarterly</span>
+      <span class="also-chip">&#128737; Bug bounty program</span>
+      <span class="also-chip">&#128193; Evidence on-demand</span>
+      <span class="also-chip">&#128260; Annual DR drill</span>
+      <span class="also-chip">&#128202; Real-time compliance dashboard</span>
+      <span class="also-chip">&#128170; Zero-trust IAM</span>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- ─────────────────────────────── FLOATING ELEMENTS -->
+<div id="alertBox">
+  <div class="alert-icon">&#9889;</div>
+  <div>
+    <div class="alert-text">Outage Detected in us-east-1</div>
+    <div class="alert-sub">Health check failed &middot; Initiating automatic failover to eu-west-1</div>
+  </div>
+</div>
+
+<div id="timerBox">
+  <div class="t-label">RTO Timer</div>
+  <div class="t-val" id="timerVal">0.0s</div>
+  <div class="t-unit">target &lt; 60 seconds</div>
+</div>
+
+<div id="successBox">
+  <div class="s-icon">&#9989;</div>
+  <div>
+    <div class="s-text">Failover Complete</div>
+    <div class="s-sub" id="successSub">eu-west-1 promoted &middot; RTO: 47.2 seconds</div>
+  </div>
+</div>
+
+<div class="diagram-num">AuditForge &nbsp;&middot;&nbsp; Diagram 4 / 6 &nbsp;&middot;&nbsp; Enterprise Global</div>
+
+<script>
+// ─────────────────────────────────── STAR FIELD
+(function () {
+  const canvas = document.getElementById('stars');
+  const ctx = canvas.getContext('2d');
+  let W, H, stars = [];
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    stars = [];
+    for (let i = 0; i < 260; i++) {
+      stars.push({
+        x:  Math.random() * W,
+        y:  Math.random() * H,
+        r:  Math.random() * 1.3 + 0.2,
+        a:  Math.random(),
+        da: (Math.random() - 0.5) * 0.007
+      });
+    }
+  }
+
+  function tick() {
+    ctx.clearRect(0, 0, W, H);
+    for (const s of stars) {
+      s.a += s.da;
+      if (s.a <= 0 || s.a >= 1) s.da *= -1;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(148,163,184,' + (s.a * 0.65) + ')';
+      ctx.fill();
+    }
+    requestAnimationFrame(tick);
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  tick();
+}());
+
+// ─────────────────────────────────── MAP DOT HIGHLIGHT
+function highlightCol(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const prev = el.style.transform;
+  el.style.transition = 'transform 0.25s ease';
+  el.style.transform  = 'scale(1.018)';
+  setTimeout(function () { el.style.transform = prev || ''; }, 900);
+}
+
+// ─────────────────────────────────── FAILOVER SIMULATION
+var failoverRunning = false;
+var _timerRAF = null;
+var _timerStart = null;
+
+function simulateFailover() {
+  if (failoverRunning) return;
+  failoverRunning = true;
+
+  var btn        = document.getElementById('btnFailover');
+  var colUs      = document.getElementById('col-us');
+  var colEuwest  = document.getElementById('col-euwest');
+  var promoted   = document.getElementById('promotedBadge');
+  var alertBox   = document.getElementById('alertBox');
+  var timerBox   = document.getElementById('timerBox');
+  var successBox = document.getElementById('successBox');
+  var timerVal   = document.getElementById('timerVal');
+  var successSub = document.getElementById('successSub');
+  var reroute    = document.getElementById('reroutePath');
+
+  btn.disabled = true;
+
+  // Phase 1 (0ms): alert + pulse US red
+  alertBox.classList.add('show');
+  colUs.classList.add('fo-pulse');
+
+  // Phase 2 (600ms): start RTO timer
+  setTimeout(function () {
+    timerBox.classList.add('show');
+    _timerStart = performance.now();
+    function rafTick() {
+      var elapsed = (performance.now() - _timerStart) / 1000;
+      timerVal.textContent = elapsed.toFixed(1) + 's';
+      _timerRAF = requestAnimationFrame(rafTick);
+    }
+    _timerRAF = requestAnimationFrame(rafTick);
+  }, 600);
+
+  // Phase 3 (1600ms): dim US, show reroute arrow
+  setTimeout(function () {
+    colUs.classList.remove('fo-pulse');
+    colUs.classList.add('fo-dim');
+    reroute.style.opacity = '0.92';
+  }, 1600);
+
+  // Phase 4 (2600ms): activate EU-West
+  setTimeout(function () {
+    colEuwest.classList.add('fo-active');
+  }, 2600);
+
+  // Phase 5 (3400ms): show promoted badge
+  setTimeout(function () {
+    promoted.classList.add('show');
+  }, 3400);
+
+  // Phase 6 (6200ms): stop timer, swap alert→success
+  setTimeout(function () {
+    cancelAnimationFrame(_timerRAF);
+    var finalTime = ((performance.now() - _timerStart) / 1000).toFixed(1);
+    timerVal.textContent = finalTime + 's';
+
+    alertBox.classList.remove('show');
+    successSub.textContent = 'eu-west-1 promoted to PRIMARY · RTO: ' + finalTime + 's ✓';
+    successBox.classList.add('show');
+  }, 6200);
+}
+
+function resetFailover() {
+  failoverRunning = false;
+  cancelAnimationFrame(_timerRAF);
+
+  var btn = document.getElementById('btnFailover');
+  btn.disabled = false;
+
+  document.getElementById('col-us').classList.remove('fo-dim', 'fo-pulse');
+  document.getElementById('col-euwest').classList.remove('fo-active');
+  document.getElementById('promotedBadge').classList.remove('show');
+  document.getElementById('alertBox').classList.remove('show');
+  document.getElementById('timerBox').classList.remove('show');
+  document.getElementById('successBox').classList.remove('show');
+  document.getElementById('timerVal').textContent = '0.0s';
+  document.getElementById('reroutePath').style.opacity = '0';
+}
+</script>
+</body>
+</html>

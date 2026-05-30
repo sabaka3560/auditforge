@@ -50,7 +50,14 @@ def _match_one(
     # Stage 1 — exact
     if ideal in actuals:
         return MappingResult(
-            ideal, ideal_val, ideal, "Exact", 1.0, "Matched", "", options
+            ideal,
+            ideal_val,
+            ideal,
+            "Exact",
+            1.0,
+            "Matched",
+            "Exact header match",
+            options,
         )
 
     # Stage 2 — normalized (ignore spaces / underscores / hyphens / case)
@@ -63,7 +70,7 @@ def _match_one(
             "Normalized",
             1.0,
             "Matched",
-            "",
+            "Normalized exact match",
             options,
         )
 
@@ -72,7 +79,14 @@ def _match_one(
     if alias:
         if alias in actuals:
             return MappingResult(
-                ideal, ideal_val, alias, "Manual Alias", 1.0, "Matched", "", options
+                ideal,
+                ideal_val,
+                alias,
+                "Manual Alias",
+                1.0,
+                "Matched",
+                "Mapped using manual alias dictionary",
+                options,
             )
         norm_alias = strip_header(alias)
         if norm_alias in norm_to_actual:
@@ -83,18 +97,13 @@ def _match_one(
                 "Manual Alias",
                 1.0,
                 "Matched",
-                "",
+                "Mapped using manual alias dictionary",
                 options,
             )
 
     # Stage 4 — fuzzy token sort ratio
     best_score, best_header = _best_fuzzy(ideal, actuals)
     if best_score >= threshold:
-        remark = (
-            "Low confidence — verify mapping"
-            if best_score < _FUZZY_LOW_CONFIDENCE
-            else ""
-        )
         return MappingResult(
             ideal,
             ideal_val,
@@ -102,11 +111,10 @@ def _match_one(
             "Fuzzy",
             best_score / 100.0,
             "Matched",
-            remark,
+            "Review recommended for fuzzy-mapped field",
             options,
         )
 
-    hint = f"Best candidate: {best_header} (score {best_score})" if best_header else ""
     return MappingResult(
         ideal,
         ideal_val,
@@ -114,7 +122,7 @@ def _match_one(
         "Unmatched",
         best_score / 100.0,
         "Unmatched",
-        hint,
+        "No reliable match found",
         options,
     )
 

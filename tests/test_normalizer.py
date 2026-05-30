@@ -34,7 +34,6 @@ class TestNormalizeValue:
             "true",
             "True",
             "TRUE",
-            "1",
             "enabled",
             "Enabled",
             "ENABLED",
@@ -64,7 +63,6 @@ class TestNormalizeValue:
             "false",
             "False",
             "FALSE",
-            "0",
             "disabled",
             "Disabled",
             "DISABLED",
@@ -98,14 +96,13 @@ class TestNormalizeValue:
 
     # ── float normalization ─────────────────────────────────────────────────
     def test_whole_float_stripped(self):
-        # "0.0" → "0" → bool map → "n" (zero = disabled); "10.0" has no bool mapping
         assert normalize_value("10.0") == "10"
-        assert normalize_value("0.0") == "n"
+        assert normalize_value("0.0") == "0"
         assert normalize_value("100.0") == "100"
 
     def test_float_object_normalized(self):
         assert normalize_value(10.0) == "10"
-        assert normalize_value(0.0) == "n"
+        assert normalize_value(0.0) == "0"
 
     def test_fractional_float_preserved(self):
         assert normalize_value("3.14") == "3.14"

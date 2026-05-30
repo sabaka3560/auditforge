@@ -50,7 +50,7 @@ def run_audit_job(job_id: str) -> None:
             sheet = job.sheet_name or ""
             ideal_name = job.check_id  # human label written to summary sheet
 
-            excel_bytes, ideal_sha256 = asyncio.run(
+            excel_bytes = asyncio.run(
                 audit_service.run_audit(
                     actual_bytes=actual_bytes,
                     ideal_bytes=ideal_bytes,
@@ -68,7 +68,6 @@ def run_audit_job(job_id: str) -> None:
 
             job.status = "done"
             job.report_key = report_key
-            job.ideal_hash = ideal_sha256
             job.finished_at = datetime.now(timezone.utc)
 
         except (ConnectionError, TimeoutError):

@@ -29,7 +29,6 @@ def build_report(
     ideal_filename: str = "",
     total_bu_rows: int = 0,
     fuzzy_threshold: int = 80,
-    ideal_sha256: str = "",
 ) -> bytes:
     wb = Workbook()
 
@@ -52,7 +51,6 @@ def build_report(
         ideal_filename,
         total_bu_rows,
         fuzzy_threshold,
-        ideal_sha256,
     )
 
     buf = io.BytesIO()
@@ -113,19 +111,56 @@ def _mapping_sheet(ws, mapping: list[MappingResult]) -> None:
         ],
     )
     for m in mapping:
-        score = f"{m.similarity_score:.4f}" if m.similarity_score else "N/A"
+        score = (
+            int(m.similarity_score)
+            if m.similarity_score == 1.0
+            else round(m.similarity_score, 4)
+        )
         ws.append(
             [
                 m.ideal_name,
-                m.matched_header or "",
+                m.matched_header or None,
                 m.match_method,
                 score,
                 m.status,
-                m.remarks,
+                m.remarks or None,
             ]
         )
         if m.status == "Unmatched":
             _fill_row(ws, YELLOW_FILL)
+
+    # Footer: repeat unmatched section (matches original output format)
+    unmatched = [m for m in mapping if m.status == "Unmatched"]
+    if unmatched:
+        ws.append([None, None, None, None, None, None])
+        ws.append([None, None, None, None, None, None])
+        ws.append(["Note", None, None, None, None, None])
+        ws.append(
+            [
+                "Below are unmatched ideal configuration names",
+                None,
+                None,
+                None,
+                None,
+                None,
+            ]
+        )
+        ws.append(
+            [
+                "Ideal Configuration Name",
+                "Actual Header Mapped",
+                "Mapping Type",
+                "Similarity Score",
+                "Status",
+                "Remarks",
+            ]
+        )
+        for m in unmatched:
+            score = round(m.similarity_score, 4)
+            ws.append(
+                [m.ideal_name, None, m.match_method, score, m.status, m.remarks or None]
+            )
+
     _autofit(ws)
 
 
@@ -139,7 +174,6 @@ def _summary_sheet(
     ideal_fn,
     bu_rows,
     threshold,
-    ideal_sha256: str = "",
 ) -> None:
     ws.title = "Audit Summary"
     _header_row(ws, ["Metric", "Value"])
@@ -161,8 +195,6 @@ def _summary_sheet(
         ("Controls in place row count", len(cip)),
         ("Control gaps row count", len(gaps)),
         ("Additional data row count", len(extra)),
-        # Row 15: ideal file integrity hash (written here when job system provides it)
-        ("Ideal file SHA-256", ideal_sha256),
         ("Fuzzy threshold used", threshold / 100),
     ]
     for metric, value in rows:

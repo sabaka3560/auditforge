@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AuditForge — Basic AWS Cloud Deployment</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:          #0d0d1a;
+  --bg2:         #13132a;
+  --bg3:         #1a1a3a;
+  --panel:       #1e1e40;
+  --border:      #2e2e5e;
+  --text:        #e8e8f8;
+  --muted:       #8888bb;
+  --aws-orange:  #FF9900;
+  --aws-purple:  #8C4FFF;
+  --aws-pink:    #E7157B;
+  --aws-green:   #3F8624;
+  --aws-red:     #DD344C;
+  --aws-blue:    #1A9CE0;
+  --aws-teal:    #00A591;
+  --vpc-border:  #2979ff;
+  --az-bg:       rgba(255,255,255,0.03);
+  --az-border:   rgba(255,255,255,0.08);
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── HEADER ── */
+.header {
+  text-align: center;
+  padding: 42px 24px 24px;
+  position: relative;
+}
+.header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #fff 0%, #a0b4ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.header p.sub {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+}
+.header .badge {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  background: rgba(255,153,0,0.15);
+  border: 1px solid rgba(255,153,0,0.4);
+  color: var(--aws-orange);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+/* ── CONTROLS ── */
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 24px 28px;
+  flex-wrap: wrap;
+}
+.btn {
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 22px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--aws-orange), #ffb340);
+  color: #0d0d1a;
+  box-shadow: 0 4px 14px rgba(255,153,0,0.35);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,153,0,0.5); }
+.btn-primary:active { transform: translateY(0); }
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.btn-secondary:hover { background: rgba(255,255,255,0.05); border-color: #4444aa; }
+
+/* ── MAIN CANVAS ── */
+.canvas {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 24px 48px;
+}
+
+/* ── INTERNET LAYER ── */
+.internet-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0;
+}
+.internet-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 28px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.12);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+.internet-box .icon { font-size: 1.4rem; }
+
+/* ── FLOW ARROW ── */
+.arrow-down {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 42px;
+  position: relative;
+}
+.arrow-down::before {
+  content: '';
+  width: 2px;
+  flex: 1;
+  background: linear-gradient(to bottom, rgba(255,153,0,0.6), rgba(255,153,0,0.2));
+}
+.arrow-down::after {
+  content: '';
+  width: 0; height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid rgba(255,153,0,0.7);
+}
+
+/* ── SERVICE ROW ── */
+.service-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 0;
+  position: relative;
+}
+
+/* ── SERVICE BOX ── */
+.svc {
+  border-radius: 12px;
+  padding: 14px 18px;
+  min-width: 150px;
+  max-width: 200px;
+  text-align: center;
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: default;
+}
+.svc:hover {
+  transform: translateY(-3px);
+}
+.svc .svc-icon {
+  font-size: 1.8rem;
+  margin-bottom: 6px;
+  display: block;
+  line-height: 1;
+}
+.svc .svc-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 3px;
+}
+.svc .svc-label {
+  font-size: 0.72rem;
+  font-family: 'JetBrains Mono', monospace;
+  opacity: 0.75;
+  line-height: 1.4;
+}
+.svc .task-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: var(--aws-orange);
+  color: #0d0d1a;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  min-width: 24px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(255,153,0,0.5);
+  transition: all 0.4s ease;
+}
+.svc .task-badge.scaling {
+  animation: pulse-badge 0.6s ease;
+}
+@keyframes pulse-badge {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.5); background: #fff; }
+  100% { transform: scale(1); }
+}
+
+/* color variants */
+.svc-compute  { background: rgba(255,153,0,0.1);  border: 1px solid rgba(255,153,0,0.35);  color: #ffd080; }
+.svc-compute .svc-name { color: var(--aws-orange); }
+.svc-db       { background: rgba(140,79,255,0.1); border: 1px solid rgba(140,79,255,0.35); color: #c8a0ff; }
+.svc-db .svc-name { color: var(--aws-purple); }
+.svc-network  { background: rgba(231,21,123,0.1); border: 1px solid rgba(231,21,123,0.35); color: #ff88c8; }
+.svc-network .svc-name { color: var(--aws-pink); }
+.svc-storage  { background: rgba(63,134,36,0.1);  border: 1px solid rgba(63,134,36,0.35);  color: #90d870; }
+.svc-storage .svc-name { color: #5dba3a; }
+.svc-security { background: rgba(221,52,76,0.1);  border: 1px solid rgba(221,52,76,0.35);  color: #ff9090; }
+.svc-security .svc-name { color: var(--aws-red); }
+.svc-monitor  { background: rgba(26,156,224,0.1); border: 1px solid rgba(26,156,224,0.35); color: #80d0ff; }
+.svc-monitor .svc-name { color: var(--aws-blue); }
+.svc-registry { background: rgba(0,165,145,0.1);  border: 1px solid rgba(0,165,145,0.35);  color: #80e8de; }
+.svc-registry .svc-name { color: var(--aws-teal); }
+
+/* ── VPC WRAPPER ── */
+.vpc {
+  border: 2px dashed rgba(41,121,255,0.5);
+  border-radius: 20px;
+  padding: 20px 20px 24px;
+  margin: 8px 0;
+  position: relative;
+  background: rgba(41,121,255,0.03);
+}
+.vpc-label {
+  position: absolute;
+  top: -12px;
+  left: 20px;
+  background: var(--bg);
+  padding: 0 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(41,121,255,0.85);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ── AZ WRAPPER ── */
+.az-row {
+  display: flex;
+  gap: 14px;
+  margin: 14px 0 8px;
+}
+.az {
+  flex: 1;
+  border: 1px solid var(--az-border);
+  border-radius: 14px;
+  background: var(--az-bg);
+  padding: 14px 14px 16px;
+  position: relative;
+}
+.az-label {
+  position: absolute;
+  top: -10px;
+  left: 14px;
+  background: var(--bg);
+  padding: 0 8px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+/* ── SUBNET LABEL ── */
+.subnet-label {
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  margin-bottom: 8px;
+  padding: 3px 8px;
+  display: inline-block;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+}
+
+/* ── HORIZONTAL CONNECTOR ── */
+.connector-h {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin: 2px 0;
+}
+.line-h {
+  height: 2px;
+  background: linear-gradient(to right, transparent, rgba(255,153,0,0.5), transparent);
+  flex: 1;
+  max-width: 80px;
+}
+.line-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(255,153,0,0.6);
+}
+
+/* ── ANIMATED FLOW ── */
+@keyframes flow-right {
+  0%   { background-position: 0 0; }
+  100% { background-position: 30px 0; }
+}
+@keyframes flow-down {
+  0%   { background-position: 0 0; }
+  100% { background-position: 0 30px; }
+}
+
+.flow-arrow-h {
+  height: 2px;
+  background-image: repeating-linear-gradient(
+    to right,
+    rgba(255,153,0,0.7) 0px,
+    rgba(255,153,0,0.7) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+  background-size: 30px 2px;
+  animation: flow-right 0.8s linear infinite;
+  flex: 1;
+  max-width: 90px;
+}
+.flow-arrow-v {
+  width: 2px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(255,153,0,0.7) 0px,
+    rgba(255,153,0,0.7) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+  background-size: 2px 30px;
+  animation: flow-down 0.8s linear infinite;
+}
+
+/* section: a full horizontal band */
+.section {
+  margin: 6px 0;
+}
+
+/* ── TOP EDGE SERVICES ── */
+.edge-services {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+/* ── PRIVATE TIER ── */
+.private-tier {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  flex-wrap: wrap;
+  padding: 12px 0 4px;
+}
+
+/* ── SUPPORT SERVICES ── */
+.support-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+/* ── TASK SPINNER ── */
+.task-list {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.task-chip {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.task-chip.active {
+  background: rgba(255,153,0,0.25);
+  border: 1px solid rgba(255,153,0,0.6);
+  color: var(--aws-orange);
+}
+.task-chip.adding {
+  animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes pop-in {
+  0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg);   opacity: 1; }
+}
+.task-chip.removed {
+  animation: pop-out 0.4s ease forwards;
+}
+@keyframes pop-out {
+  0%   { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0); opacity: 0; }
+}
+
+/* ── LEGEND ── */
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 24px 24px 12px;
+  border-top: 1px solid var(--border);
+  margin: 24px 24px 0;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* ── FOOTER ── */
+.footer {
+  text-align: center;
+  padding: 16px 24px 40px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.footer .cost {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 6px 20px;
+  border-radius: 20px;
+  background: rgba(63,134,36,0.15);
+  border: 1px solid rgba(63,134,36,0.4);
+  color: #90d870;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+/* ── SCALE STATE ── */
+.scaling-active .svc-compute {
+  box-shadow: 0 0 18px rgba(255,153,0,0.3);
+}
+
+/* ── TOOLTIP ── */
+.svc[data-tip] { position: relative; }
+.svc[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111130;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 7px 12px;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  color: var(--text);
+  z-index: 100;
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  line-height: 1.5;
+  text-align: left;
+  white-space: pre-line;
+}
+
+/* ── NOTIFICATION TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background: linear-gradient(135deg, rgba(30,30,64,0.98), rgba(20,20,50,0.98));
+  border: 1px solid rgba(255,153,0,0.5);
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-size: 0.82rem;
+  color: var(--aws-orange);
+  font-weight: 500;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s ease;
+  z-index: 999;
+  max-width: 300px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* two-column for private tier layout */
+.two-col {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+/* ── Vertical connector segment ── */
+.vconn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.vconn .seg {
+  width: 2px;
+  height: 22px;
+  background: linear-gradient(to bottom, rgba(255,153,0,0.5), rgba(255,153,0,0.2));
+}
+.vconn .arrowhead {
+  width: 0; height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 7px solid rgba(255,153,0,0.5);
+}
+
+/* ── bidirectional arrows between services ── */
+.bidir {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  align-self: center;
+}
+.bidir span {
+  font-size: 0.75rem;
+  color: rgba(255,153,0,0.5);
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <h1>AuditForge — Basic AWS Cloud Deployment</h1>
+  <p class="sub">Single-region, lift-and-shift from Docker Compose</p>
+  <span class="badge">AWS Solutions Architecture · us-east-1</span>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <button class="btn btn-primary" id="scaleBtn" onclick="addLoad()">
+    <span>⚡</span> Add Load →
+  </button>
+  <button class="btn btn-secondary" onclick="resetScale()">
+    <span>↺</span> Reset
+  </button>
+</div>
+
+<!-- MAIN CANVAS -->
+<div class="canvas" id="mainCanvas">
+
+  <!-- INTERNET -->
+  <div class="internet-row">
+    <div class="internet-box">
+      <span class="icon">🌐</span>
+      <span>Internet / Client Browser</span>
+    </div>
+  </div>
+
+  <div class="arrow-down" style="margin:0 auto;"></div>
+
+  <!-- ROUTE53 + WAF (optional edge) -->
+  <div class="edge-services" style="margin-bottom:8px;">
+    <div class="svc svc-network" data-tip="DNS resolution&#10;auditforge.yourcompany.com&#10;Hosted Zone + A record → ALB">
+      <span class="svc-icon">🔷</span>
+      <span class="svc-name">Route 53</span>
+      <span class="svc-label">DNS / Routing<br>Hosted Zone</span>
+    </div>
+  </div>
+
+  <div class="arrow-down" style="margin:0 auto;"></div>
+
+  <!-- ALB -->
+  <div class="edge-services" style="margin-bottom:0;">
+    <div class="svc svc-network" style="min-width:200px;"
+         data-tip="Application Load Balancer&#10;HTTP :80 → HTTPS :443&#10;Target group → ECS port 7373&#10;Multi-AZ: us-east-1a + 1b">
+      <span class="svc-icon">⚖️</span>
+      <span class="svc-name">Application Load Balancer</span>
+      <span class="svc-label">HTTPS :443 → :7373<br>2 Availability Zones</span>
+    </div>
+  </div>
+
+  <!-- VPC -->
+  <div class="vpc" style="margin-top:14px;">
+    <span class="vpc-label">VPC — 10.0.0.0/16</span>
+
+    <!-- PUBLIC SUBNETS: ALB lives here (already shown above, but label) -->
+    <div style="text-align:center; margin-bottom:10px;">
+      <span class="subnet-label">Public Subnets — 10.0.0.0/24, 10.0.1.0/24 (ALB, NAT Gateways)</span>
+    </div>
+
+    <!-- AZ ROW -->
+    <div class="az-row">
+
+      <!-- AZ-1a -->
+      <div class="az">
+        <span class="az-label">us-east-1a</span>
+        <div style="text-align:center; margin-bottom:8px;">
+          <span class="subnet-label">Private Subnet 10.0.2.0/24</span>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+          <!-- Web task -->
+          <div class="svc svc-compute" style="width:100%; max-width:none;" id="web-az1"
+               data-tip="ECS Fargate — Web Service&#10;FastAPI :7373, serves UI + REST API&#10;0.5 vCPU · 1 GB RAM per task&#10;→ receives traffic from ALB">
+            <div class="task-badge" id="badge-web-az1">×1</div>
+            <span class="svc-icon">🟠</span>
+            <span class="svc-name">ECS Fargate</span>
+            <span class="svc-label">Web Service<br>FastAPI :7373<br>0.5 vCPU · 1 GB</span>
+            <div class="task-list" id="tasks-web-az1">
+              <div class="task-chip active">W1</div>
+            </div>
+          </div>
+          <!-- Worker task -->
+          <div class="svc svc-compute" style="width:100%; max-width:none;" id="worker-az1"
+               data-tip="ECS Fargate — Worker Service&#10;RQ worker, consumes audit jobs&#10;Reads/writes S3 Excel files&#10;1 vCPU · 2 GB RAM per task">
+            <div class="task-badge" id="badge-worker-az1">×1</div>
+            <span class="svc-icon">⚙️</span>
+            <span class="svc-name">ECS Fargate</span>
+            <span class="svc-label">RQ Worker<br>Audit Engine<br>1 vCPU · 2 GB</span>
+            <div class="task-list" id="tasks-worker-az1">
+              <div class="task-chip active">K1</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AZ-1b -->
+      <div class="az">
+        <span class="az-label">us-east-1b</span>
+        <div style="text-align:center; margin-bottom:8px;">
+          <span class="subnet-label">Private Subnet 10.0.3.0/24</span>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+          <!-- Web task -->
+          <div class="svc svc-compute" style="width:100%; max-width:none;" id="web-az2"
+               data-tip="ECS Fargate — Web Service&#10;FastAPI :7373 (replica)&#10;0.5 vCPU · 1 GB RAM per task&#10;→ receives traffic from ALB">
+            <div class="task-badge" id="badge-web-az2">×1</div>
+            <span class="svc-icon">🟠</span>
+            <span class="svc-name">ECS Fargate</span>
+            <span class="svc-label">Web Service<br>FastAPI :7373<br>0.5 vCPU · 1 GB</span>
+            <div class="task-list" id="tasks-web-az2">
+              <div class="task-chip active">W2</div>
+            </div>
+          </div>
+          <!-- Worker task -->
+          <div class="svc svc-compute" style="width:100%; max-width:none;" id="worker-az2"
+               data-tip="ECS Fargate — Worker Service&#10;RQ worker (replica)&#10;Reads/writes S3 Excel files&#10;1 vCPU · 2 GB RAM per task">
+            <div class="task-badge" id="badge-worker-az2">×1</div>
+            <span class="svc-icon">⚙️</span>
+            <span class="svc-name">ECS Fargate</span>
+            <span class="svc-label">RQ Worker<br>Audit Engine<br>1 vCPU · 2 GB</span>
+            <div class="task-list" id="tasks-worker-az2">
+              <div class="task-chip active">K2</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end az-row -->
+
+    <!-- PRIVATE DATA TIER -->
+    <div style="text-align:center; margin: 14px 0 8px;">
+      <span class="subnet-label">Private Subnets — 10.0.4.0/24, 10.0.5.0/24 (Data Tier)</span>
+    </div>
+
+    <div class="private-tier">
+
+      <!-- Redis -->
+      <div class="svc svc-db" data-tip="ElastiCache for Redis&#10;cache.t3.micro · Single node&#10;Job queue: web → worker&#10;RQ jobs + ephemeral state">
+        <span class="svc-icon">🔴</span>
+        <span class="svc-name">ElastiCache Redis</span>
+        <span class="svc-label">cache.t3.micro<br>Single Node<br>RQ Job Queue</span>
+      </div>
+
+      <!-- RDS -->
+      <div class="svc svc-db" data-tip="RDS PostgreSQL 15&#10;db.t3.medium · Single-AZ&#10;Users, tenants, audit jobs,&#10;ideal files metadata&#10;20 GB gp3 · auto-backups 7d">
+        <span class="svc-icon">🐘</span>
+        <span class="svc-name">RDS PostgreSQL</span>
+        <span class="svc-label">db.t3.medium<br>Single-AZ<br>20 GB gp3</span>
+      </div>
+
+      <!-- S3 -->
+      <div class="svc svc-storage" data-tip="S3 Bucket: audit-forge-storage&#10;/uploads — actual Excel files&#10;/ideals — ideal config files&#10;/reports — 5-sheet Excel reports&#10;Versioning ON · SSE-S3">
+        <span class="svc-icon">🪣</span>
+        <span class="svc-name">S3</span>
+        <span class="svc-label">audit-forge-storage<br>Uploads / Ideals<br>Reports (Excel)</span>
+      </div>
+
+    </div>
+
+  </div><!-- end VPC -->
+
+  <!-- SUPPORT SERVICES row outside VPC -->
+  <div style="text-align:center; margin:18px 0 8px;">
+    <span class="subnet-label" style="font-size:0.7rem; color:#8888bb;">AWS Platform Services</span>
+  </div>
+
+  <div class="support-row">
+
+    <div class="svc svc-registry" data-tip="ECR — Elastic Container Registry&#10;Stores Docker images for&#10;web service + worker service&#10;Image scanning ON">
+      <span class="svc-icon">📦</span>
+      <span class="svc-name">ECR</span>
+      <span class="svc-label">Container Registry<br>web + worker<br>Image Scanning</span>
+    </div>
+
+    <div class="svc svc-security" data-tip="Secrets Manager&#10;JWT_SECRET — auth signing key&#10;DB_PASSWORD — RDS credentials&#10;REDIS_URL — ElastiCache endpoint&#10;Auto-rotation enabled">
+      <span class="svc-icon">🔐</span>
+      <span class="svc-name">Secrets Manager</span>
+      <span class="svc-label">JWT Secret<br>DB Password<br>Redis URL</span>
+    </div>
+
+    <div class="svc svc-monitor" data-tip="CloudWatch&#10;ECS task logs (web + worker)&#10;RDS Performance Insights&#10;ALB access logs&#10;Custom metric: jobs/min">
+      <span class="svc-icon">📊</span>
+      <span class="svc-name">CloudWatch</span>
+      <span class="svc-label">Logs + Metrics<br>Alarms<br>Dashboards</span>
+    </div>
+
+    <div class="svc svc-network" data-tip="IAM Roles + Security Groups&#10;ECS task role → S3 + Secrets&#10;SG: ALB → ECS :7373&#10;SG: ECS → RDS :5432&#10;SG: ECS → Redis :6379">
+      <span class="svc-icon">🛡️</span>
+      <span class="svc-name">IAM + SGs</span>
+      <span class="svc-label">Task Roles<br>Security Groups<br>Least Privilege</span>
+    </div>
+
+  </div>
+
+</div><!-- end canvas -->
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-dot" style="background:rgba(255,153,0,0.7);"></div>
+    Compute (ECS, EC2)
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:rgba(140,79,255,0.7);"></div>
+    Database / Cache
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:rgba(231,21,123,0.7);"></div>
+    Networking (ALB, Route53)
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:rgba(63,134,36,0.7);"></div>
+    Storage (S3)
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:rgba(221,52,76,0.7);"></div>
+    Security (Secrets, IAM)
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:rgba(26,156,224,0.7);"></div>
+    Monitoring (CloudWatch)
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:rgba(0,165,145,0.7);"></div>
+    Registry (ECR)
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:rgba(41,121,255,0.5); border:1px dashed rgba(41,121,255,0.7);"></div>
+    VPC Boundary
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div>AuditForge · Basic AWS Deployment · us-east-1 · Single Region</div>
+  <div class="cost">💰 Estimated cost: ~$180 / month</div>
+  <div style="margin-top:10px; font-size:0.72rem; opacity:0.6;">
+    RDS t3.medium ~$60 · Fargate (4 tasks) ~$55 · ALB ~$20 · ElastiCache ~$15 · S3 ~$5 · Misc ~$25
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──
+const state = {
+  webTasks:    2,   // total across both AZs (1 per AZ = 2)
+  workerTasks: 2,
+  maxWeb:      6,
+  maxWorker:   6,
+  step:        0
+};
+
+// task label counters per service slot
+const slots = {
+  'tasks-web-az1':    { prefix: 'W', chips: ['W1'] },
+  'tasks-web-az2':    { prefix: 'W', chips: ['W2'] },
+  'tasks-worker-az1': { prefix: 'K', chips: ['K1'] },
+  'tasks-worker-az2': { prefix: 'K', chips: ['K2'] },
+};
+
+function renderSlot(slotId) {
+  const el = document.getElementById(slotId);
+  if (!el) return;
+  el.innerHTML = '';
+  slots[slotId].chips.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'task-chip active';
+    d.textContent = c;
+    el.appendChild(d);
+  });
+}
+
+function addChipToSlot(slotId) {
+  const slot = slots[slotId];
+  const el   = document.getElementById(slotId);
+  if (!el) return;
+  const idx  = slot.chips.length + 1;
+  const lbl  = slot.prefix + (slotId.includes('az2') ? idx + 1 : idx);
+  slot.chips.push(lbl);
+  const d = document.createElement('div');
+  d.className = 'task-chip active adding';
+  d.textContent = lbl;
+  el.appendChild(d);
+}
+
+function setBadge(id, text) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.classList.add('scaling');
+  setTimeout(() => el.classList.remove('scaling'), 700);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+const steps = [
+  {
+    msg: '⚡ Load spike detected — scaling web tasks…',
+    fn() {
+      addChipToSlot('tasks-web-az1');
+      addChipToSlot('tasks-web-az2');
+      state.webTasks += 2;
+      setBadge('badge-web-az1', `×${slots['tasks-web-az1'].chips.length}`);
+      setBadge('badge-web-az2', `×${slots['tasks-web-az2'].chips.length}`);
+    }
+  },
+  {
+    msg: '⚙️ Queue depth rising — scaling worker tasks…',
+    fn() {
+      addChipToSlot('tasks-worker-az1');
+      addChipToSlot('tasks-worker-az2');
+      state.workerTasks += 2;
+      setBadge('badge-worker-az1', `×${slots['tasks-worker-az1'].chips.length}`);
+      setBadge('badge-worker-az2', `×${slots['tasks-worker-az2'].chips.length}`);
+    }
+  },
+  {
+    msg: '🚀 Peak load — max tasks (3 web + 3 worker per AZ)',
+    fn() {
+      addChipToSlot('tasks-web-az1');
+      addChipToSlot('tasks-web-az2');
+      addChipToSlot('tasks-worker-az1');
+      addChipToSlot('tasks-worker-az2');
+      state.webTasks += 2;
+      state.workerTasks += 2;
+      setBadge('badge-web-az1',    `×${slots['tasks-web-az1'].chips.length}`);
+      setBadge('badge-web-az2',    `×${slots['tasks-web-az2'].chips.length}`);
+      setBadge('badge-worker-az1', `×${slots['tasks-worker-az1'].chips.length}`);
+      setBadge('badge-worker-az2', `×${slots['tasks-worker-az2'].chips.length}`);
+    }
+  }
+];
+
+function addLoad() {
+  if (state.step >= steps.length) {
+    showToast('🔒 Max capacity reached — upgrade instance sizes to scale further');
+    return;
+  }
+  const s = steps[state.step];
+  showToast(s.msg);
+  s.fn();
+  state.step++;
+  if (state.step >= steps.length) {
+    document.getElementById('scaleBtn').textContent = '🔒 Max Capacity';
+    document.getElementById('scaleBtn').style.opacity = '0.6';
+    document.getElementById('scaleBtn').style.cursor = 'default';
+  }
+}
+
+function resetScale() {
+  state.step = 0;
+  state.webTasks = 2;
+  state.workerTasks = 2;
+
+  // reset all slot chips
+  slots['tasks-web-az1']    = { prefix: 'W', chips: ['W1'] };
+  slots['tasks-web-az2']    = { prefix: 'W', chips: ['W2'] };
+  slots['tasks-worker-az1'] = { prefix: 'K', chips: ['K1'] };
+  slots['tasks-worker-az2'] = { prefix: 'K', chips: ['K2'] };
+
+  Object.keys(slots).forEach(renderSlot);
+
+  setBadge('badge-web-az1',    '×1');
+  setBadge('badge-web-az2',    '×1');
+  setBadge('badge-worker-az1', '×1');
+  setBadge('badge-worker-az2', '×1');
+
+  const btn = document.getElementById('scaleBtn');
+  btn.innerHTML = '<span>⚡</span> Add Load →';
+  btn.style.opacity = '1';
+  btn.style.cursor = 'pointer';
+
+  showToast('↺ Reset — back to baseline (1 task per service per AZ)');
+}
+</script>
+</body>
+</html>

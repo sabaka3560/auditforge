@@ -1,12 +1,11 @@
 """Audit orchestration service — the only place that calls engine/.
 
 Public API:
-    run_audit(...) -> tuple[bytes, str]
+    run_audit(...) -> bytes
 """
 
 from __future__ import annotations
 
-import hashlib
 import io
 
 from engine import build_mapping, build_report, compare, read_actual, read_ideal
@@ -20,15 +19,13 @@ async def run_audit(
     ideal_name: str,
     sheet_name: str,
     fuzzy_threshold: int,
-) -> tuple[bytes, str]:
-    """Run the full audit pipeline and return (excel_bytes, ideal_sha256).
+) -> bytes:
+    """Run the full audit pipeline and return excel_bytes.
 
     Raises:
         ValueError: for bad input (propagated from engine).
         RuntimeError: wraps any unexpected engine exception.
     """
-    ideal_sha256 = hashlib.sha256(ideal_bytes).hexdigest()
-
     effective_sheet = sheet_name or "INV_ORGANIZATION_PARAMETER"
 
     try:
@@ -55,11 +52,10 @@ async def run_audit(
             ideal_filename=ideal_name,
             total_bu_rows=len(actual_df),
             fuzzy_threshold=fuzzy_threshold,
-            ideal_sha256=ideal_sha256,
         )
     except ValueError:
         raise
     except Exception as exc:
         raise RuntimeError(f"Audit pipeline error: {exc}") from exc
 
-    return excel_bytes, ideal_sha256
+    return excel_bytes

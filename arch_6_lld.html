@@ -1,0 +1,2005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AuditForge — Low Level Design (File Architecture)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:         #0d1117;
+    --surface:    #161b22;
+    --surface2:   #1c2230;
+    --border:     #30363d;
+    --text:       #e6edf3;
+    --text-muted: #8b949e;
+    --cyan:       #00BCD4;
+    --blue:       #2196F3;
+    --yellow:     #FFC107;
+    --grey:       #607D8B;
+    --green:      #4CAF50;
+    --red:        #F44336;
+    --purple:     #9C27B0;
+    --glow-yellow: #FFD700;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, #0d1117 0%, #161b22 60%, #1a2030 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 40px 22px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+  }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+  .header h1 span { color: var(--cyan); }
+  .header-sub {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .header-meta {
+    display: flex;
+    gap: 12px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid;
+    letter-spacing: 0.3px;
+  }
+  .badge-cyan  { color: var(--cyan);   border-color: var(--cyan);   background: rgba(0,188,212,0.08); }
+  .badge-blue  { color: var(--blue);   border-color: var(--blue);   background: rgba(33,150,243,0.08); }
+  .badge-yellow{ color: var(--yellow); border-color: var(--yellow); background: rgba(255,193,7,0.08); }
+  .badge-grey  { color: var(--grey);   border-color: var(--grey);   background: rgba(96,125,139,0.08); }
+
+  .trace-btn {
+    margin-left: auto;
+    background: linear-gradient(135deg, #1a3a1a, #0d2a1a);
+    color: var(--green);
+    border: 1px solid var(--green);
+    padding: 7px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .trace-btn:hover { background: rgba(76,175,80,0.15); box-shadow: 0 0 12px rgba(76,175,80,0.3); }
+  .trace-btn.running { background: rgba(255,193,7,0.1); color: var(--yellow); border-color: var(--yellow); }
+
+  /* ── Layout ── */
+  .main-layout {
+    display: flex;
+    gap: 0;
+    min-height: calc(100vh - 115px);
+  }
+
+  /* ── Left Sidebar ── */
+  .sidebar {
+    width: 280px;
+    min-width: 280px;
+    border-right: 1px solid var(--border);
+    padding: 24px 20px;
+    position: sticky;
+    top: 115px;
+    height: calc(100vh - 115px);
+    overflow-y: auto;
+    background: var(--surface);
+  }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .sidebar-section { margin-bottom: 28px; }
+  .sidebar-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .callgraph {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    line-height: 1.8;
+  }
+  .cg-node {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: background 0.15s;
+  }
+  .cg-node:hover { background: rgba(255,255,255,0.04); }
+  .cg-file       { color: var(--cyan); }
+  .cg-file.blue  { color: var(--blue); }
+  .cg-file.yellow{ color: var(--yellow); }
+  .cg-file.grey  { color: var(--grey); }
+
+  .arrow-legend { display: flex; flex-direction: column; gap: 8px; }
+  .arrow-item { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); }
+  .arrow-line-solid  { width: 28px; height: 2px; background: var(--cyan); border-radius: 1px; }
+  .arrow-line-dotted { width: 28px; height: 0; border-top: 2px dashed var(--text-muted); }
+
+  .trace-panel {
+    background: rgba(76,175,80,0.04);
+    border: 1px solid rgba(76,175,80,0.2);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 11px;
+    color: var(--text-muted);
+    min-height: 60px;
+    line-height: 1.55;
+  }
+  .trace-panel.active {
+    border-color: var(--yellow);
+    background: rgba(255,193,7,0.04);
+    color: var(--yellow);
+  }
+  .trace-step-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 10px;
+    color: var(--glow-yellow);
+    margin-bottom: 4px;
+  }
+
+  /* ── Content ── */
+  .content {
+    flex: 1;
+    padding: 28px 32px;
+    overflow-y: auto;
+    max-width: calc(100% - 280px);
+  }
+  .content::-webkit-scrollbar { width: 6px; }
+  .content::-webkit-scrollbar-track { background: transparent; }
+  .content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── Zone ── */
+  .zone { margin-bottom: 36px; }
+  .zone-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 10px 16px;
+    border-radius: 6px;
+    border-left: 4px solid;
+  }
+  .zone-header.engine  { border-color: var(--cyan);   background: rgba(0,188,212,0.05); }
+  .zone-header.app     { border-color: var(--blue);   background: rgba(33,150,243,0.05); }
+  .zone-header.static  { border-color: var(--yellow); background: rgba(255,193,7,0.05); }
+  .zone-header.config  { border-color: var(--grey);   background: rgba(96,125,139,0.05); }
+  .zone-header.tests   { border-color: var(--purple); background: rgba(156,39,176,0.05); }
+
+  .zone-label {
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.5px;
+  }
+  .zone-desc { font-size: 11px; color: var(--text-muted); }
+
+  /* ── File Grid ── */
+  .file-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 12px;
+  }
+
+  /* ── File Card ── */
+  .file-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    border-top: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    overflow: hidden;
+  }
+  .file-card.engine  { border-top-color: var(--cyan); }
+  .file-card.app     { border-top-color: var(--blue); }
+  .file-card.static  { border-top-color: var(--yellow); }
+  .file-card.config  { border-top-color: var(--grey); }
+  .file-card.tests   { border-top-color: var(--purple); }
+
+  .file-card:hover {
+    border-color: rgba(255,255,255,0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
+
+  .file-card.trace-active {
+    border-color: var(--glow-yellow) !important;
+    border-top-color: var(--glow-yellow) !important;
+    box-shadow: 0 0 0 2px var(--glow-yellow), 0 0 28px rgba(255,215,0,0.4) !important;
+    transform: translateY(-2px);
+    animation: glow-pulse 0.65s ease-in-out;
+  }
+  @keyframes glow-pulse {
+    0%   { box-shadow: 0 0 0 2px var(--glow-yellow), 0 0 8px  rgba(255,215,0,0.2); }
+    50%  { box-shadow: 0 0 0 3px var(--glow-yellow), 0 0 36px rgba(255,215,0,0.65); }
+    100% { box-shadow: 0 0 0 2px var(--glow-yellow), 0 0 28px rgba(255,215,0,0.4); }
+  }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px 10px;
+  }
+  .card-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .card-icon.engine  { background: rgba(0,188,212,0.15);   color: var(--cyan); }
+  .card-icon.app     { background: rgba(33,150,243,0.15);  color: var(--blue); }
+  .card-icon.static  { background: rgba(255,193,7,0.15);   color: var(--yellow); }
+  .card-icon.config  { background: rgba(96,125,139,0.15);  color: var(--grey); }
+  .card-icon.tests   { background: rgba(156,39,176,0.15);  color: var(--purple); }
+
+  .card-title-wrap { flex: 1; min-width: 0; }
+  .card-filename {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-path {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+  .card-desc {
+    padding: 0 14px 12px;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    line-height: 1.55;
+  }
+
+  .card-expand-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 2px;
+    font-weight: 700;
+    line-height: 1;
+    user-select: none;
+  }
+  .card-expand-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+
+  .card-detail {
+    display: none;
+    padding: 0 14px 14px;
+    border-top: 1px solid var(--border);
+    margin-top: 2px;
+  }
+  .file-card.expanded .card-detail { display: block; }
+
+  .detail-section { margin-top: 10px; }
+  .detail-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .fn-list { display: flex; flex-direction: column; gap: 4px; }
+  .fn-item {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--cyan);
+    background: rgba(0,188,212,0.06);
+    padding: 3px 8px;
+    border-radius: 3px;
+    border-left: 2px solid rgba(0,188,212,0.3);
+    line-height: 1.5;
+  }
+  .fn-item.blue   { color: var(--blue);   background: rgba(33,150,243,0.06);  border-left-color: rgba(33,150,243,0.3); }
+  .fn-item.yellow { color: var(--yellow); background: rgba(255,193,7,0.06);   border-left-color: rgba(255,193,7,0.3); }
+  .fn-item.grey   { color: var(--grey);   background: rgba(96,125,139,0.06);  border-left-color: rgba(96,125,139,0.3); }
+  .fn-item.purple { color: var(--purple); background: rgba(156,39,176,0.06);  border-left-color: rgba(156,39,176,0.3); }
+  .fn-item.green  { color: var(--green);  background: rgba(76,175,80,0.06);   border-left-color: rgba(76,175,80,0.3); }
+  .fn-item.red    { color: var(--red);    background: rgba(244,67,54,0.06);   border-left-color: rgba(244,67,54,0.3); }
+
+  .import-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+  .import-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    background: var(--surface);
+  }
+
+  /* Sub-groups within app zone */
+  .sub-group { margin-bottom: 20px; }
+  .sub-group-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    padding: 5px 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 4px;
+    border-left: 2px solid var(--blue);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── Pipeline diagram ── */
+  .pipeline-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin-bottom: 32px;
+  }
+  .pipeline-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pipeline-title::before {
+    content: '';
+    width: 3px;
+    height: 16px;
+    background: var(--cyan);
+    border-radius: 2px;
+    display: block;
+  }
+
+  .pipeline-flow {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  .pipeline-flow::-webkit-scrollbar { height: 4px; }
+  .pipeline-flow::-webkit-scrollbar-track { background: transparent; }
+  .pipeline-flow::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .pipe-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .pipe-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    text-align: center;
+    min-width: 100px;
+  }
+  .pipe-box.engine-color { border-top: 2px solid var(--cyan); }
+  .pipe-box.app-color    { border-top: 2px solid var(--blue); }
+  .pipe-box.static-color { border-top: 2px solid var(--yellow); }
+  .pipe-box.config-color { border-top: 2px solid var(--grey); }
+
+  .pipe-file   { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .pipe-action { font-size: 9px; color: var(--text-muted); }
+  .pipe-step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--glow-yellow);
+    background: rgba(255,215,0,0.1);
+    border: 1px solid rgba(255,215,0,0.3);
+    border-radius: 10px;
+    padding: 1px 6px;
+    margin-top: 5px;
+    display: inline-block;
+  }
+
+  .pipe-arrow {
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    margin-top: 16px;
+  }
+  .pipe-arrow-line { height: 2px; width: 18px; background: linear-gradient(90deg, var(--cyan), var(--blue)); }
+  .pipe-arrow-head { width: 0; height: 0; border-top: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 6px solid var(--blue); }
+
+  /* ── Footer ── */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 16px 40px;
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .footer-right { font-family: 'JetBrains Mono', monospace; color: var(--cyan); font-size: 10px; }
+
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .content { max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<div class="header">
+  <h1><span>AuditForge</span> — Low Level Design (File Architecture)</h1>
+  <div class="header-sub">Diagram 6 of 6 &nbsp;·&nbsp; Every file, every responsibility, every call edge</div>
+  <div class="header-meta">
+    <span class="badge badge-cyan">ENGINE/ — core processing</span>
+    <span class="badge badge-blue">APP/ — FastAPI + workers</span>
+    <span class="badge badge-yellow">STATIC/ — SPA frontend</span>
+    <span class="badge badge-grey">CONFIG/ — ideals + infra</span>
+    <button class="trace-btn" id="traceBtn" onclick="startTrace()">
+      <span id="traceIcon">&#9654;</span> Trace Audit Job
+    </button>
+  </div>
+</div>
+
+<!-- ── MAIN LAYOUT ── -->
+<div class="main-layout">
+
+  <!-- ── SIDEBAR ── -->
+  <div class="sidebar">
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Zone Legend</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--cyan)"></div><span>ENGINE — pure functions, no I/O</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div><span>APP — FastAPI, workers, DB</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div><span>STATIC — vanilla JS SPA</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--grey)"></div><span>CONFIG — ideals, infra, migrations</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div><span>TESTS — pytest suite</span></div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Arrow Types</div>
+      <div class="arrow-legend">
+        <div class="arrow-item"><div class="arrow-line-solid"></div><span>function call</span></div>
+        <div class="arrow-item"><div class="arrow-line-dotted"></div><span>import / data dep.</span></div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Call Graph Summary</div>
+      <div class="callgraph">
+        <div class="cg-node" data-target="static-index-html"><span class="cg-file yellow">index.html</span></div>
+        <div style="padding-left:10px; color:var(--border); font-size:10px">&#8595; POST /api/audits</div>
+        <div class="cg-node" data-target="audit-py"><span class="cg-file blue">routes/audit.py</span></div>
+        <div style="padding-left:10px; color:var(--border); font-size:10px">&#8595; enqueue RQ job</div>
+        <div class="cg-node" data-target="audit-worker-py"><span class="cg-file blue">audit_worker.py</span></div>
+        <div style="padding-left:10px; color:var(--border); font-size:10px">&#8595; get ideal bytes</div>
+        <div class="cg-node" data-target="ideals-loader-py"><span class="cg-file blue">ideals_loader.py</span></div>
+        <div style="padding-left:10px; color:var(--border); font-size:10px">&#8595; read files</div>
+        <div class="cg-node" data-target="reader-py"><span class="cg-file">reader.py</span></div>
+        <div style="padding-left:10px; color:var(--border); font-size:10px">&#8595; match headers</div>
+        <div class="cg-node" data-target="matcher-py"><span class="cg-file">matcher.py</span></div>
+        <div style="padding-left:10px; color:var(--border); font-size:10px">&#8595; compare values</div>
+        <div class="cg-node" data-target="comparator-py"><span class="cg-file">comparator.py</span></div>
+        <div style="padding-left:10px; color:var(--border); font-size:10px">&#8595; build xlsx</div>
+        <div class="cg-node" data-target="writer-py"><span class="cg-file">writer.py</span></div>
+        <div style="padding-left:10px; color:var(--border); font-size:10px">&#8595; save + update job</div>
+        <div class="cg-node" data-target="storage-py"><span class="cg-file blue">storage.py</span></div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Active Trace</div>
+      <div class="trace-panel" id="tracePanel">
+        Click <strong>&#9654; Trace Audit Job</strong> to animate the request lifecycle across all 13 touch-points.
+      </div>
+    </div>
+
+  </div><!-- /sidebar -->
+
+  <!-- ── CONTENT ── -->
+  <div class="content">
+
+    <!-- ── PIPELINE FLOW ── -->
+    <div class="pipeline-section">
+      <div class="pipeline-title">Audit Job Execution Pipeline — 13 Steps</div>
+      <div class="pipeline-flow">
+
+        <div class="pipe-node">
+          <div class="pipe-box static-color">
+            <div class="pipe-file">index.html</div>
+            <div class="pipe-action">submitAudit()</div>
+            <div class="pipe-step-num">step 1</div>
+          </div>
+        </div>
+        <div class="pipe-arrow"><div class="pipe-arrow-line"></div><div class="pipe-arrow-head"></div></div>
+
+        <div class="pipe-node">
+          <div class="pipe-box app-color">
+            <div class="pipe-file">routes/audit.py</div>
+            <div class="pipe-action">POST /api/audits</div>
+            <div class="pipe-step-num">step 2</div>
+          </div>
+        </div>
+        <div class="pipe-arrow"><div class="pipe-arrow-line"></div><div class="pipe-arrow-head"></div></div>
+
+        <div class="pipe-node">
+          <div class="pipe-box app-color">
+            <div class="pipe-file">storage.py</div>
+            <div class="pipe-action">save actual</div>
+            <div class="pipe-step-num">step 3</div>
+          </div>
+        </div>
+        <div class="pipe-arrow"><div class="pipe-arrow-line"></div><div class="pipe-arrow-head"></div></div>
+
+        <div class="pipe-node">
+          <div class="pipe-box app-color">
+            <div class="pipe-file">audit_job.py</div>
+            <div class="pipe-action">INSERT job</div>
+            <div class="pipe-step-num">step 4</div>
+          </div>
+        </div>
+        <div class="pipe-arrow"><div class="pipe-arrow-line"></div><div class="pipe-arrow-head"></div></div>
+
+        <div class="pipe-node">
+          <div class="pipe-box app-color">
+            <div class="pipe-file">audit_worker.py</div>
+            <div class="pipe-action">run_audit_job</div>
+            <div class="pipe-step-num">step 5</div>
+          </div>
+        </div>
+        <div class="pipe-arrow"><div class="pipe-arrow-line"></div><div class="pipe-arrow-head"></div></div>
+
+        <div class="pipe-node">
+          <div class="pipe-box app-color">
+            <div class="pipe-file">ideals_loader</div>
+            <div class="pipe-action">get ideal bytes</div>
+            <div class="pipe-step-num">step 6</div>
+          </div>
+        </div>
+        <div class="pipe-arrow"><div class="pipe-arrow-line"></div><div class="pipe-arrow-head"></div></div>
+
+        <div class="pipe-node">
+          <div class="pipe-box engine-color">
+            <div class="pipe-file">reader.py</div>
+            <div class="pipe-action">read_actual/ideal</div>
+            <div class="pipe-step-num">step 7</div>
+          </div>
+        </div>
+        <div class="pipe-arrow"><div class="pipe-arrow-line"></div><div class="pipe-arrow-head"></div></div>
+
+        <div class="pipe-node">
+          <div class="pipe-box engine-color">
+            <div class="pipe-file">matcher.py</div>
+            <div class="pipe-action">build_mapping</div>
+            <div class="pipe-step-num">step 8</div>
+          </div>
+        </div>
+        <div class="pipe-arrow"><div class="pipe-arrow-line"></div><div class="pipe-arrow-head"></div></div>
+
+        <div class="pipe-node">
+          <div class="pipe-box engine-color">
+            <div class="pipe-file">comparator.py</div>
+            <div class="pipe-action">compare()</div>
+            <div class="pipe-step-num">step 9</div>
+          </div>
+        </div>
+        <div class="pipe-arrow"><div class="pipe-arrow-line"></div><div class="pipe-arrow-head"></div></div>
+
+        <div class="pipe-node">
+          <div class="pipe-box engine-color">
+            <div class="pipe-file">writer.py</div>
+            <div class="pipe-action">build_report</div>
+            <div class="pipe-step-num">step 10</div>
+          </div>
+        </div>
+        <div class="pipe-arrow"><div class="pipe-arrow-line"></div><div class="pipe-arrow-head"></div></div>
+
+        <div class="pipe-node">
+          <div class="pipe-box app-color">
+            <div class="pipe-file">storage.py</div>
+            <div class="pipe-action">save report</div>
+            <div class="pipe-step-num">step 11</div>
+          </div>
+        </div>
+        <div class="pipe-arrow"><div class="pipe-arrow-line"></div><div class="pipe-arrow-head"></div></div>
+
+        <div class="pipe-node">
+          <div class="pipe-box app-color">
+            <div class="pipe-file">audit_job.py</div>
+            <div class="pipe-action">UPDATE done</div>
+            <div class="pipe-step-num">step 12</div>
+          </div>
+        </div>
+        <div class="pipe-arrow"><div class="pipe-arrow-line"></div><div class="pipe-arrow-head"></div></div>
+
+        <div class="pipe-node">
+          <div class="pipe-box static-color">
+            <div class="pipe-file">index.html</div>
+            <div class="pipe-action">download report</div>
+            <div class="pipe-step-num">step 13</div>
+          </div>
+        </div>
+
+      </div><!-- /pipeline-flow -->
+    </div>
+
+    <!-- ══ ENGINE ZONE ══ -->
+    <div class="zone">
+      <div class="zone-header engine">
+        <span class="zone-label" style="color:var(--cyan)">ENGINE/</span>
+        <span class="zone-desc">Pure functions &nbsp;·&nbsp; no I/O &nbsp;·&nbsp; no DB &nbsp;·&nbsp; no HTTP &nbsp;·&nbsp; deterministic audit core</span>
+      </div>
+      <div class="file-grid">
+
+        <div class="file-card engine" id="card-init-py">
+          <div class="card-header">
+            <div class="card-icon engine">&#9881;</div>
+            <div class="card-title-wrap">
+              <div class="card-filename">__init__.py</div>
+              <div class="card-path">engine/__init__.py</div>
+            </div>
+            <div class="card-expand-btn">+</div>
+          </div>
+          <div class="card-desc">Public API surface. Re-exports all five entry-points so callers use <code style="color:var(--cyan)">from engine import ...</code> with no submodule leaking into callers.</div>
+          <div class="card-detail">
+            <div class="detail-section">
+              <div class="detail-label">Re-exports</div>
+              <div class="fn-list">
+                <div class="fn-item">build_report  &#8592; writer.py</div>
+                <div class="fn-item">compare       &#8592; comparator.py</div>
+                <div class="fn-item">build_mapping &#8592; matcher.py</div>
+                <div class="fn-item">read_actual   &#8592; reader.py</div>
+                <div class="fn-item">read_ideal    &#8592; reader.py</div>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-label">Design note</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Keeps main.py and workers decoupled from internal module layout. A rename of comparator.py is invisible to callers.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="file-card engine" id="card-types-py">
+          <div class="card-header">
+            <div class="card-icon engine">&#128208;</div>
+            <div class="card-title-wrap">
+              <div class="card-filename">types.py</div>
+              <div class="card-path">engine/types.py</div>
+            </div>
+            <div class="card-expand-btn">+</div>
+          </div>
+          <div class="card-desc">Shared dataclasses. The common vocabulary passed between every engine module — no logic, just typed containers.</div>
+          <div class="card-detail">
+            <div class="detail-section">
+              <div class="detail-label">Dataclasses</div>
+              <div class="fn-list">
+                <div class="fn-item">MappingResult(ideal_name, matched_header, match_method, similarity_score, status, remarks)</div>
+                <div class="fn-item">AuditRow(bu_name, config_name, actual_value, ideal_value, options, comment)</div>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-label">MappingResult.status values</div>
+              <div class="import-tags">
+                <span class="import-tag">Exact</span>
+                <span class="import-tag">Normalized</span>
+                <span class="import-tag">Alias</span>
+                <span class="import-tag">Fuzzy</span>
+                <span class="import-tag">Unmatched</span>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-label">Imported by</div>
+              <div class="import-tags">
+                <span class="import-tag">matcher.py</span>
+                <span class="import-tag">comparator.py</span>
+                <span class="import-tag">writer.py</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="file-card engine" id="card-aliases-py">
+          <div class="card-header">
+            <div class="card-icon engine">&#128273;</div>
+            <div class="card-title-wrap">
+              <div class="card-filename">aliases.py</div>
+              <div class="card-path">engine/aliases.py</div>
+            </div>
+            <div class="card-expand-btn">+</div>
+          </div>
+          <div class="card-desc">MANUAL_ALIASES dict — 12 hard-coded Oracle Fusion column rename pairs. Stage 3 of the 4-stage header matching waterfall.</div>
+          <div class="card-detail">
+            <div class="detail-section">
+              <div class="detail-label">Selected entries (12 total)</div>
+              <div class="fn-list">
+                <div class="fn-item">AllowItemSubstitutions &#8594; AllowItemSubstitutionsFlag</div>
+                <div class="fn-item">BusinessUnitName &#8594; BusinessUnitId</div>
+                <div class="fn-item">+ 10 more Oracle Fusion rename variants</div>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-label">Imported by</div>
+              <div class="import-tags"><span class="import-tag">matcher.py</span></div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-label">How to extend</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Add entry &#8594; add test in tests/test_matcher.py &#8594; run pytest.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="file-card engine" id="card-normalizer-py">
+          <div class="card-header">
+            <div class="card-icon engine">&#9879;</div>
+            <div class="card-title-wrap">
+              <div class="card-filename">normalizer.py</div>
+              <div class="card-path">engine/normalizer.py</div>
+            </div>
+            <div class="card-expand-btn">+</div>
+          </div>
+          <div class="card-desc">String normalisation utilities — single source of truth for how values and headers are cleaned before any comparison. Used by 3 other engine modules.</div>
+          <div class="card-detail">
+            <div class="detail-section">
+              <div class="detail-label">Functions</div>
+              <div class="fn-list">
+                <div class="fn-item">strip_header(s: str) &#8594; str — collapse spaces/dashes/underscores, lowercase</div>
+                <div class="fn-item">normalize_value(v: Any) &#8594; str — bool synonyms y/n, strip whitespace, lowercase floats</div>
+                <div class="fn-item">is_capture(ideal: str) &#8594; bool — True if "capture" substring (case-insensitive)</div>
+                <div class="fn-item">detect_ideal_columns(df: DataFrame) &#8594; tuple[str, str] — heuristic find of name_col + val_col</div>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-label">Boolean synonym map</div>
+              <div class="import-tags">
+                <span class="import-tag">Y/yes/true/1/enabled/on &#8594; y</span>
+                <span class="import-tag">N/no/false/0/disabled/off &#8594; n</span>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-label">Imported by</div>
+              <div class="import-tags">
+                <span class="import-tag">matcher.py</span>
+                <span class="import-tag">comparator.py</span>
+                <span class="import-tag">reader.py</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="file-card engine" id="card-reader-py">
+          <div class="card-header">
+            <div class="card-icon engine">&#128194;</div>
+            <div class="card-title-wrap">
+              <div class="card-filename">reader.py</div>
+              <div class="card-path">engine/reader.py</div>
+            </div>
+            <div class="card-expand-btn">+</div>
+          </div>
+          <div class="card-desc">File ingestion layer. Reads xlsx/xls/csv into DataFrames, normalises column 0 to BU_NAME, drops fully-null rows. The only place pandas file I/O lives.</div>
+          <div class="card-detail">
+            <div class="detail-section">
+              <div class="detail-label">Functions</div>
+              <div class="fn-list">
+                <div class="fn-item">read_actual(file_obj, sheet_name: str) &#8594; DataFrame — col0&#8594;BU_NAME, trims whitespace, drops nulls</div>
+                <div class="fn-item">read_ideal(file_obj) &#8594; DataFrame(config_name, ideal_value, options) — uses detect_ideal_columns</div>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-label">Supported formats</div>
+              <div class="import-tags">
+                <span class="import-tag">.xlsx</span>
+                <span class="import-tag">.xls</span>
+                <span class="import-tag">.csv</span>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-label">Imports</div>
+              <div class="import-tags">
+                <span class="import-tag">normalizer.detect_ideal_columns</span>
+                <span class="import-tag">pandas</span>
+                <span class="import-tag">openpyxl</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="file-card engine" id="card-matcher-py">
+          <div class="card-header">
+            <div class="card-icon engine">&#128279;</div>
+            <div class="card-title-wrap">
+              <div class="card-filename">matcher.py</div>
+              <div class="card-path">engine/matcher.py</div>
+            </div>
+            <div class="card-expand-btn">+</div>
+          </div>
+          <div class="card-desc">4-stage waterfall header matcher. Given ideal column names and actual file headers, returns one MappingResult per ideal column. First hit wins; Unmatched if all 4 fail.</div>
+          <div class="card-detail">
+            <div class="detail-section">
+              <div class="detail-label">Main function</div>
+              <div class="fn-list">
+                <div class="fn-item">build_mapping(ideal_rows, actual_headers, threshold=80) &#8594; list[MappingResult]</div>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-label">4-Stage waterfall (first hit wins)</div>
+              <div class="fn-list">
+                <div class="fn-item">&#9312; Exact — ideal_name in actual_headers</div>
+                <div class="fn-item">&#9313; Normalized — strip_header(ideal) == strip_header(actual)</div>
+                <div class="fn-item">&#9314; ManualAlias — MANUAL_ALIASES[ideal] in actual_headers</div>
+                <div class="fn-item">&#9315; Fuzzy — token_sort_ratio(ideal, actual) &#8805; threshold</div>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-label">Known unmatched by design (fuzzy &lt;80)</div>
+              <div class="import-tags">
+                <span class="import-tag">LastUpdateDate</span>
+                <span class="import-tag">LastUpdateLogin</span>
+                <span class="import-tag">LastUpdatedBy</span>
+                <span class="import-tag">SourceOrganizationId (~0.72)</span>
+                <span class="import-tag">SourceSubinventory (~0.70)</span>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-label">Imports</div>
+              <div class="import-tags">
+                <span class="import-tag">aliases.MANUAL_ALIASES</span>
+                <span class="import-tag">normalizer.strip_header</span>
+                <span class="import-tag">types.MappingResult</span>
+                <span class="import-tag">rapidfuzz</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="file-card engine" id="card-comparator-py">
+          <div class="card-header">
+            <div class="card-icon engine">&#9878;</div>
+            <div class="card-title-wrap">
+              <div class="card-filename">comparator.py</div>
+              <div class="card-path">engine/comparator.py</div>
+            </div>
+            <div class="card-expand-btn">+</div>
+          </div>
+          <div class="card-desc">Deterministic BU x config classification. Iterates every (BU, matched config) pair and emits rows into three buckets: CIP, gaps, additional.</div>
+          <div class="card-detail">
+            <div class="detail-section">
+              <div class="detail-label">Main function</div>
+              <div class="fn-list">
+                <div class="fn-item">compare(mapping, actual_df, ideal_df) &#8594; (cip_list, gaps_list, additional_list)</div>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-label">Classification logic (per BU x config)</div>
+              <div class="fn-list">
+                <div class="fn-item blue">is_capture(ideal_val) &#8594; additional (extract only, no comparison)</div>
+                <div class="fn-item green">norm(actual) == norm(ideal) &#8594; CIP (control in place)</div>
+                <div class="fn-item red">actual is null, ideal not capture &#8594; Control gap</div>
+                <div class="fn-item red">norm(actual) != norm(ideal) &#8594; gap</div>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-label">Imports</div>
+              <div class="import-tags">
+                <span class="import-tag">normalizer.normalize_value</span>
+                <span class="import-tag">normalizer.is_capture</span>
+                <span class="import-tag">types.AuditRow</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="file-card engine" id="card-writer-py">
+          <div class="card-header">
+            <div class="card-icon engine">&#128202;</div>
+            <div class="card-title-wrap">
+              <div class="card-filename">writer.py</div>
+              <div class="card-path">engine/writer.py</div>
+            </div>
+            <div class="card-expand-btn">+</div>
+          </div>
+          <div class="card-desc">5-sheet Excel report builder. Takes three classified lists + mapping and assembles the final xlsx bytes with colour-coded sheets.</div>
+          <div class="card-detail">
+            <div class="detail-section">
+              <div class="detail-label">Main function</div>
+              <div class="fn-list">
+                <div class="fn-item">build_report(cip, gaps, additional, mapping, ...) &#8594; bytes</div>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-label">5 output sheets</div>
+              <div class="fn-list">
+                <div class="fn-item green">Controls in place — GREEN_FILL rows</div>
+                <div class="fn-item red">Control gaps — RED_FILL rows</div>
+                <div class="fn-item blue">Controls additional data — BLUE_FILL rows</div>
+                <div class="fn-item yellow">Header Mapping and Exc — YELLOW for unmatched</div>
+                <div class="fn-item grey">Audit Summary — metrics table</div>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-label">Imports</div>
+              <div class="import-tags">
+                <span class="import-tag">styles.*</span>
+                <span class="import-tag">types.AuditRow</span>
+                <span class="import-tag">types.MappingResult</span>
+                <span class="import-tag">openpyxl</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="file-card engine" id="card-styles-py">
+          <div class="card-header">
+            <div class="card-icon engine">&#127912;</div>
+            <div class="card-title-wrap">
+              <div class="card-filename">styles.py</div>
+              <div class="card-path">engine/styles.py</div>
+            </div>
+            <div class="card-expand-btn">+</div>
+          </div>
+          <div class="card-desc">openpyxl style constants. Centralises all fill colours, fonts, and alignment so writer.py stays declarative and style-free.</div>
+          <div class="card-detail">
+            <div class="detail-section">
+              <div class="detail-label">Constants</div>
+              <div class="fn-list">
+                <div class="fn-item green">GREEN_FILL — PatternFill for CIP rows</div>
+                <div class="fn-item red">RED_FILL — PatternFill for gap rows</div>
+                <div class="fn-item blue">BLUE_FILL — PatternFill for additional rows</div>
+                <div class="fn-item yellow">YELLOW_FILL — PatternFill for unmatched</div>
+                <div class="fn-item">HEADER_FILL — dark grey column headers</div>
+                <div class="fn-item">HEADER_FONT — white bold Font</div>
+                <div class="fn-item">CENTER — Alignment(horizontal='center')</div>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-label">Imported by</div>
+              <div class="import-tags"><span class="import-tag">writer.py</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /engine zone -->
+
+    <!-- ══ APP ZONE ══ -->
+    <div class="zone">
+      <div class="zone-header app">
+        <span class="zone-label" style="color:var(--blue)">APP/</span>
+        <span class="zone-desc">FastAPI &nbsp;·&nbsp; PostgreSQL (asyncpg) &nbsp;·&nbsp; Redis/RQ workers &nbsp;·&nbsp; JWT auth &nbsp;·&nbsp; multi-tenant</span>
+      </div>
+
+      <div class="sub-group">
+        <div class="sub-group-title">app/ — application root</div>
+        <div class="file-grid">
+
+          <div class="file-card app" id="card-main-py">
+            <div class="card-header">
+              <div class="card-icon app">&#128640;</div>
+              <div class="card-title-wrap">
+                <div class="card-filename">main.py</div>
+                <div class="card-path">app/main.py</div>
+              </div>
+              <div class="card-expand-btn">+</div>
+            </div>
+            <div class="card-desc">FastAPI application factory. Lifespan seeds default admin + tenant. Mounts static files, includes all routers, exposes /health and GET /api/checks.</div>
+            <div class="card-detail">
+              <div class="detail-section">
+                <div class="detail-label">Routes &amp; setup</div>
+                <div class="fn-list">
+                  <div class="fn-item blue">create_app() &#8594; FastAPI</div>
+                  <div class="fn-item blue">lifespan — seeds admin + tenant on startup</div>
+                  <div class="fn-item blue">GET /health &#8594; {status: ok}</div>
+                  <div class="fn-item blue">GET /api/checks &#8594; reads checks.json (public, no auth)</div>
+                  <div class="fn-item blue">StaticFiles mount &#8594; serves static/index.html at /</div>
+                </div>
+              </div>
+              <div class="detail-section">
+                <div class="detail-label">Imports routers</div>
+                <div class="import-tags">
+                  <span class="import-tag">routes.auth</span>
+                  <span class="import-tag">routes.audit</span>
+                  <span class="import-tag">routes.ideals</span>
+                  <span class="import-tag">routes.users</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="file-card app" id="card-dependencies-py">
+            <div class="card-header">
+              <div class="card-icon app">&#128274;</div>
+              <div class="card-title-wrap">
+                <div class="card-filename">dependencies.py</div>
+                <div class="card-path">app/dependencies.py</div>
+              </div>
+              <div class="card-expand-btn">+</div>
+            </div>
+            <div class="card-desc">FastAPI dependency injectors. All auth and DB session provisioning lives here, injected via Depends() into every route that needs it.</div>
+            <div class="card-detail">
+              <div class="detail-section">
+                <div class="detail-label">Dependency functions</div>
+                <div class="fn-list">
+                  <div class="fn-item blue">get_db() &#8594; AsyncSession (asyncpg)</div>
+                  <div class="fn-item blue">get_current_user(Bearer token) &#8594; User — JWT decode, 401 if invalid/expired</div>
+                  <div class="fn-item blue">get_tenant(user) &#8594; Tenant</div>
+                  <div class="fn-item blue">require_admin(user) &#8594; User — 403 if role != admin</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /app root -->
+
+      <div class="sub-group">
+        <div class="sub-group-title">app/models/ — SQLAlchemy ORM</div>
+        <div class="file-grid">
+
+          <div class="file-card app" id="card-user-py">
+            <div class="card-header">
+              <div class="card-icon app">&#128100;</div>
+              <div class="card-title-wrap">
+                <div class="card-filename">user.py</div>
+                <div class="card-path">app/models/user.py</div>
+              </div>
+              <div class="card-expand-btn">+</div>
+            </div>
+            <div class="card-desc">User ORM model. UUID PK, tenant FK, bcrypt hashed password, role enum (admin/associate), soft-delete via is_active.</div>
+            <div class="card-detail">
+              <div class="detail-section">
+                <div class="detail-label">Columns</div>
+                <div class="fn-list">
+                  <div class="fn-item blue">id: UUID PK</div>
+                  <div class="fn-item blue">tenant_id: FK &#8594; Tenant</div>
+                  <div class="fn-item blue">email: unique, indexed</div>
+                  <div class="fn-item blue">hashed_pw: str</div>
+                  <div class="fn-item blue">role: enum(admin, associate)</div>
+                  <div class="fn-item blue">is_active: bool default True</div>
+                  <div class="fn-item blue">created_at: timestamptz</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="file-card app" id="card-tenant-py">
+            <div class="card-header">
+              <div class="card-icon app">&#127970;</div>
+              <div class="card-title-wrap">
+                <div class="card-filename">tenant.py</div>
+                <div class="card-path">app/models/tenant.py</div>
+              </div>
+              <div class="card-expand-btn">+</div>
+            </div>
+            <div class="card-desc">Tenant ORM model. Top-level isolation unit. Slug embedded in JWT enables tenant resolution without an extra DB round-trip.</div>
+            <div class="card-detail">
+              <div class="detail-section">
+                <div class="detail-label">Columns</div>
+                <div class="fn-list">
+                  <div class="fn-item blue">id: UUID PK</div>
+                  <div class="fn-item blue">slug: unique (embedded in JWT)</div>
+                  <div class="fn-item blue">name: str</div>
+                  <div class="fn-item blue">created_at: timestamptz</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="file-card app" id="card-audit-job-py">
+            <div class="card-header">
+              <div class="card-icon app">&#128203;</div>
+              <div class="card-title-wrap">
+                <div class="card-filename">audit_job.py</div>
+                <div class="card-path">app/models/audit_job.py</div>
+              </div>
+              <div class="card-expand-btn">+</div>
+            </div>
+            <div class="card-desc">AuditJob ORM model. Full lifecycle tracked: queued &#8594; running &#8594; done/failed. Holds both actual_key (input) and report_key (output) storage references.</div>
+            <div class="card-detail">
+              <div class="detail-section">
+                <div class="detail-label">Columns</div>
+                <div class="fn-list">
+                  <div class="fn-item blue">id: UUID PK</div>
+                  <div class="fn-item blue">tenant_id: FK &#8594; Tenant</div>
+                  <div class="fn-item blue">submitted_by: FK &#8594; User</div>
+                  <div class="fn-item blue">check_id, sheet_name, actual_key, report_key (nullable)</div>
+                  <div class="fn-item blue">fuzzy_threshold: int</div>
+                  <div class="fn-item blue">status: enum(queued / running / done / failed)</div>
+                  <div class="fn-item blue">created_at, finished_at (nullable)</div>
+                  <div class="fn-item blue">error_message (nullable)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="file-card app" id="card-ideal-file-py">
+            <div class="card-header">
+              <div class="card-icon app">&#128193;</div>
+              <div class="card-title-wrap">
+                <div class="card-filename">ideal_file.py</div>
+                <div class="card-path">app/models/ideal_file.py</div>
+              </div>
+              <div class="card-expand-btn">+</div>
+            </div>
+            <div class="card-desc">IdealFile ORM model. Versioned per-tenant custom ideal overrides. is_active flag determines which version the worker loads; old versions are deactivated on upload.</div>
+            <div class="card-detail">
+              <div class="detail-section">
+                <div class="detail-label">Columns</div>
+                <div class="fn-list">
+                  <div class="fn-item blue">id: UUID PK</div>
+                  <div class="fn-item blue">tenant_id: FK &#8594; Tenant</div>
+                  <div class="fn-item blue">check_id: str</div>
+                  <div class="fn-item blue">storage_key: str</div>
+                  <div class="fn-item blue">content_hash: sha256</div>
+                  <div class="fn-item blue">version: int (auto-increment per tenant+check)</div>
+                  <div class="fn-item blue">is_active: bool</div>
+                  <div class="fn-item blue">uploaded_by: FK &#8594; User</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /models -->
+
+      <div class="sub-group">
+        <div class="sub-group-title">app/routes/ — HTTP route handlers</div>
+        <div class="file-grid">
+
+          <div class="file-card app" id="card-auth-py">
+            <div class="card-header">
+              <div class="card-icon app">&#128272;</div>
+              <div class="card-title-wrap">
+                <div class="card-filename">auth.py</div>
+                <div class="card-path">app/routes/auth.py</div>
+              </div>
+              <div class="card-expand-btn">+</div>
+            </div>
+            <div class="card-desc">OAuth2 token endpoint. Issues JWTs with tenant_id and role claims. 480-minute expiry. Verifies password via security.verify_password (bcrypt).</div>
+            <div class="card-detail">
+              <div class="detail-section">
+                <div class="detail-label">Routes</div>
+                <div class="fn-list">
+                  <div class="fn-item blue">POST /auth/token — OAuth2PasswordRequestForm &#8594; {access_token, token_type}</div>
+                </div>
+              </div>
+              <div class="detail-section">
+                <div class="detail-label">JWT payload</div>
+                <div class="import-tags">
+                  <span class="import-tag">sub=email</span>
+                  <span class="import-tag">tenant_id</span>
+                  <span class="import-tag">role</span>
+                  <span class="import-tag">exp=now+480min</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="file-card app" id="card-audit-py">
+            <div class="card-header">
+              <div class="card-icon app">&#128228;</div>
+              <div class="card-title-wrap">
+                <div class="card-filename">audit.py</div>
+                <div class="card-path">app/routes/audit.py</div>
+              </div>
+              <div class="card-expand-btn">+</div>
+            </div>
+            <div class="card-desc">Audit job CRUD. Accepts file upload, persists to storage, creates DB record, enqueues RQ job. Streams the finished report for download.</div>
+            <div class="card-detail">
+              <div class="detail-section">
+                <div class="detail-label">Routes</div>
+                <div class="fn-list">
+                  <div class="fn-item blue">POST /api/audits — upload file &#8594; save &#8594; INSERT AuditJob &#8594; enqueue RQ</div>
+                  <div class="fn-item blue">GET /api/audits — list last 50 by tenant+user</div>
+                  <div class="fn-item blue">GET /api/audits/{id} — job status poll</div>
+                  <div class="fn-item blue">POST /api/audits/{id}/retry — clone failed job</div>
+                  <div class="fn-item blue">GET /api/audits/{id}/download — stream xlsx bytes</div>
+                </div>
+              </div>
+              <div class="detail-section">
+                <div class="detail-label">Calls</div>
+                <div class="import-tags">
+                  <span class="import-tag">storage.save()</span>
+                  <span class="import-tag">rq.enqueue(run_audit_job)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="file-card app" id="card-ideals-py">
+            <div class="card-header">
+              <div class="card-icon app">&#128448;</div>
+              <div class="card-title-wrap">
+                <div class="card-filename">ideals.py</div>
+                <div class="card-path">app/routes/ideals.py</div>
+              </div>
+              <div class="card-expand-btn">+</div>
+            </div>
+            <div class="card-desc">Per-tenant ideal file management. Upload custom ideals, revert to bundled, list active overrides. Version is auto-incremented on each upload.</div>
+            <div class="card-detail">
+              <div class="detail-section">
+                <div class="detail-label">Routes</div>
+                <div class="fn-list">
+                  <div class="fn-item blue">GET /api/ideals — list active custom ideals for tenant</div>
+                  <div class="fn-item blue">GET /api/ideals/{check_id}/download — serve ideal file bytes</div>
+                  <div class="fn-item blue">POST /api/ideals/{check_id} — upload custom: deactivate old, save new IdealFile</div>
+                  <div class="fn-item blue">DELETE /api/ideals/{check_id} — set is_active=False &#8594; revert to bundled</div>
+                </div>
+              </div>
+              <div class="detail-section">
+                <div class="detail-label">Calls</div>
+                <div class="import-tags">
+                  <span class="import-tag">storage.save/load</span>
+                  <span class="import-tag">ideals_loader</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="file-card app" id="card-users-py">
+            <div class="card-header">
+              <div class="card-icon app">&#128101;</div>
+              <div class="card-title-wrap">
+                <div class="card-filename">users.py</div>
+                <div class="card-path">app/routes/users.py</div>
+              </div>
+              <div class="card-expand-btn">+</div>
+            </div>
+            <div class="card-desc">Admin-only user management. Create, list, and soft-delete users within the current tenant. All routes require the require_admin dependency.</div>
+            <div class="card-detail">
+              <div class="detail-section">
+                <div class="detail-label">Routes (admin only)</div>
+                <div class="fn-list">
+                  <div class="fn-item blue">GET /api/users — list all tenant users</div>
+                  <div class="fn-item blue">POST /api/users — create user with bcrypt hash</div>
+                  <div class="fn-item blue">DELETE /api/users/{id} — set is_active=False (soft delete)</div>
+                </div>
+              </div>
+              <div class="detail-section">
+                <div class="detail-label">Depends on</div>
+                <div class="import-tags">
+                  <span class="import-tag">require_admin</span>
+                  <span class="import-tag">security.hash_password</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /routes -->
+
+      <div class="sub-group">
+        <div class="sub-group-title">app/workers/ &nbsp;·&nbsp; app/services/ &nbsp;·&nbsp; app/core/</div>
+        <div class="file-grid">
+
+          <div class="file-card app" id="card-audit-worker-py">
+            <div class="card-header">
+              <div class="card-icon app">&#9881;</div>
+              <div class="card-title-wrap">
+                <div class="card-filename">audit_worker.py</div>
+                <div class="card-path">app/workers/audit_worker.py</div>
+              </div>
+              <div class="card-expand-btn">+</div>
+            </div>
+            <div class="card-desc">RQ job executor. Bridge between async web layer and synchronous engine. Runs full pipeline in a worker process. Updates job status on success or failure.</div>
+            <div class="card-detail">
+              <div class="detail-section">
+                <div class="detail-label">Function</div>
+                <div class="fn-list">
+                  <div class="fn-item blue">run_audit_job(job_id: str) — sync, called by RQ</div>
+                </div>
+              </div>
+              <div class="detail-section">
+                <div class="detail-label">Execution sequence</div>
+                <div class="fn-list">
+                  <div class="fn-item blue">1. Load job via SyncSessionLocal</div>
+                  <div class="fn-item blue">2. ideals_loader.get_ideal_bytes(check_id, tenant_id)</div>
+                  <div class="fn-item blue">3. engine.read_actual + engine.read_ideal</div>
+                  <div class="fn-item blue">4. engine.build_mapping(ideal_rows, actual_headers)</div>
+                  <div class="fn-item blue">5. engine.compare(mapping, actual_df, ideal_df)</div>
+                  <div class="fn-item blue">6. engine.build_report(cip, gaps, additional, mapping)</div>
+                  <div class="fn-item blue">7. storage.save(report_key, report_bytes)</div>
+                  <div class="fn-item blue">8. UPDATE AuditJob status=done (or failed + error_message)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="file-card app" id="card-storage-py">
+            <div class="card-header">
+              <div class="card-icon app">&#128190;</div>
+              <div class="card-title-wrap">
+                <div class="card-filename">storage.py</div>
+                <div class="card-path">app/services/storage.py</div>
+              </div>
+              <div class="card-expand-btn">+</div>
+            </div>
+            <div class="card-desc">Filesystem blob storage abstraction. Simple key-addressed byte store at STORAGE_PATH/{key}. Swap for S3 later by replacing this module alone.</div>
+            <div class="card-detail">
+              <div class="detail-section">
+                <div class="detail-label">Functions</div>
+                <div class="fn-list">
+                  <div class="fn-item blue">save(key: str, data: bytes, settings) &#8594; None — writes STORAGE_PATH/{key}, creates dirs</div>
+                  <div class="fn-item blue">load(key: str, settings) &#8594; bytes — reads STORAGE_PATH/{key}</div>
+                  <div class="fn-item blue">delete(key: str, settings) &#8594; None — removes file</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="file-card app" id="card-ideals-loader-py">
+            <div class="card-header">
+              <div class="card-icon app">&#128230;</div>
+              <div class="card-title-wrap">
+                <div class="card-filename">ideals_loader.py</div>
+                <div class="card-path">app/services/ideals_loader.py</div>
+              </div>
+              <div class="card-expand-btn">+</div>
+            </div>
+            <div class="card-desc">Ideal file resolver. Queries DB for active per-tenant override; falls back to bundled ideals/{check_id}.xlsx if none found.</div>
+            <div class="card-detail">
+              <div class="detail-section">
+                <div class="detail-label">Function</div>
+                <div class="fn-list">
+                  <div class="fn-item blue">get_ideal_bytes(check_id: str, tenant_id: UUID, db) &#8594; bytes</div>
+                </div>
+              </div>
+              <div class="detail-section">
+                <div class="detail-label">Fallback chain</div>
+                <div class="fn-list">
+                  <div class="fn-item blue">1. DB: SELECT IdealFile WHERE tenant_id + check_id + is_active=True</div>
+                  <div class="fn-item blue">2. Fallback: read ideals/{check_id}.xlsx from disk (bundled)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="file-card app" id="card-config-py">
+            <div class="card-header">
+              <div class="card-icon app">&#9881;</div>
+              <div class="card-title-wrap">
+                <div class="card-filename">config.py</div>
+                <div class="card-path">app/core/config.py</div>
+              </div>
+              <div class="card-expand-btn">+</div>
+            </div>
+            <div class="card-desc">Pydantic BaseSettings. Reads all secrets from env/.env at startup. Single source of truth for every runtime configuration knob.</div>
+            <div class="card-detail">
+              <div class="detail-section">
+                <div class="detail-label">Settings fields</div>
+                <div class="fn-list">
+                  <div class="fn-item blue">DATABASE_URL — asyncpg connection string</div>
+                  <div class="fn-item blue">REDIS_URL — RQ broker URL</div>
+                  <div class="fn-item blue">JWT_SECRET — HMAC-SHA256 signing key</div>
+                  <div class="fn-item blue">STORAGE_PATH — root dir for blob storage</div>
+                  <div class="fn-item blue">IDEALS_DIR — path to bundled ideals/</div>
+                  <div class="fn-item blue">JWT_EXPIRE_MINUTES — default 480</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="file-card app" id="card-database-py">
+            <div class="card-header">
+              <div class="card-icon app">&#128447;</div>
+              <div class="card-title-wrap">
+                <div class="card-filename">database.py</div>
+                <div class="card-path">app/core/database.py</div>
+              </div>
+              <div class="card-expand-btn">+</div>
+            </div>
+            <div class="card-desc">SQLAlchemy session factories. Two session types from one DATABASE_URL: async for FastAPI routes, sync for RQ workers that can't use async context.</div>
+            <div class="card-detail">
+              <div class="detail-section">
+                <div class="detail-label">Session factories</div>
+                <div class="fn-list">
+                  <div class="fn-item blue">AsyncSessionLocal — asyncpg engine, used in routes via get_db()</div>
+                  <div class="fn-item blue">SyncSessionLocal — psycopg2 engine, used in audit_worker.py</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="file-card app" id="card-security-py">
+            <div class="card-header">
+              <div class="card-icon app">&#128737;</div>
+              <div class="card-title-wrap">
+                <div class="card-filename">security.py</div>
+                <div class="card-path">app/core/security.py</div>
+              </div>
+              <div class="card-expand-btn">+</div>
+            </div>
+            <div class="card-desc">Password hashing utilities. bcrypt via passlib CryptContext. All crypto concentrated here, injected into auth routes and user creation.</div>
+            <div class="card-detail">
+              <div class="detail-section">
+                <div class="detail-label">Functions</div>
+                <div class="fn-list">
+                  <div class="fn-item blue">hash_password(pw: str) &#8594; str — bcrypt hash via passlib</div>
+                  <div class="fn-item blue">verify_password(plain: str, hash: str) &#8594; bool — CryptContext.verify</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /workers+services+core -->
+
+    </div><!-- /app zone -->
+
+    <!-- ══ STATIC ZONE ══ -->
+    <div class="zone">
+      <div class="zone-header static">
+        <span class="zone-label" style="color:var(--yellow)">STATIC/</span>
+        <span class="zone-desc">~900-line vanilla JS SPA &nbsp;·&nbsp; no framework &nbsp;·&nbsp; polls job status every 2 seconds</span>
+      </div>
+      <div class="file-grid">
+
+        <div class="file-card static" id="card-static-index-html">
+          <div class="card-header">
+            <div class="card-icon static">&#127760;</div>
+            <div class="card-title-wrap">
+              <div class="card-filename">index.html</div>
+              <div class="card-path">static/index.html</div>
+            </div>
+            <div class="card-expand-btn">+</div>
+          </div>
+          <div class="card-desc">Full SPA. Login, audit submission, job history, admin panel (user management + custom ideal upload). Polls job status every 2 seconds until done/failed, then triggers download.</div>
+          <div class="card-detail">
+            <div class="detail-section">
+              <div class="detail-label">Module-level state</div>
+              <div class="fn-list">
+                <div class="fn-item yellow">_token — JWT bearer string (null when logged out)</div>
+                <div class="fn-item yellow">_user — {email, role, tenant_id}</div>
+                <div class="fn-item yellow">_jobs{} — {jobId: intervalId} for active pollers</div>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-label">Key functions</div>
+              <div class="fn-list">
+                <div class="fn-item yellow">doLogin / logout / showLogin</div>
+                <div class="fn-item yellow">initApp — entry point after successful auth</div>
+                <div class="fn-item yellow">loadChecks — GET /api/checks &#8594; populate select dropdown</div>
+                <div class="fn-item yellow">submitAudit &#8594; POST /api/audits &#8594; trackJob</div>
+                <div class="fn-item yellow">trackJob — setInterval poll every 2s, clears on done/fail</div>
+                <div class="fn-item yellow">renderJobs — renders job cards with status badges</div>
+                <div class="fn-item yellow">loadJobHistory — GET /api/audits, render all jobs</div>
+                <div class="fn-item yellow">loadAdminPanel &#8594; uploadIdeal (POST /api/ideals/{check_id})</div>
+                <div class="fn-item yellow">loadUsers &#8594; createUser / deactivateUser</div>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-label">API calls (11 endpoints)</div>
+              <div class="import-tags">
+                <span class="import-tag">POST /auth/token</span>
+                <span class="import-tag">GET /api/checks</span>
+                <span class="import-tag">POST /api/audits</span>
+                <span class="import-tag">GET /api/audits/{id}</span>
+                <span class="import-tag">GET /api/audits/{id}/download</span>
+                <span class="import-tag">GET /api/ideals</span>
+                <span class="import-tag">POST /api/ideals/{id}</span>
+                <span class="import-tag">DELETE /api/ideals/{id}</span>
+                <span class="import-tag">GET /api/users</span>
+                <span class="import-tag">POST /api/users</span>
+                <span class="import-tag">DELETE /api/users/{id}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /static zone -->
+
+    <!-- ══ CONFIG / INFRA ZONE ══ -->
+    <div class="zone">
+      <div class="zone-header config">
+        <span class="zone-label" style="color:var(--grey)">CONFIG/ &nbsp;&middot;&nbsp; INFRA</span>
+        <span class="zone-desc">Bundled ideals &nbsp;·&nbsp; Alembic migrations &nbsp;·&nbsp; Docker &nbsp;·&nbsp; GitHub Actions CI</span>
+      </div>
+      <div class="file-grid">
+
+        <div class="file-card config" id="card-checks-json">
+          <div class="card-header">
+            <div class="card-icon config">&#128203;</div>
+            <div class="card-title-wrap">
+              <div class="card-filename">checks.json</div>
+              <div class="card-path">ideals/checks.json</div>
+            </div>
+            <div class="card-expand-btn">+</div>
+          </div>
+          <div class="card-desc">Registry of available audit check types. Each entry provides id, human name, default sheet, and description. Served publicly by GET /api/checks (no auth required).</div>
+          <div class="card-detail">
+            <div class="detail-section">
+              <div class="detail-label">Schema per entry</div>
+              <div class="fn-list">
+                <div class="fn-item grey">id: str — matches ideal xlsx filename (e.g. "inv_organization_parameters")</div>
+                <div class="fn-item grey">name: str — display label in the UI dropdown</div>
+                <div class="fn-item grey">default_sheet: str — pre-filled sheet name in upload form</div>
+                <div class="fn-item grey">description: str — shown below dropdown in UI</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="file-card config" id="card-ideal-xlsx">
+          <div class="card-header">
+            <div class="card-icon config">&#128202;</div>
+            <div class="card-title-wrap">
+              <div class="card-filename">inv_organization_parameters.xlsx</div>
+              <div class="card-path">ideals/inv_organization_parameters.xlsx</div>
+            </div>
+            <div class="card-expand-btn">+</div>
+          </div>
+          <div class="card-desc">Bundled Oracle Fusion INV ideal values. 33 configuration rows with ideal values and options. Default fallback when no tenant-specific override exists.</div>
+          <div class="card-detail">
+            <div class="detail-section">
+              <div class="detail-label">Contents</div>
+              <div class="fn-list">
+                <div class="fn-item grey">33 Oracle Fusion INV org parameter configs</div>
+                <div class="fn-item grey">Columns: config_name, ideal_value, options</div>
+                <div class="fn-item grey">5 known-unmatched fields (by design — no matching actual column)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="file-card config" id="card-migration-py">
+          <div class="card-header">
+            <div class="card-icon config">&#128260;</div>
+            <div class="card-title-wrap">
+              <div class="card-filename">0001_initial.py</div>
+              <div class="card-path">migrations/versions/0001_initial.py</div>
+            </div>
+            <div class="card-expand-btn">+</div>
+          </div>
+          <div class="card-desc">Alembic initial migration. Creates all 4 tables with indexes. Idempotent — safe to re-run on fresh or existing database.</div>
+          <div class="card-detail">
+            <div class="detail-section">
+              <div class="detail-label">Creates</div>
+              <div class="fn-list">
+                <div class="fn-item grey">CREATE TABLE tenants (id, slug unique, name, created_at)</div>
+                <div class="fn-item grey">CREATE TABLE users (id, tenant_id FK, email unique, hashed_pw, role enum, is_active, created_at)</div>
+                <div class="fn-item grey">CREATE TABLE audit_jobs (id, tenant_id FK, submitted_by FK, check_id, sheet_name, actual_key, report_key, fuzzy_threshold, status enum, created_at, finished_at, error_message)</div>
+                <div class="fn-item grey">CREATE TABLE ideal_files (id, tenant_id FK, check_id, storage_key, content_hash, version, is_active, uploaded_by FK, created_at)</div>
+                <div class="fn-item grey">+ indexes: email, tenant_id, (tenant_id, check_id)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="file-card config" id="card-dockerfile">
+          <div class="card-header">
+            <div class="card-icon config">&#128051;</div>
+            <div class="card-title-wrap">
+              <div class="card-filename">Dockerfile</div>
+              <div class="card-path">Dockerfile</div>
+            </div>
+            <div class="card-expand-btn">+</div>
+          </div>
+          <div class="card-desc">Container image definition. Minimal python:3.12-slim base. Same image used for both the web service and the RQ worker.</div>
+          <div class="card-detail">
+            <div class="detail-section">
+              <div class="detail-label">Build steps</div>
+              <div class="fn-list">
+                <div class="fn-item grey">FROM python:3.12-slim</div>
+                <div class="fn-item grey">WORKDIR /app</div>
+                <div class="fn-item grey">pip install --no-cache-dir -r requirements.txt</div>
+                <div class="fn-item grey">COPY . .</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="file-card config" id="card-docker-compose">
+          <div class="card-header">
+            <div class="card-icon config">&#128057;</div>
+            <div class="card-title-wrap">
+              <div class="card-filename">docker-compose.yml</div>
+              <div class="card-path">docker-compose.yml</div>
+            </div>
+            <div class="card-expand-btn">+</div>
+          </div>
+          <div class="card-desc">Full local dev / prod stack. 5 services wired with health checks and depends_on for correct startup ordering.</div>
+          <div class="card-detail">
+            <div class="detail-section">
+              <div class="detail-label">Services</div>
+              <div class="fn-list">
+                <div class="fn-item grey">postgres — PostgreSQL 16, healthcheck: pg_isready</div>
+                <div class="fn-item grey">redis — Redis 7, healthcheck: redis-cli ping</div>
+                <div class="fn-item grey">web — FastAPI (uvicorn), depends_on postgres+redis (healthy)</div>
+                <div class="fn-item grey">worker — RQ worker, same image as web, depends_on postgres+redis</div>
+                <div class="fn-item grey">migrate — alembic upgrade head, one-shot, depends_on postgres</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="file-card config" id="card-ci-yml">
+          <div class="card-header">
+            <div class="card-icon config">&#129302;</div>
+            <div class="card-title-wrap">
+              <div class="card-filename">ci.yml</div>
+              <div class="card-path">.github/workflows/ci.yml</div>
+            </div>
+            <div class="card-expand-btn">+</div>
+          </div>
+          <div class="card-desc">GitHub Actions CI pipeline. Runs on every push. Enforces zero lint errors, format compliance, migration check, and 70% coverage floor.</div>
+          <div class="card-detail">
+            <div class="detail-section">
+              <div class="detail-label">Pipeline steps</div>
+              <div class="fn-list">
+                <div class="fn-item grey">ruff check engine/ tests/ main.py — zero errors required</div>
+                <div class="fn-item grey">ruff format --check — no formatting diff allowed</div>
+                <div class="fn-item grey">alembic upgrade head — schema migration validity</div>
+                <div class="fn-item grey">pytest --cov=engine --cov=app --cov-fail-under=70</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /config zone -->
+
+    <!-- ══ TESTS ZONE ══ -->
+    <div class="zone">
+      <div class="zone-header tests">
+        <span class="zone-label" style="color:var(--purple)">TESTS/</span>
+        <span class="zone-desc">pytest &nbsp;·&nbsp; unit + integration + HTTP + 16 Oracle Fusion edge-case scenarios</span>
+      </div>
+      <div class="file-grid">
+
+        <div class="file-card tests" id="card-test-integration">
+          <div class="card-header">
+            <div class="card-icon tests">&#129514;</div>
+            <div class="card-title-wrap">
+              <div class="card-filename">test_integration.py</div>
+              <div class="card-path">tests/test_integration.py</div>
+            </div>
+            <div class="card-expand-btn">+</div>
+          </div>
+          <div class="card-desc">Full pipeline end-to-end tests using real Oracle Fusion BU names and realistic config values. Exercises read &#8594; match &#8594; compare &#8594; write in one shot.</div>
+          <div class="card-detail">
+            <div class="detail-section">
+              <div class="detail-label">Coverage</div>
+              <div class="fn-list">
+                <div class="fn-item purple">read_actual + read_ideal with Oracle Fusion fixtures</div>
+                <div class="fn-item purple">build_mapping produces correct MappingResults per stage</div>
+                <div class="fn-item purple">compare classifies rows into correct CIP / gap / additional buckets</div>
+                <div class="fn-item purple">build_report returns valid xlsx bytes with all 5 sheets present</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="file-card tests" id="card-test-matcher">
+          <div class="card-header">
+            <div class="card-icon tests">&#128269;</div>
+            <div class="card-title-wrap">
+              <div class="card-filename">test_matcher.py</div>
+              <div class="card-path">tests/test_matcher.py</div>
+            </div>
+            <div class="card-expand-btn">+</div>
+          </div>
+          <div class="card-desc">Unit tests for all 4 matching stages. Each stage has positive and negative cases. Every new alias entry in aliases.py must add a test here.</div>
+          <div class="card-detail">
+            <div class="detail-section">
+              <div class="detail-label">Test coverage</div>
+              <div class="fn-list">
+                <div class="fn-item purple">Stage 1: exact match (positive + case-different negative)</div>
+                <div class="fn-item purple">Stage 2: normalized match (spaces, dashes, mixed case)</div>
+                <div class="fn-item purple">Stage 3: every manual alias entry verified individually</div>
+                <div class="fn-item purple">Stage 4: fuzzy boundary — score 80 &#8594; match, score 79 &#8594; Unmatched</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="file-card tests" id="card-test-api">
+          <div class="card-header">
+            <div class="card-icon tests">&#127760;</div>
+            <div class="card-title-wrap">
+              <div class="card-filename">test_api.py</div>
+              <div class="card-path">tests/test_api.py</div>
+            </div>
+            <div class="card-expand-btn">+</div>
+          </div>
+          <div class="card-desc">HTTP endpoint tests. Uses async pytest fixtures and httpx.AsyncClient. Covers auth, audit CRUD, user management, and role-based access control.</div>
+          <div class="card-detail">
+            <div class="detail-section">
+              <div class="detail-label">Fixtures</div>
+              <div class="fn-list">
+                <div class="fn-item purple">async_client — httpx.AsyncClient(app)</div>
+                <div class="fn-item purple">admin_token — creates admin user, returns JWT</div>
+                <div class="fn-item purple">associate_token — creates associate user, returns JWT</div>
+              </div>
+            </div>
+            <div class="detail-section">
+              <div class="detail-label">Test cases</div>
+              <div class="fn-list">
+                <div class="fn-item purple">POST /auth/token — valid creds, wrong pw, unknown user</div>
+                <div class="fn-item purple">POST /api/audits — with real xlsx, status polling sequence</div>
+                <div class="fn-item purple">GET /api/audits/{id}/download — report bytes, correct content-type</div>
+                <div class="fn-item purple">DELETE /api/users/{id} — admin succeeds, associate gets 403</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="file-card tests" id="card-test-oracle">
+          <div class="card-header">
+            <div class="card-icon tests">&#9889;</div>
+            <div class="card-title-wrap">
+              <div class="card-filename">test_oracle_audit_scenarios.py</div>
+              <div class="card-path">tests/test_oracle_audit_scenarios.py</div>
+            </div>
+            <div class="card-expand-btn">+</div>
+          </div>
+          <div class="card-desc">16 real-world Oracle Fusion edge-case scenarios. Covers unicode BU names, duplicate configs, fuzzy boundary conditions, null columns, and capture fields.</div>
+          <div class="card-detail">
+            <div class="detail-section">
+              <div class="detail-label">16 scenarios</div>
+              <div class="fn-list">
+                <div class="fn-item purple">Unicode BU names — Arabic, Chinese, accented Latin</div>
+                <div class="fn-item purple">Duplicate config rows in actual file</div>
+                <div class="fn-item purple">Fuzzy boundary: score 80 (match) vs 79 (Unmatched)</div>
+                <div class="fn-item purple">Null actual vs non-capture ideal &#8594; Control gap</div>
+                <div class="fn-item purple">Null actual vs capture ideal &#8594; additional row</div>
+                <div class="fn-item purple">Boolean synonym variants: enabled/true/1/yes &#8594; y</div>
+                <div class="fn-item purple">All-null actual column &#8594; zero rows emitted</div>
+                <div class="fn-item purple">Mixed-case header variants (Exact vs Normalized stage)</div>
+                <div class="fn-item purple">+ 8 additional production-derived scenarios</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /tests zone -->
+
+  </div><!-- /content -->
+</div><!-- /main-layout -->
+
+<!-- ── FOOTER ── -->
+<div class="footer">
+  <span>
+    AuditForge — Low Level Design &nbsp;&#183;&nbsp; Diagram 6 of 6 &nbsp;&#183;&nbsp;
+    <span style="color:var(--cyan)">34 files</span> &nbsp;&#183;&nbsp;
+    <span style="color:var(--blue)">5 zones</span> &nbsp;&#183;&nbsp;
+    <span style="color:var(--yellow)">13 trace steps</span> &nbsp;&#183;&nbsp;
+    <span style="color:var(--green)">4-stage matching waterfall</span>
+  </span>
+  <span class="footer-right">engine/ &nbsp;&#183;&nbsp; app/ &nbsp;&#183;&nbsp; static/ &nbsp;&#183;&nbsp; ideals/ &nbsp;&#183;&nbsp; tests/</span>
+</div>
+
+<!-- ══ JAVASCRIPT ══ -->
+<script>
+// ── Card expand/collapse ───────────────────────────────────────────────────
+document.querySelectorAll('.file-card').forEach(function(card) {
+  card.addEventListener('click', function(e) {
+    // Clicking anywhere on the card toggles expand
+    card.classList.toggle('expanded');
+    var btn = card.querySelector('.card-expand-btn');
+    if (btn) btn.textContent = card.classList.contains('expanded') ? '×' : '+';
+  });
+});
+
+// ── Scroll-to-card helper ──────────────────────────────────────────────────
+function scrollToCard(id) {
+  var el = document.getElementById('card-' + id);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  clearTraceGlow();
+  el.classList.add('trace-active');
+  setTimeout(function() { el.classList.remove('trace-active'); }, 2000);
+}
+
+// Sidebar call-graph nodes
+document.querySelectorAll('.cg-node[data-target]').forEach(function(node) {
+  node.addEventListener('click', function() {
+    scrollToCard(node.getAttribute('data-target'));
+  });
+});
+
+// ── Trace animation ────────────────────────────────────────────────────────
+var TRACE_STEPS = [
+  {
+    id: 'static-index-html',
+    label: 'Step 1 / 13 — static/index.html',
+    msg: 'User clicks "Submit Audit". submitAudit() collects the xlsx file, check_id, and sheet_name, then fires POST /api/audits as multipart/form-data with the Bearer token.'
+  },
+  {
+    id: 'audit-py',
+    label: 'Step 2 / 13 — app/routes/audit.py',
+    msg: 'create_audit() receives the upload. Validates the Bearer JWT via get_current_user(). Generates a unique storage key for the actual file.'
+  },
+  {
+    id: 'storage-py',
+    label: 'Step 3 / 13 — app/services/storage.py',
+    msg: 'storage.save(key, bytes): writes the actual xlsx to STORAGE_PATH/{key}. Creates parent directories as needed.'
+  },
+  {
+    id: 'audit-job-py',
+    label: 'Step 4 / 13 — app/models/audit_job.py',
+    msg: 'INSERT AuditJob(status=queued, actual_key=..., check_id=..., tenant_id=...). Returns job_id immediately — response is 202 Accepted.'
+  },
+  {
+    id: 'audit-worker-py',
+    label: 'Step 5 / 13 — app/workers/audit_worker.py',
+    msg: 'Redis/RQ dequeues run_audit_job(job_id). Sets status=running. Begins the synchronous engine pipeline inside the isolated worker process.'
+  },
+  {
+    id: 'ideals-loader-py',
+    label: 'Step 6 / 13 — app/services/ideals_loader.py',
+    msg: 'get_ideal_bytes(check_id, tenant_id): queries IdealFile table for active per-tenant override. Falls back to bundled ideals/inv_organization_parameters.xlsx if none found.'
+  },
+  {
+    id: 'reader-py',
+    label: 'Step 7 / 13 — engine/reader.py',
+    msg: 'read_actual() parses the actual xlsx: col0 becomes BU_NAME, trims whitespace, drops null rows. read_ideal() uses detect_ideal_columns() to locate config_name + ideal_value columns.'
+  },
+  {
+    id: 'matcher-py',
+    label: 'Step 8 / 13 — engine/matcher.py + aliases.py + normalizer.py',
+    msg: 'build_mapping() runs the 4-stage waterfall: Exact &#8594; Normalized &#8594; ManualAlias &#8594; Fuzzy(&#8805;80). Imports MANUAL_ALIASES and strip_header. Returns list[MappingResult] — one per ideal column.'
+  },
+  {
+    id: 'comparator-py',
+    label: 'Step 9 / 13 — engine/comparator.py + normalizer.py',
+    msg: 'compare() iterates every BU &#215; matched-config pair. Uses normalize_value for comparison, is_capture for "extract only" detection. Returns (cip_list, gaps_list, additional_list).'
+  },
+  {
+    id: 'writer-py',
+    label: 'Step 10 / 13 — engine/writer.py + styles.py + types.py',
+    msg: 'build_report() builds a 5-sheet openpyxl workbook: Controls in place (GREEN), Control gaps (RED), Additional data (BLUE), Header Mapping (YELLOW for unmatched), Audit Summary. Returns bytes.'
+  },
+  {
+    id: 'storage-py',
+    label: 'Step 11 / 13 — app/services/storage.py',
+    msg: 'storage.save(report_key, report_bytes): persists the finished xlsx report to STORAGE_PATH. Sets AuditJob.report_key = report_key.'
+  },
+  {
+    id: 'audit-job-py',
+    label: 'Step 12 / 13 — app/models/audit_job.py',
+    msg: 'UPDATE AuditJob SET status=done, finished_at=now(), report_key=... On any exception: status=failed, error_message=str(exc).'
+  },
+  {
+    id: 'static-index-html',
+    label: 'Step 13 / 13 — static/index.html',
+    msg: 'trackJob() poll (every 2s) detects status=done. Clears setInterval. Triggers GET /api/audits/{id}/download &#8594; browser saves the xlsx audit report.'
+  }
+];
+
+var traceRunning = false;
+var traceTimeout = null;
+
+function clearTraceGlow() {
+  document.querySelectorAll('.file-card.trace-active').forEach(function(el) {
+    el.classList.remove('trace-active');
+  });
+}
+
+function startTrace() {
+  if (traceRunning) {
+    stopTrace();
+    return;
+  }
+  traceRunning = true;
+  var btn = document.getElementById('traceBtn');
+  var icon = document.getElementById('traceIcon');
+  btn.classList.add('running');
+  icon.textContent = '■';
+  runTraceStep(0);
+}
+
+function stopTrace() {
+  traceRunning = false;
+  if (traceTimeout) { clearTimeout(traceTimeout); traceTimeout = null; }
+  clearTraceGlow();
+  var btn = document.getElementById('traceBtn');
+  var icon = document.getElementById('traceIcon');
+  btn.classList.remove('running');
+  icon.textContent = '▶';
+  var panel = document.getElementById('tracePanel');
+  panel.className = 'trace-panel';
+  panel.innerHTML = 'Trace complete. Click <strong>&#9654; Trace Audit Job</strong> to replay.';
+}
+
+function runTraceStep(stepIdx) {
+  if (!traceRunning || stepIdx >= TRACE_STEPS.length) {
+    stopTrace();
+    return;
+  }
+  clearTraceGlow();
+  var step = TRACE_STEPS[stepIdx];
+  var el = document.getElementById('card-' + step.id);
+  if (el) {
+    el.classList.add('trace-active');
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  var panel = document.getElementById('tracePanel');
+  panel.className = 'trace-panel active';
+  panel.innerHTML = '<div class="trace-step-label">' + step.label + '</div>' + step.msg;
+  // 650ms per step — long enough to read the tooltip
+  traceTimeout = setTimeout(function() { runTraceStep(stepIdx + 1); }, 650);
+}
+</script>
+
+</body>
+</html>
