@@ -205,10 +205,10 @@ class TestExcelOutput:
         headers = [c.value for c in next(ws.iter_rows(min_row=1, max_row=1))]
         assert headers == base + ["Ideal Value", "Valid Options", "Comment"]
 
-    def test_audit_summary_has_14_rows(self):
+    def test_audit_summary_has_15_rows(self):
         ws = self.wb["Audit Summary"]
         data_rows = list(ws.iter_rows(min_row=2, values_only=True))
-        assert len(data_rows) == 14
+        assert len(data_rows) == 15
 
     def test_mapping_sheet_has_correct_columns(self):
         ws = self.wb["Header Mapping and Exc"]

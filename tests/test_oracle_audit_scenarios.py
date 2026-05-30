@@ -820,3 +820,288 @@ class TestCrossCuttingAuditRules:
         headers = [cell.value for cell in next(ws.iter_rows(min_row=1, max_row=1))]
         assert "Valid Options" in headers
         assert "Ideal Value" in headers
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TC-1  Integer LOV codes
+# Known limitation: normalize_value("1") → "y" via bool map. LOV codes that
+# happen to use "1" or "0" as values are indistinguishable from booleans.
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class TestIntegerLOVCodes:
+    """Document the known bool-map collision on integer LOV codes."""
+
+    def test_lov_code_1_matches_ideal_1_as_cip(self):
+        """ReceivingRoutingId ideal='1', actual='1' → CIP (correct result)."""
+        cip, gaps, _, _ = run(
+            ["Mumbai Plant"],
+            {"ReceivingRoutingId": ["1"]},
+            [("ReceivingRoutingId", "1", "1-Direct, 2-Standard, 3-Inspection")],
+        )
+        assert ("Mumbai Plant", "ReceivingRoutingId") in cip_keys(cip)
+
+    def test_lov_code_2_vs_ideal_1_is_gap(self):
+        """ReceivingRoutingId actual='2' (Standard) when ideal='1' (Direct) → gap."""
+        cip, gaps, _, _ = run(
+            ["Delhi HQ"],
+            {"ReceivingRoutingId": ["2"]},
+            [("ReceivingRoutingId", "1", "1-Direct, 2-Standard, 3-Inspection")],
+        )
+        assert ("Delhi HQ", "ReceivingRoutingId") in gap_keys(gaps)
+
+    def test_boolean_true_collides_with_lov_code_1(self):
+        # Known bug: normalize("true") == "y" == normalize("1").
+        # A boolean "true" export value is treated as equivalent to LOV code "1".
+        # This is a false CIP — the actual value is semantically different.
+        from engine.normalizer import normalize_value
+
+        assert normalize_value("true") == normalize_value("1") == "y"
+
+        cip, gaps, _, _ = run(
+            ["Mumbai Plant"],
+            {"ReceivingRoutingId": ["true"]},  # mis-exported as boolean
+            [("ReceivingRoutingId", "1", "1-Direct, 2-Standard, 3-Inspection")],
+        )
+        # Current behaviour: false CIP (both map to "y"). Asserted here to
+        # track the known limitation — fix via per-config comparison mode.
+        assert ("Mumbai Plant", "ReceivingRoutingId") in cip_keys(cip)
+
+    def test_lov_code_0_maps_to_n_not_zero(self):
+        """LOV code '0' normalizes to 'n'. ideal='0', actual='0' → CIP via 'n'=='n'."""
+        from engine.normalizer import normalize_value
+
+        assert normalize_value("0") == "n"
+
+        cip, gaps, _, _ = run(
+            ["Mumbai Plant"],
+            {"NegativeInvReceiptCode": ["0"]},
+            [("NegativeInvReceiptCode", "0", "0-Allowed, 1-Not Allowed")],
+        )
+        assert ("Mumbai Plant", "NegativeInvReceiptCode") in cip_keys(cip)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TC-2  Unicode BU names
+# Arabic, CJK, and accented characters must survive the stringify/strip pipeline.
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class TestUnicodeBUNames:
+    UNICODE_BUS = [
+        "مصنع دبي",  # Arabic  — Dubai Factory
+        "東京工場",  # Japanese — Tokyo Factory
+        "上海制造",  # Chinese  — Shanghai Manufacturing
+        "Münih Tesisi",  # Turkish  — Munich Facility (accented)
+        "Nairobi Plant",  # ASCII control
+    ]
+
+    def test_unicode_bu_names_appear_in_cip(self):
+        """All BU names (inc. Arabic/CJK) must be preserved exactly in CIP rows."""
+        cip, gaps, _, _ = run(
+            self.UNICODE_BUS,
+            {"InventoryFlag": ["Y"] * 5},
+            [("InventoryFlag", "Y", "Y, N")],
+        )
+        cip_bus = {r.bu_name for r in cip}
+        for bu in self.UNICODE_BUS:
+            assert bu in cip_bus, f"BU name lost: {bu!r}"
+
+    def test_unicode_bu_names_appear_in_gaps(self):
+        """Control gaps must carry the original Unicode BU name unmodified."""
+        cip, gaps, _, _ = run(
+            self.UNICODE_BUS,
+            {"InventoryFlag": ["N"] * 5},
+            [("InventoryFlag", "Y", "Y, N")],
+        )
+        gap_bus = {r.bu_name for r in gaps}
+        for bu in self.UNICODE_BUS:
+            assert bu in gap_bus, f"BU name lost in gaps: {bu!r}"
+
+    def test_mixed_unicode_and_ascii_bus_produce_correct_row_count(self):
+        """Each BU gets exactly one row per config — no merging or skipping."""
+        cip, gaps, _, _ = run(
+            self.UNICODE_BUS,
+            {"InventoryFlag": ["Y", "N", "Y", "N", "Y"]},
+            [("InventoryFlag", "Y", "Y, N")],
+        )
+        assert len(cip) == 3
+        assert len(gaps) == 2
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TC-3  Duplicate BU rows
+# When a BU appears more than once in the export (split organizations, test
+# data), each row is an independent finding — never merged or deduplicated.
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class TestDuplicateBURows:
+    def test_same_bu_twice_both_compliant_produces_two_cip_rows(self):
+        """Two identical BU rows, both CIP → 2 CIP rows, 0 gaps."""
+        cip, gaps, _, _ = run(
+            ["Mumbai Plant", "Mumbai Plant"],
+            {"InventoryFlag": ["Y", "Y"]},
+            [("InventoryFlag", "Y", "Y, N")],
+        )
+        assert len(cip) == 2
+        assert len(gaps) == 0
+
+    def test_same_bu_twice_one_gap_one_cip(self):
+        """Two rows for same BU with different values → one CIP and one gap."""
+        cip, gaps, _, _ = run(
+            ["Mumbai Plant", "Mumbai Plant"],
+            {"InventoryFlag": ["Y", "N"]},
+            [("InventoryFlag", "Y", "Y, N")],
+        )
+        assert len(cip) == 1
+        assert len(gaps) == 1
+        assert cip[0].bu_name == "Mumbai Plant"
+        assert gaps[0].bu_name == "Mumbai Plant"
+
+    def test_triplicate_bu_all_gaps(self):
+        """Three rows for the same BU, all non-compliant → 3 separate gap rows."""
+        cip, gaps, _, _ = run(
+            ["Delhi HQ", "Delhi HQ", "Delhi HQ"],
+            {"InventoryFlag": ["N", "N", "N"]},
+            [("InventoryFlag", "Y", "Y, N")],
+        )
+        assert len(gaps) == 3
+        assert all(r.bu_name == "Delhi HQ" for r in gaps)
+
+    def test_duplicate_capture_rows_both_extracted(self):
+        """Duplicate BU rows for a capture config → both values extracted independently."""
+        cip, gaps, extra, _ = run(
+            ["Mumbai Plant", "Mumbai Plant"],
+            {"OrganizationCode": [2, 999]},
+            [("OrganizationCode", "Capture", "")],
+        )
+        assert len(extra) == 2
+        values = [r.actual_value for r in extra]
+        assert "2" in values
+        assert "999" in values
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TC-4  Fuzzy false-positive boundary
+# Matches in the 80–89 range must carry the "Low confidence — verify mapping"
+# remark so auditors know to manually confirm the column alignment.
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class TestFuzzyFalsePositiveBoundary:
+    def test_score_below_90_gets_low_confidence_remark(self):
+        """Fuzzy score 80–89 → MappingResult.remarks contains 'Low confidence'."""
+        from thefuzz import fuzz
+
+        ideal_name = "ReceivingRoutingFlag"
+        actual_name = "ReceivingRoutingId"
+        score = fuzz.token_sort_ratio(ideal_name.lower(), actual_name.lower())
+        assert 80 <= score < 90, (
+            f"Precondition failed: score={score}. Pick a different pair if fuzzy lib changed."
+        )
+
+        ideal_df = pd.DataFrame(
+            {"config_name": [ideal_name], "ideal_value": ["1"], "options": [""]}
+        )
+        mapping = build_mapping(ideal_df, ["BU_NAME", actual_name], fuzzy_threshold=80)
+        m = mapping[0]
+        assert m.status == "Matched"
+        assert m.match_method == "Fuzzy"
+        assert "Low confidence" in m.remarks
+
+    def test_score_at_or_above_90_has_no_remark(self):
+        """Fuzzy score >= 90 → MappingResult.remarks is empty (high confidence)."""
+        from thefuzz import fuzz
+
+        ideal_name = "AllowItemSubstitutionFlag"
+        actual_name = "AllowItemSubstitutionsFlag"
+        score = fuzz.token_sort_ratio(ideal_name.lower(), actual_name.lower())
+        assert score >= 90, (
+            f"Precondition failed: score={score}. Pick a closer pair if fuzzy lib changed."
+        )
+
+        ideal_df = pd.DataFrame(
+            {"config_name": [ideal_name], "ideal_value": ["Y"], "options": [""]}
+        )
+        mapping = build_mapping(ideal_df, ["BU_NAME", actual_name], fuzzy_threshold=80)
+        m = mapping[0]
+        assert m.status == "Matched"
+        assert m.match_method == "Fuzzy"
+        assert m.remarks == ""
+
+    def test_below_threshold_is_unmatched_not_low_confidence(self):
+        """Score below threshold → Unmatched, not a low-confidence match."""
+        ideal_df = pd.DataFrame(
+            {
+                "config_name": ["LastUpdateDate"],
+                "ideal_value": ["Date"],
+                "options": [""],
+            }
+        )
+        mapping = build_mapping(
+            ideal_df,
+            ["BU_NAME", "InventoryFlag", "ReceivingRoutingId"],
+            fuzzy_threshold=80,
+        )
+        m = mapping[0]
+        assert m.status == "Unmatched"
+        assert "Low confidence" not in m.remarks
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TC-5  All-null actual column
+# When every BU has a null/NaN value for a comparison config, the engine must
+# produce one control gap per BU — never a false CIP.
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class TestAllNullActualColumn:
+    def test_all_null_column_produces_all_gaps(self):
+        """10 BUs, all None for InventoryFlag → 10 gaps, 0 CIPs."""
+        bus = [f"Plant_{i:02d}" for i in range(10)]
+        cip, gaps, extra, _ = run(
+            bus,
+            {"InventoryFlag": [None] * 10},
+            [("InventoryFlag", "Y", "Y, N")],
+        )
+        assert len(cip) == 0
+        assert len(gaps) == 10
+        assert {r.bu_name for r in gaps} == set(bus)
+
+    def test_all_nan_column_produces_all_gaps(self):
+        """float('nan') values (pandas default for missing cells) → all gaps."""
+
+        bus = ["Mumbai Plant", "Delhi HQ", "Bangalore IT"]
+        cip, gaps, _, _ = run(
+            bus,
+            {"InventoryFlag": [float("nan")] * 3},
+            [("InventoryFlag", "Y", "Y, N")],
+        )
+        assert len(gaps) == 3
+        assert len(cip) == 0
+        assert all(r.actual_value == "" for r in gaps)
+
+    def test_mixed_null_and_valid_values(self):
+        """Some nulls → gaps; non-null matching values → CIP. Counts must add up."""
+        bus = ["Plant_A", "Plant_B", "Plant_C", "Plant_D"]
+        cip, gaps, _, _ = run(
+            bus,
+            {"InventoryFlag": ["Y", None, "Y", None]},
+            [("InventoryFlag", "Y", "Y, N")],
+        )
+        assert len(cip) == 2
+        assert len(gaps) == 2
+        assert {r.bu_name for r in gaps} == {"Plant_B", "Plant_D"}
+
+    def test_all_null_capture_column_produces_empty_actual_values(self):
+        """All-null capture column → extra rows with empty actual_value strings."""
+        bus = ["Mumbai Plant", "Delhi HQ"]
+        cip, gaps, extra, _ = run(
+            bus,
+            {"OrganizationCode": [None, None]},
+            [("OrganizationCode", "Capture", "")],
+        )
+        assert len(extra) == 2
+        assert all(r.actual_value == "" for r in extra)
+        assert len(gaps) == 0

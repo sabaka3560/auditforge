@@ -319,7 +319,7 @@ class TestRunAudit:
         assert r.status_code == 200
 
     def test_report_is_valid_xlsx_in_dev_mode(self):
-        """In dev mode (not frozen), response is a valid xlsx binary."""
+        """POST /api/audit returns a token; GET /api/download/{token} returns xlsx."""
         r = client.post(
             "/api/audit?check_id=inv_organization_parameters",
             files={
@@ -331,7 +331,10 @@ class TestRunAudit:
             },
         )
         assert r.status_code == 200
-        wb = openpyxl.load_workbook(io.BytesIO(r.content))
+        token = r.json()["token"]
+        dl = client.get(f"/api/download/{token}")
+        assert dl.status_code == 200
+        wb = openpyxl.load_workbook(io.BytesIO(dl.content))
         assert "Controls in place" in wb.sheetnames
         assert "Control gaps" in wb.sheetnames
         assert "Audit Summary" in wb.sheetnames
@@ -344,14 +347,20 @@ class TestAdminDownload:
     def test_download_inv_org_parameters(self):
         r = client.get("/api/admin/checks/inv_organization_parameters/download")
         assert r.status_code == 200
-        content_type = r.headers.get("content-type", "")
-        assert "spreadsheet" in content_type
+        # v1 returns a token; redeem it for the xlsx bytes
+        token = r.json()["token"]
+        dl = client.get(f"/api/download/{token}")
+        assert dl.status_code == 200
+        assert "spreadsheet" in dl.headers.get("content-type", "")
 
     def test_download_all_checks(self):
         checks = client.get("/api/checks").json()
         for check in checks:
             r = client.get(f"/api/admin/checks/{check['id']}/download")
             assert r.status_code == 200, f"download failed for {check['id']}"
+            token = r.json()["token"]
+            dl = client.get(f"/api/download/{token}")
+            assert dl.status_code == 200, f"token download failed for {check['id']}"
 
     def test_download_unknown_check_returns_404(self):
         r = client.get("/api/admin/checks/nonexistent/download")

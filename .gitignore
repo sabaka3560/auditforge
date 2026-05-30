@@ -1,19 +1,30 @@
-# Build output
-dist/
-build/
-*.spec
-
 # Python
 __pycache__/
 *.py[cod]
 *.egg-info/
 .venv/
 venv/
+.env
 
-# IDE
-.vscode/
-.idea/
+# Build / packaging
+dist/
+build/
+*.spec
+
+# Test / lint caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+
+# Storage (runtime data — never commit)
+storage/
 
 # OS
 .DS_Store
 Thumbs.db
+
+# IDE
+.vscode/
+.idea/
