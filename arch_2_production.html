@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AuditForge — Production Auto-Scaling AWS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:          #0a0e1a;
+    --bg2:         #0f1424;
+    --bg3:         #141929;
+    --surface:     #1a2035;
+    --surface2:    #202840;
+    --border:      #2a3550;
+    --border2:     #1e2d4a;
+    --text:        #e8eaf6;
+    --text2:       #9ba3c4;
+    --text3:       #6b7499;
+    --compute:     #FF9900;
+    --compute-dim: rgba(255,153,0,0.15);
+    --db:          #9B59B6;
+    --db-dim:      rgba(155,89,182,0.15);
+    --net:         #E91E8C;
+    --net-dim:     rgba(233,30,140,0.15);
+    --storage:     #3F8624;
+    --storage-dim: rgba(63,134,36,0.15);
+    --security:    #CC2929;
+    --security-dim:rgba(204,41,41,0.15);
+    --accent:      #4fc3f7;
+    --accent-dim:  rgba(79,195,247,0.12);
+    --green:       #4caf50;
+    --az-bg:       rgba(255,255,255,0.025);
+    --az-border:   rgba(255,255,255,0.06);
+    --vpc-border:  rgba(79,195,247,0.35);
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  .page-header {
+    background: linear-gradient(135deg, #0f1729 0%, #0a0e1a 40%, #12102a 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 24px 40px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+  .page-header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 80% at 10% 50%, rgba(255,153,0,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 60% at 90% 50%, rgba(79,195,247,0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-left { position: relative; z-index: 1; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,153,0,0.12); border: 1px solid rgba(255,153,0,0.3);
+    color: var(--compute); font-size: 11px; font-weight: 600;
+    padding: 3px 10px; border-radius: 20px; letter-spacing: 0.05em;
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  .badge-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--compute);
+    animation: pulse-dot 2s infinite;
+  }
+  @keyframes pulse-dot {
+    0%,100%{ opacity:1; transform:scale(1) }
+    50%{ opacity:.5; transform:scale(1.3) }
+  }
+  h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+  h1 span { color: var(--compute); }
+  .subtitle { font-size: 13px; color: var(--text2); margin-top: 4px; }
+  .diagram-counter {
+    position: relative; z-index: 1;
+    font-size: 12px; color: var(--text3); font-weight: 500;
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 8px 16px; border-radius: 8px;
+    text-align: right;
+  }
+  .diagram-counter strong { color: var(--text2); }
+
+  /* ── LAYOUT ── */
+  .main { padding: 28px 32px 48px; max-width: 1600px; margin: 0 auto; }
+
+  /* ── CONTROL PANEL ── */
+  .control-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 32px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    flex-wrap: wrap;
+  }
+  .slider-section { flex: 1; min-width: 260px; }
+  .slider-label {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 12px;
+  }
+  .slider-label .name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .slider-label .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px; font-weight: 700; color: var(--compute);
+  }
+  .slider-label .unit { font-size: 13px; color: var(--text2); margin-left: 4px; }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 6px; border-radius: 3px;
+    background: linear-gradient(
+      to right,
+      var(--compute) 0%,
+      var(--compute) var(--pct,0%),
+      var(--surface2) var(--pct,0%),
+      var(--surface2) 100%
+    );
+    outline: none; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--compute); border: 3px solid var(--bg);
+    box-shadow: 0 0 0 3px rgba(255,153,0,0.25);
+    cursor: pointer; transition: box-shadow .15s;
+  }
+  input[type=range]::-webkit-slider-thumb:hover {
+    box-shadow: 0 0 0 6px rgba(255,153,0,0.2);
+  }
+  .slider-ticks {
+    display: flex; justify-content: space-between;
+    margin-top: 6px; font-size: 11px; color: var(--text3);
+  }
+
+  .metrics-row { display: flex; gap: 16px; flex-wrap: wrap; }
+  .metric-card {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 14px 20px;
+    min-width: 140px;
+    text-align: center;
+  }
+  .metric-card .m-label {
+    font-size: 11px; font-weight: 500; color: var(--text3);
+    text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px;
+  }
+  .metric-card .m-value {
+    font-size: 22px; font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .metric-card .m-unit { font-size: 11px; color: var(--text2); margin-left: 2px; }
+  .m-web    { color: var(--compute); }
+  .m-worker { color: var(--accent); }
+  .m-cost   { color: var(--green); }
+  .m-queue  { color: var(--net); }
+
+  /* SQS gauge */
+  .gauge-wrap { text-align: center; }
+  .gauge-bar-bg {
+    width: 100%; height: 8px; border-radius: 4px;
+    background: var(--surface2); margin-top: 8px; overflow: hidden;
+  }
+  .gauge-bar-fill {
+    height: 100%; border-radius: 4px;
+    background: linear-gradient(90deg, var(--net), #ff4081);
+    transition: width .4s ease;
+  }
+
+  /* Cost breakdown card */
+  .cost-breakdown {
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 12px; padding: 14px 18px; min-width: 200px;
+  }
+  .cost-breakdown .cb-title {
+    font-size: 11px; font-weight: 600; color: var(--text3);
+    text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px;
+  }
+  .cb-row {
+    display: flex; justify-content: space-between;
+    font-size: 12px; color: var(--text2); margin-bottom: 4px;
+  }
+  .cb-row .cb-num { font-family: 'JetBrains Mono', monospace; color: var(--text); }
+  .cb-total {
+    border-top: 1px solid var(--border); margin-top: 8px; padding-top: 8px;
+    display: flex; justify-content: space-between;
+    font-size: 13px; font-weight: 700;
+  }
+  .cb-total .cb-num { color: var(--green); font-family: 'JetBrains Mono', monospace; }
+
+  /* ── VPC WRAPPER ── */
+  .vpc-wrapper {
+    border: 2px dashed var(--vpc-border);
+    border-radius: 20px;
+    padding: 20px;
+    position: relative;
+    background: rgba(79,195,247,0.018);
+  }
+  .vpc-label {
+    position: absolute; top: -13px; left: 24px;
+    background: var(--bg); padding: 2px 10px;
+    font-size: 11px; font-weight: 700; letter-spacing: .1em;
+    color: var(--accent); text-transform: uppercase;
+  }
+
+  /* ── LAYER DIVIDER ── */
+  .layer-divider {
+    display: flex; align-items: center; gap: 10px;
+    margin: 16px 0 10px;
+  }
+  .layer-divider::before, .layer-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border2);
+  }
+  .layer-divider .ld-text {
+    font-size: 10px; font-weight: 700; color: var(--text3);
+    text-transform: uppercase; letter-spacing: .12em; white-space: nowrap;
+  }
+
+  /* ── FLOW ARROW ── */
+  .flow-arrow {
+    display: flex; justify-content: center; align-items: center;
+    height: 32px; position: relative; overflow: visible;
+  }
+  .flow-arrow svg { height: 32px; overflow: visible; }
+  .flow-path {
+    stroke: var(--border); stroke-width: 1.5; fill: none;
+    stroke-dasharray: 6 4; stroke-dashoffset: 0;
+    animation: dash-flow 1.2s linear infinite;
+  }
+  .flow-path-fast { animation-duration: .8s; }
+  @keyframes dash-flow { from{stroke-dashoffset:20} to{stroke-dashoffset:0} }
+
+  /* ── SERVICE CARD ── */
+  .svc {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden; position: relative;
+    transition: box-shadow .2s, transform .15s;
+  }
+  .svc:hover { box-shadow: 0 4px 24px rgba(0,0,0,.4); transform: translateY(-1px); }
+  .svc-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; font-size: 12px; font-weight: 700; letter-spacing: .02em;
+  }
+  .svc-icon { font-size: 15px; line-height: 1; }
+  .svc-body { padding: 10px 12px 12px; }
+  .svc-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+  .svc-detail { font-size: 11px; color: var(--text2); line-height: 1.5; }
+  .svc-detail code {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--accent); background: var(--accent-dim); padding: 1px 4px; border-radius: 3px;
+  }
+  .svc-tag {
+    display: inline-block; font-size: 10px; font-weight: 600;
+    padding: 2px 7px; border-radius: 4px; margin-top: 6px; margin-right: 4px;
+  }
+
+  /* Color themes */
+  .theme-compute .svc-header { background: var(--compute-dim); color: var(--compute); border-bottom: 1px solid rgba(255,153,0,0.2); }
+  .theme-compute .svc-tag    { background: var(--compute-dim); color: var(--compute); }
+  .theme-db      .svc-header { background: var(--db-dim);      color: var(--db);      border-bottom: 1px solid rgba(155,89,182,0.2); }
+  .theme-db      .svc-tag    { background: var(--db-dim);      color: var(--db); }
+  .theme-net     .svc-header { background: var(--net-dim);     color: var(--net);     border-bottom: 1px solid rgba(233,30,140,0.2); }
+  .theme-net     .svc-tag    { background: var(--net-dim);     color: var(--net); }
+  .theme-storage .svc-header { background: var(--storage-dim); color: var(--storage); border-bottom: 1px solid rgba(63,134,36,0.2); }
+  .theme-storage .svc-tag    { background: var(--storage-dim); color: var(--storage); }
+  .theme-security.svc-header { background: var(--security-dim);color: var(--security);border-bottom: 1px solid rgba(204,41,41,0.2); }
+  .theme-security.svc-tag    { background: var(--security-dim);color: var(--security); }
+  .theme-acc     .svc-header { background: var(--accent-dim);  color: var(--accent);  border-bottom: 1px solid rgba(79,195,247,0.2); }
+  .theme-acc     .svc-tag    { background: var(--accent-dim);  color: var(--accent); }
+
+  /* compound selector fix */
+  .theme-security .svc-header { background: var(--security-dim); color: var(--security); border-bottom: 1px solid rgba(204,41,41,0.2); }
+  .theme-security .svc-tag    { background: var(--security-dim); color: var(--security); }
+
+  /* ── AZ GRID ── */
+  .az-columns { display: flex; gap: 10px; }
+  .az-col {
+    flex: 1;
+    background: var(--az-bg); border: 1px solid var(--az-border);
+    border-radius: 12px; padding: 12px; position: relative;
+  }
+  .az-col-label {
+    font-size: 10px; font-weight: 700; color: var(--text3);
+    text-transform: uppercase; letter-spacing: .1em;
+    text-align: center; margin-bottom: 10px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--az-border);
+  }
+
+  /* ── TASK PILL ── */
+  .task-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--bg); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 4px 10px; margin-top: 8px;
+  }
+  .task-pill .tp-label { font-size: 11px; color: var(--text3); }
+  .task-pill .tp-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px; font-weight: 700; color: var(--compute);
+    min-width: 24px; text-align: center; transition: all .3s;
+  }
+  .task-pill-worker .tp-value { color: var(--accent); }
+
+  /* ── SCALING BADGE ── */
+  .scaling-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; font-weight: 600;
+    padding: 2px 8px; border-radius: 10px; margin-top: 6px;
+    background: rgba(76,175,80,0.12); color: var(--green);
+    border: 1px solid rgba(76,175,80,0.25);
+    transition: all .3s;
+  }
+  .scaling-badge .scale-icon { font-size: 12px; }
+
+  /* ── INTERNET + GLOBAL LAYER ── */
+  .users-row { display: flex; justify-content: center; }
+  .users-card {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px 24px;
+  }
+  .users-card .u-icon { font-size: 22px; }
+  .users-card .u-text { font-size: 13px; font-weight: 600; color: var(--text); }
+  .users-card .u-sub  { font-size: 11px; color: var(--text3); }
+  .global-services { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 0; }
+  .global-services .svc { flex: 1; min-width: 180px; }
+
+  /* ── SQS QUEUE VISUAL ── */
+  .queue-visual { display: flex; align-items: center; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .q-block {
+    width: 22px; height: 22px; border-radius: 4px;
+    border: 1.5px solid var(--border); background: var(--bg3);
+    transition: background .3s, border-color .3s; position: relative; overflow: hidden;
+  }
+  .q-block.filled {
+    background: rgba(233,30,140,0.25); border-color: rgba(233,30,140,0.5);
+  }
+  .q-block.filled::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(233,30,140,0.4), rgba(255,64,129,0.2));
+  }
+  .q-block.processing {
+    background: rgba(255,153,0,0.2); border-color: rgba(255,153,0,0.5);
+    animation: q-process .8s infinite alternate;
+  }
+  @keyframes q-process { from{opacity:.5} to{opacity:1} }
+  .q-dots { color: var(--text3); font-size: 14px; letter-spacing: -1px; }
+
+  /* ── AURORA ROW ── */
+  .aurora-row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .aurora-node {
+    flex: 1; min-width: 80px;
+    background: var(--bg3); border: 1px solid rgba(155,89,182,0.3);
+    border-radius: 8px; padding: 7px 10px; text-align: center;
+  }
+  .aurora-node .an-role { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; }
+  .aurora-node .an-label { font-size: 12px; font-weight: 600; color: var(--db); margin-top: 2px; }
+  .aurora-node.writer { border-color: rgba(155,89,182,0.6); background: rgba(155,89,182,0.08); }
+
+  /* ── CACHE NODES ── */
+  .cache-nodes { display: flex; gap: 6px; margin-top: 8px; }
+  .cache-node {
+    flex: 1; background: var(--bg3); border: 1px solid rgba(255,153,0,0.25);
+    border-radius: 6px; padding: 5px 8px; text-align: center;
+    font-size: 10px; color: var(--text2);
+  }
+  .cache-node strong { display: block; color: var(--compute); font-size: 11px; }
+
+  /* ── DATA TIER ── */
+  .data-tier { display: flex; gap: 12px; flex-wrap: wrap; }
+  .data-tier .svc { flex: 1; min-width: 200px; }
+
+  /* ── SUPPORT TIER ── */
+  .support-tier { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+  .support-tier .svc { flex: 1; min-width: 160px; }
+
+  /* ── ALB AZ BOXES ── */
+  .alb-az-boxes { display: flex; gap: 12px; flex-wrap: wrap; }
+  .alb-az-box {
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 8px 14px; text-align: center; flex: 1; min-width: 90px;
+  }
+  .alb-az-box .aaz-label { font-size: 10px; color: var(--text3); }
+  .alb-az-box .aaz-name  { font-size: 12px; font-weight: 600; color: var(--net); margin-top: 2px; }
+  .alb-az-box .aaz-cidr  { font-size: 10px; color: var(--text2); }
+  .alb-az-box .aaz-sub   { font-size: 10px; color: var(--text3); margin-top: 4px; }
+
+  /* ── TOOLTIP ── */
+  .has-tip { position: relative; cursor: help; }
+  .has-tip::after {
+    content: attr(data-tip);
+    position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+    background: #1c2540; border: 1px solid var(--border);
+    color: var(--text2); font-size: 11px; line-height: 1.5;
+    padding: 6px 10px; border-radius: 6px;
+    pointer-events: none; opacity: 0; transition: opacity .2s;
+    z-index: 100; max-width: 260px; white-space: normal; text-align: center;
+  }
+  .has-tip:hover::after { opacity: 1; }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    margin-top: 24px; padding: 16px 20px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  }
+  .legend-title { width: 100%; font-size: 12px; font-weight: 700; color: var(--text2); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .06em; }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text2); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── FOOTER ── */
+  .footer {
+    text-align: center; padding: 20px;
+    font-size: 11px; color: var(--text3);
+    border-top: 1px solid var(--border2); margin-top: 32px;
+  }
+  .footer a { color: var(--text2); text-decoration: none; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .main { padding: 16px; }
+    .az-columns { flex-direction: column; }
+    .data-tier, .support-tier, .global-services { flex-direction: column; }
+    .control-panel { flex-direction: column; gap: 20px; }
+    .page-header { flex-direction: column; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════ PAGE HEADER ═══════════════════════ -->
+<header class="page-header">
+  <div class="header-left">
+    <div class="badge"><span class="badge-dot"></span>Diagram 2 of 6</div>
+    <h1>AuditForge — <span>Production Auto-Scaling AWS</span></h1>
+    <div class="subtitle">Oracle Fusion ERP Configuration Audit · FastAPI + RQ Workers + Aurora PostgreSQL + SQS FIFO · Multi-AZ us-east-1</div>
+  </div>
+  <div class="diagram-counter">
+    Architecture Series<br>
+    <strong>Production · Multi-AZ · Auto-Scaling</strong>
+  </div>
+</header>
+
+<!-- ═══════════════════════ MAIN ═══════════════════════════════ -->
+<main class="main">
+
+  <!-- ── Interactive Control Panel ── -->
+  <div class="control-panel">
+    <div class="slider-section">
+      <div class="slider-label">
+        <span class="name">Concurrent Audits</span>
+        <span>
+          <span class="value" id="sliderVal">1</span>
+          <span class="unit">active</span>
+        </span>
+      </div>
+      <input type="range" id="loadSlider" min="1" max="100" value="1" style="--pct:0%">
+      <div class="slider-ticks">
+        <span>1</span><span>25</span><span>50</span><span>75</span><span>100</span>
+      </div>
+    </div>
+
+    <div class="metrics-row">
+      <!-- Web tasks -->
+      <div class="metric-card has-tip" data-tip="ECS Fargate Web tasks. Target Tracking: CPU 60%. Scales 2 to 8 total tasks across all AZs. 0.5 vCPU / 1 GB per task.">
+        <div class="m-label">Web Tasks</div>
+        <div class="m-value m-web">
+          <span id="webTasks">2</span><span class="m-unit">tasks</span>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px;">&#8597; 2–8 tasks</div>
+      </div>
+
+      <!-- Worker tasks -->
+      <div class="metric-card has-tip" data-tip="ECS Fargate Worker tasks. Scales 1 to 20 based on SQS ApproximateNumberOfMessages CloudWatch alarm. 1 vCPU / 2 GB per task.">
+        <div class="m-label">Worker Tasks</div>
+        <div class="m-value m-worker">
+          <span id="workerTasks">1</span><span class="m-unit">tasks</span>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px;">&#8597; 1–20 tasks</div>
+      </div>
+
+      <!-- SQS queue depth gauge -->
+      <div class="metric-card gauge-wrap has-tip" data-tip="SQS FIFO queue depth. Rises under burst load, drains as workers scale. Workers drain ~5 msgs/s each at full speed.">
+        <div class="m-label">SQS Queue Depth</div>
+        <div class="m-value m-queue">
+          <span id="queueDepth">0</span><span class="m-unit">msgs</span>
+        </div>
+        <div class="gauge-bar-bg">
+          <div class="gauge-bar-fill" id="queueGauge" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Cost breakdown -->
+      <div class="cost-breakdown">
+        <div class="cb-title">Monthly Cost Estimate</div>
+        <div class="cb-row">
+          <span>ECS (web + workers)</span>
+          <span class="cb-num" id="costECS">$180</span>
+        </div>
+        <div class="cb-row">
+          <span>Aurora Multi-AZ</span>
+          <span class="cb-num" id="costAurora">$220</span>
+        </div>
+        <div class="cb-row">
+          <span>ElastiCache Redis</span>
+          <span class="cb-num" id="costCache">$95</span>
+        </div>
+        <div class="cb-row">
+          <span>ALB + CloudFront</span>
+          <span class="cb-num" id="costNet">$45</span>
+        </div>
+        <div class="cb-row">
+          <span>SQS + S3 + other</span>
+          <span class="cb-num" id="costOther">$60</span>
+        </div>
+        <div class="cb-total">
+          <span>Total / month</span>
+          <span class="cb-num" id="costTotal">$600</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ ARCHITECTURE DIAGRAM ════════════════════ -->
+
+  <!-- Layer 0: Internet -->
+  <div class="layer-divider"><span class="ld-text">Internet</span></div>
+  <div class="users-row">
+    <div class="users-card">
+      <span class="u-icon">&#127760;</span>
+      <div>
+        <div class="u-text">Users / Internet</div>
+        <div class="u-sub">HTTPS · Global · Any Browser</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="flow-arrow">
+    <svg width="40" viewBox="0 0 40 32">
+      <line x1="20" y1="0" x2="20" y2="25" class="flow-path"/>
+      <polygon points="14,21 20,31 26,21" fill="var(--border)" opacity=".7"/>
+    </svg>
+    <span style="position:absolute;left:calc(50% + 20px);font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;">HTTPS</span>
+  </div>
+
+  <!-- Layer 1: Edge security + CDN -->
+  <div class="layer-divider"><span class="ld-text">AWS Edge / Security</span></div>
+  <div class="global-services">
+    <div class="svc theme-security has-tip"
+         data-tip="AWS WAF v2: rate limiting (2000 req/5 min), SQL injection protection, geo-blocking. Evaluated before traffic reaches CloudFront PoPs.">
+      <div class="svc-header"><span class="svc-icon">&#128737;&#65039;</span> Security / WAF</div>
+      <div class="svc-body">
+        <div class="svc-name">AWS WAF v2</div>
+        <div class="svc-detail">
+          Rate limiting · SQL injection rules<br>
+          Geo-blocking · Managed AWS rule groups
+        </div>
+        <span class="svc-tag">AWS Managed Rules</span>
+        <span class="svc-tag">Rate: 2 000 req/5 min</span>
+      </div>
+    </div>
+
+    <div class="svc theme-net has-tip"
+         data-tip="CloudFront CDN: index.html, JS, CSS cached at 400+ edge PoPs. Cache-Control: max-age=31536000 for hashed assets. CloudFront OAC signs S3 requests for report downloads.">
+      <div class="svc-header"><span class="svc-icon">&#9889;</span> Networking / CDN</div>
+      <div class="svc-body">
+        <div class="svc-name">CloudFront CDN</div>
+        <div class="svc-detail">
+          Static assets cached at edge<br>
+          <code>index.html</code>, <code>*.js</code>, <code>*.css</code><br>
+          Report download via OAC signed S3
+        </div>
+        <span class="svc-tag">400+ PoPs</span>
+        <span class="svc-tag">TLS 1.3</span>
+        <span class="svc-tag">HTTP/2</span>
+      </div>
+    </div>
+
+    <div class="svc theme-security has-tip"
+         data-tip="Route 53 DNS with latency-based routing to ALB. Health checks every 30s. Failover routing policy: primary ALB → secondary maintenance page on S3.">
+      <div class="svc-header"><span class="svc-icon">&#128308;</span> Networking / DNS</div>
+      <div class="svc-body">
+        <div class="svc-name">Route 53</div>
+        <div class="svc-detail">
+          Latency-based routing · Health checks<br>
+          Failover: ALB → S3 maintenance page
+        </div>
+        <span class="svc-tag">auditforge.io</span>
+        <span class="svc-tag">TTL 60 s</span>
+        <span class="svc-tag">Health Check</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="flow-arrow">
+    <svg width="40" viewBox="0 0 40 32">
+      <line x1="20" y1="0" x2="20" y2="25" class="flow-path"/>
+      <polygon points="14,21 20,31 26,21" fill="var(--border)" opacity=".7"/>
+    </svg>
+    <span style="position:absolute;left:calc(50% + 20px);font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;">:443 TLS</span>
+  </div>
+
+  <!-- ═══════════════════ VPC BOUNDARY ════════════════════════════ -->
+  <div class="vpc-wrapper">
+    <div class="vpc-label">VPC &nbsp; vpc-auditforge &nbsp; 10.0.0.0/16</div>
+
+    <!-- Layer 2: ALB in public subnets -->
+    <div class="layer-divider"><span class="ld-text">Public Subnets &mdash; ALB + NAT Gateways</span></div>
+    <div class="svc theme-net has-tip" style="width:100%;margin-top:8px;"
+         data-tip="Application Load Balancer: HTTPS :443, HTTP to HTTPS redirect. Deployed into all 3 public subnets for AZ redundancy. Health check: GET /healthz every 10 s, 2 healthy threshold. Access logs to S3. Connection draining 30 s.">
+      <div class="svc-header"><span class="svc-icon">&#9878;&#65039;</span> Networking / Load Balancer</div>
+      <div class="svc-body" style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;">
+        <div style="flex:1;min-width:200px;">
+          <div class="svc-name">Application Load Balancer</div>
+          <div class="svc-detail">
+            Multi-AZ · HTTPS :443 · HTTP&#8594;HTTPS redirect<br>
+            Health check: <code>GET /healthz</code> every 10 s<br>
+            Access logs &#8594; S3 · Connection draining 30 s
+          </div>
+          <span class="svc-tag">Multi-AZ</span>
+          <span class="svc-tag">Sticky Sessions Off</span>
+        </div>
+        <div class="alb-az-boxes">
+          <div class="alb-az-box">
+            <div class="aaz-label">us-east-1a</div>
+            <div class="aaz-name">Public Subnet</div>
+            <div class="aaz-cidr">10.0.0.0/24</div>
+            <div class="aaz-sub">NAT GW &#8594; IGW</div>
+          </div>
+          <div class="alb-az-box">
+            <div class="aaz-label">us-east-1b</div>
+            <div class="aaz-name">Public Subnet</div>
+            <div class="aaz-cidr">10.0.1.0/24</div>
+            <div class="aaz-sub">NAT GW &#8594; IGW</div>
+          </div>
+          <div class="alb-az-box">
+            <div class="aaz-label">us-east-1c</div>
+            <div class="aaz-name">Public Subnet</div>
+            <div class="aaz-cidr">10.0.2.0/24</div>
+            <div class="aaz-sub">NAT GW &#8594; IGW</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrow -->
+    <div class="flow-arrow">
+      <svg width="40" viewBox="0 0 40 32">
+        <line x1="20" y1="0" x2="20" y2="25" class="flow-path flow-path-fast"/>
+        <polygon points="14,21 20,31 26,21" fill="var(--border)" opacity=".7"/>
+      </svg>
+      <span style="position:absolute;left:calc(50% + 20px);font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;">round-robin</span>
+    </div>
+
+    <!-- Layer 3: ECS Fargate Web (3 AZs) -->
+    <div class="layer-divider"><span class="ld-text">Private App Subnets &mdash; ECS Fargate Web Service</span></div>
+    <div class="az-columns" style="margin-top:8px;">
+      <!-- AZ A -->
+      <div class="az-col">
+        <div class="az-col-label">us-east-1a &middot; 10.0.10.0/24</div>
+        <div class="svc theme-compute has-tip"
+             data-tip="ECS Fargate task: auditforge-web. 0.5 vCPU, 1 GB RAM. Target Tracking policy: CPU 60% triggers +1 task. Minimum 2 tasks total (1 per primary AZ), maximum 8.">
+          <div class="svc-header"><span class="svc-icon">&#128421;&#65039;</span> Compute / Container</div>
+          <div class="svc-body">
+            <div class="svc-name">ECS Fargate — Web</div>
+            <div class="svc-detail">
+              <code>auditforge-web:latest</code><br>
+              0.5 vCPU · 1 GB RAM<br>
+              FastAPI + uvicorn
+            </div>
+            <div class="task-pill">
+              <span class="tp-label">Tasks:</span>
+              <span class="tp-value" id="webTaskA">1</span>
+            </div>
+            <div class="scaling-badge"><span class="scale-icon">&#8597;</span> CPU Target 60%</div>
+          </div>
+        </div>
+      </div>
+      <!-- AZ B -->
+      <div class="az-col">
+        <div class="az-col-label">us-east-1b &middot; 10.0.11.0/24</div>
+        <div class="svc theme-compute has-tip"
+             data-tip="ECS Fargate task: auditforge-web, AZ-B. Identical config for fault tolerance. ALB distributes evenly across healthy registered targets.">
+          <div class="svc-header"><span class="svc-icon">&#128421;&#65039;</span> Compute / Container</div>
+          <div class="svc-body">
+            <div class="svc-name">ECS Fargate — Web</div>
+            <div class="svc-detail">
+              <code>auditforge-web:latest</code><br>
+              0.5 vCPU · 1 GB RAM<br>
+              FastAPI + uvicorn
+            </div>
+            <div class="task-pill">
+              <span class="tp-label">Tasks:</span>
+              <span class="tp-value" id="webTaskB">1</span>
+            </div>
+            <div class="scaling-badge"><span class="scale-icon">&#8597;</span> CPU Target 60%</div>
+          </div>
+        </div>
+      </div>
+      <!-- AZ C -->
+      <div class="az-col">
+        <div class="az-col-label">us-east-1c &middot; 10.0.12.0/24</div>
+        <div class="svc theme-compute has-tip"
+             data-tip="ECS Fargate task: auditforge-web, AZ-C. Tasks placed here once total count exceeds 4 (ALB weighted target groups ensure even spread).">
+          <div class="svc-header"><span class="svc-icon">&#128421;&#65039;</span> Compute / Container</div>
+          <div class="svc-body">
+            <div class="svc-name">ECS Fargate — Web</div>
+            <div class="svc-detail">
+              <code>auditforge-web:latest</code><br>
+              0.5 vCPU · 1 GB RAM<br>
+              FastAPI + uvicorn
+            </div>
+            <div class="task-pill">
+              <span class="tp-label">Tasks:</span>
+              <span class="tp-value" id="webTaskC">0</span>
+            </div>
+            <div class="scaling-badge"><span class="scale-icon">&#8597;</span> CPU Target 60%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrow -->
+    <div class="flow-arrow">
+      <svg width="40" viewBox="0 0 40 32">
+        <line x1="20" y1="0" x2="20" y2="25" class="flow-path"/>
+        <polygon points="14,21 20,31 26,21" fill="var(--border)" opacity=".7"/>
+      </svg>
+      <span style="position:absolute;left:calc(50% + 20px);font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;">enqueue job</span>
+    </div>
+
+    <!-- Layer 4: SQS FIFO -->
+    <div class="layer-divider"><span class="ld-text">Message Queue &mdash; Amazon SQS FIFO</span></div>
+    <div class="svc theme-net" style="width:100%;margin-top:8px;">
+      <div class="svc-header"><span class="svc-icon">&#128236;</span> Messaging / Queue</div>
+      <div class="svc-body" style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;">
+        <div style="flex:1;min-width:220px;">
+          <div class="svc-name has-tip" data-tip="SQS FIFO replaces Redis as the primary job queue for durability. MessageGroupId = org_id guarantees per-org ordering. Visibility timeout 300 s matches max audit runtime.">
+            Amazon SQS FIFO &mdash; <code>audits.fifo</code>
+          </div>
+          <div class="svc-detail" style="margin-top:5px;">
+            Exactly-once delivery · Per-org ordering via <code>MessageGroupId</code><br>
+            Visibility timeout: <code>300 s</code> · DLQ after 3 failures · Retention: 4 days
+          </div>
+          <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;">
+            <span class="svc-tag">FIFO</span>
+            <span class="svc-tag">Exactly-Once</span>
+            <span class="svc-tag" id="sqsTag">Depth: 0 msgs</span>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px;">Live queue visualization</div>
+          <div class="queue-visual" id="queueVisual"></div>
+        </div>
+
+        <div style="background:var(--bg3);border:1px solid rgba(233,30,140,0.2);border-radius:8px;padding:10px 14px;min-width:150px;">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Dead Letter Queue</div>
+          <div style="font-size:11px;color:var(--text2);">audits-dlq.fifo</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:4px;">
+            Max receives: 3<br>
+            Retention: 14 days<br>
+            &#8594; SNS alert on any DLQ msg
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrow -->
+    <div class="flow-arrow">
+      <svg width="40" viewBox="0 0 40 32">
+        <line x1="20" y1="0" x2="20" y2="25" class="flow-path flow-path-fast"/>
+        <polygon points="14,21 20,31 26,21" fill="var(--border)" opacity=".7"/>
+      </svg>
+      <span style="position:absolute;left:calc(50% + 20px);font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;">poll / dequeue</span>
+    </div>
+
+    <!-- Layer 5: ECS Workers (3 AZs) -->
+    <div class="layer-divider"><span class="ld-text">Private App Subnets &mdash; ECS Fargate Worker Service</span></div>
+    <div class="az-columns" style="margin-top:8px;">
+      <div class="az-col">
+        <div class="az-col-label">us-east-1a &middot; 10.0.10.0/24</div>
+        <div class="svc theme-acc has-tip"
+             data-tip="RQ Worker: polls SQS FIFO, runs engine.compare(), writes .xlsx report to S3, updates Aurora job status. 1 vCPU 2 GB RAM. CloudWatch step scaling: +2 tasks per 10 msgs above 5-msg alarm threshold.">
+          <div class="svc-header"><span class="svc-icon">&#9881;&#65039;</span> Compute / Worker</div>
+          <div class="svc-body">
+            <div class="svc-name">ECS Fargate — Worker</div>
+            <div class="svc-detail">
+              <code>auditforge-worker:latest</code><br>
+              1 vCPU · 2 GB RAM<br>
+              RQ worker + engine pipeline
+            </div>
+            <div class="task-pill task-pill-worker">
+              <span class="tp-label">Tasks:</span>
+              <span class="tp-value" id="workerTaskA">1</span>
+            </div>
+            <div class="scaling-badge" id="scaleBadgeA"><span class="scale-icon">&#8597;</span> SQS Queue Depth</div>
+          </div>
+        </div>
+      </div>
+      <div class="az-col">
+        <div class="az-col-label">us-east-1b &middot; 10.0.11.0/24</div>
+        <div class="svc theme-acc has-tip"
+             data-tip="Worker tasks in AZ-B. Added first when queue depth exceeds 5 messages. Step scaling policy: +2 tasks per 10 additional messages.">
+          <div class="svc-header"><span class="svc-icon">&#9881;&#65039;</span> Compute / Worker</div>
+          <div class="svc-body">
+            <div class="svc-name">ECS Fargate — Worker</div>
+            <div class="svc-detail">
+              <code>auditforge-worker:latest</code><br>
+              1 vCPU · 2 GB RAM<br>
+              RQ worker + engine pipeline
+            </div>
+            <div class="task-pill task-pill-worker">
+              <span class="tp-label">Tasks:</span>
+              <span class="tp-value" id="workerTaskB">0</span>
+            </div>
+            <div class="scaling-badge" id="scaleBadgeB"><span class="scale-icon">&#8597;</span> SQS Queue Depth</div>
+          </div>
+        </div>
+      </div>
+      <div class="az-col">
+        <div class="az-col-label">us-east-1c &middot; 10.0.12.0/24</div>
+        <div class="svc theme-acc has-tip"
+             data-tip="Worker tasks in AZ-C. Activated at high load (queue depth above 30 msgs). Maximum 20 workers total across all AZs respects Aurora RDS Proxy connection pooling limits.">
+          <div class="svc-header"><span class="svc-icon">&#9881;&#65039;</span> Compute / Worker</div>
+          <div class="svc-body">
+            <div class="svc-name">ECS Fargate — Worker</div>
+            <div class="svc-detail">
+              <code>auditforge-worker:latest</code><br>
+              1 vCPU · 2 GB RAM<br>
+              RQ worker + engine pipeline
+            </div>
+            <div class="task-pill task-pill-worker">
+              <span class="tp-label">Tasks:</span>
+              <span class="tp-value" id="workerTaskC">0</span>
+            </div>
+            <div class="scaling-badge" id="scaleBadgeC"><span class="scale-icon">&#8597;</span> SQS Queue Depth</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrow -->
+    <div class="flow-arrow">
+      <svg width="40" viewBox="0 0 40 32">
+        <line x1="20" y1="0" x2="20" y2="25" class="flow-path"/>
+        <polygon points="14,21 20,31 26,21" fill="var(--border)" opacity=".7"/>
+      </svg>
+      <span style="position:absolute;left:calc(50% + 20px);font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;">read / write</span>
+    </div>
+
+    <!-- Layer 6: Data tier -->
+    <div class="layer-divider"><span class="ld-text">Private Data Subnets &mdash; 10.0.2x.0/24</span></div>
+    <div class="data-tier" style="margin-top:8px;">
+
+      <!-- Aurora PostgreSQL -->
+      <div class="svc theme-db has-tip"
+           data-tip="Aurora PostgreSQL 15 Multi-AZ cluster. Writer in us-east-1a, two read replicas in 1b and 1c. Automatic failover under 30 s. Storage auto-scales 10 GB to 128 TB. Daily snapshots retained 35 days. RDS Proxy fronts connections from ECS workers.">
+        <div class="svc-header"><span class="svc-icon">&#128024;</span> Database / Aurora</div>
+        <div class="svc-body">
+          <div class="svc-name">Aurora PostgreSQL 15 Multi-AZ</div>
+          <div class="svc-detail">
+            Auto-failover &lt;30 s · Storage auto-scales<br>
+            Daily snapshots · 35-day retention<br>
+            <code>db.r6g.large</code> · RDS Proxy connection pool
+          </div>
+          <div class="aurora-row">
+            <div class="aurora-node writer">
+              <div class="an-role">Writer</div>
+              <div class="an-label">us-east-1a</div>
+            </div>
+            <div class="aurora-node">
+              <div class="an-role">Read Replica</div>
+              <div class="an-label">us-east-1b</div>
+            </div>
+            <div class="aurora-node">
+              <div class="an-role">Read Replica</div>
+              <div class="an-label">us-east-1c</div>
+            </div>
+          </div>
+          <span class="svc-tag">Multi-AZ</span>
+          <span class="svc-tag">RDS Proxy</span>
+          <span class="svc-tag">35-day backups</span>
+        </div>
+      </div>
+
+      <!-- ElastiCache Redis -->
+      <div class="svc theme-compute has-tip"
+           data-tip="ElastiCache Redis 7 cluster mode, 3 nodes across AZs. Used for session cache and job-status polling — NOT the primary job queue (SQS FIFO handles that). Automatic failover. Encryption at rest and in transit.">
+        <div class="svc-header"><span class="svc-icon">&#9889;</span> Cache / Redis</div>
+        <div class="svc-body">
+          <div class="svc-name">ElastiCache Redis 7 Cluster</div>
+          <div class="svc-detail">
+            3-node cluster · Session cache<br>
+            Job status polling · <code>cache.r6g.large</code><br>
+            Auto-failover · Encryption at rest
+          </div>
+          <div class="cache-nodes">
+            <div class="cache-node"><strong>Node 1</strong>Primary<br>1a</div>
+            <div class="cache-node"><strong>Node 2</strong>Replica<br>1b</div>
+            <div class="cache-node"><strong>Node 3</strong>Replica<br>1c</div>
+          </div>
+          <span class="svc-tag">Cluster Mode</span>
+          <span class="svc-tag">TLS</span>
+        </div>
+      </div>
+
+      <!-- S3 -->
+      <div class="svc theme-storage has-tip"
+           data-tip="S3 bucket: auditforge-reports. Versioning enabled. Object lifecycle: transition to S3-IA at 90 days, delete at 365 days. Workers write signed URLs; CloudFront OAC restricts direct S3 access. KMS encryption at rest.">
+        <div class="svc-header"><span class="svc-icon">&#129695;</span> Storage / S3</div>
+        <div class="svc-body">
+          <div class="svc-name">S3 &mdash; <code>auditforge-reports</code></div>
+          <div class="svc-detail">
+            Audit reports (.xlsx) · Versioning on<br>
+            Lifecycle: 90 d &#8594; S3-IA &#8594; 365 d delete<br>
+            Pre-signed URLs · CloudFront OAC · KMS
+          </div>
+          <span class="svc-tag">Server-Side Encryption</span>
+          <span class="svc-tag">Versioning</span>
+          <span class="svc-tag">OAC</span>
+        </div>
+      </div>
+
+    </div><!-- /data-tier -->
+  </div><!-- /vpc-wrapper -->
+
+  <!-- ── Support Services (outside VPC) ── -->
+  <div class="layer-divider" style="margin-top:24px;"><span class="ld-text">AWS Platform Support Services</span></div>
+  <div class="support-tier">
+
+    <div class="svc theme-security has-tip"
+         data-tip="Amazon ECR: private container registry. Image scanning on push via Inspector. Immutable tags enforced in production. Lifecycle policy: keep last 10 tagged images, purge untagged after 1 day.">
+      <div class="svc-header"><span class="svc-icon">&#128230;</span> Dev / Registry</div>
+      <div class="svc-body">
+        <div class="svc-name">ECR Private Registry</div>
+        <div class="svc-detail">Image scanning on push<br>Immutable tags · Lifecycle policy</div>
+        <span class="svc-tag">Inspector Scan</span>
+      </div>
+    </div>
+
+    <div class="svc theme-security has-tip"
+         data-tip="Secrets Manager: Aurora DB password, JWT secret, third-party API keys. Auto-rotation every 30 days for Aurora credentials via a Lambda rotator. ECS task execution role grants GetSecretValue at launch.">
+      <div class="svc-header"><span class="svc-icon">&#128272;</span> Security / Secrets</div>
+      <div class="svc-body">
+        <div class="svc-name">Secrets Manager</div>
+        <div class="svc-detail">DB password · JWT secret<br>Auto-rotation 30 d · ECS IAM role</div>
+        <span class="svc-tag">Auto-Rotation</span>
+      </div>
+    </div>
+
+    <div class="svc theme-acc has-tip"
+         data-tip="CloudWatch: ECS CPU/memory, ALB 5xx rate, SQS ApproximateNumberOfMessages (drives worker scaling), Aurora read latency, ElastiCache evictions. Log Insights queries for error triage.">
+      <div class="svc-header"><span class="svc-icon">&#128202;</span> Observability</div>
+      <div class="svc-body">
+        <div class="svc-name">CloudWatch + Alarms</div>
+        <div class="svc-detail">Dashboards · Metric alarms<br>Log Insights · Worker scaling alarm</div>
+        <span class="svc-tag">Log Insights</span>
+        <span class="svc-tag">Composite Alarms</span>
+      </div>
+    </div>
+
+    <div class="svc theme-net has-tip"
+         data-tip="SNS topic: auditforge-alerts. Subscriptions: Ops email list + PagerDuty webhook. Triggered by: CloudWatch alarms, SQS DLQ messages, ECS task failures, Aurora failover events.">
+      <div class="svc-header"><span class="svc-icon">&#128276;</span> Notifications</div>
+      <div class="svc-body">
+        <div class="svc-name">SNS &#8594; Email / PagerDuty</div>
+        <div class="svc-detail">Alarm notifications<br>DLQ alerts · Failover events</div>
+        <span class="svc-tag">PagerDuty</span>
+        <span class="svc-tag">Email</span>
+      </div>
+    </div>
+
+    <div class="svc theme-compute has-tip"
+         data-tip="AWS X-Ray distributed tracing. Service map: FastAPI → SQS → Worker → Aurora. Trace sampling: 5% baseline + 100% on error responses. Segment annotations: org_id, job_id for correlation.">
+      <div class="svc-header"><span class="svc-icon">&#128269;</span> Tracing</div>
+      <div class="svc-body">
+        <div class="svc-name">X-Ray Distributed Tracing</div>
+        <div class="svc-detail">Service map · Latency analysis<br>5% sample · 100% on errors</div>
+        <span class="svc-tag">Service Map</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Legend ── -->
+  <div class="legend">
+    <div class="legend-title">Legend</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--compute)"></span> Compute (ECS Fargate)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--db)"></span> Database (Aurora PostgreSQL)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--net)"></span> Networking (ALB / CloudFront / SQS)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--storage)"></span> Storage (S3)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--security)"></span> Security (WAF / Secrets Manager / ECR)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--accent)"></span> Platform (ElastiCache / X-Ray / CloudWatch)</div>
+    <div class="legend-item">
+      <svg width="28" height="12"><line x1="0" y1="6" x2="28" y2="6" stroke="var(--vpc-border)" stroke-width="2" stroke-dasharray="5,3"/></svg>
+      VPC boundary (10.0.0.0/16)
+    </div>
+    <div class="legend-item">
+      <svg width="28" height="12">
+        <line x1="0" y1="6" x2="28" y2="6" stroke="var(--border)" stroke-width="1.5" stroke-dasharray="4,3">
+          <animate attributeName="stroke-dashoffset" from="14" to="0" dur="1s" repeatCount="indefinite"/>
+        </line>
+      </svg>
+      Animated data-flow
+    </div>
+    <div class="legend-item">&#8597; Auto-scaling (ECS Target Tracking / Step Scaling)</div>
+    <div class="legend-item" style="margin-left:auto;font-size:11px;color:var(--text3);">
+      Hover any card for details &nbsp;&middot;&nbsp; Drag slider to simulate load
+    </div>
+  </div>
+
+</main>
+
+<footer class="footer">
+  AuditForge Architecture Series &nbsp;&middot;&nbsp; Diagram 2 of 6 &nbsp;&middot;&nbsp;
+  Production Auto-Scaling AWS &nbsp;&middot;&nbsp;
+  Cost estimates: approximate us-east-1 on-demand pricing, May 2026 &nbsp;&middot;&nbsp;
+  <a href="arch_1_basic_cloud.html">&#8592; Diagram 1: Basic Cloud</a>
+  &nbsp;&nbsp;
+  <a href="arch_3_microservices.html">Diagram 3: Microservices &#8594;</a>
+</footer>
+
+<!-- ═══════════════════════════════ JAVASCRIPT ══════════════════════════════ -->
+<script>
+(function () {
+  'use strict';
+
+  /* ── Element refs ── */
+  const slider      = document.getElementById('loadSlider');
+  const sliderVal   = document.getElementById('sliderVal');
+  const webTasksEl  = document.getElementById('webTasks');
+  const wrkTasksEl  = document.getElementById('workerTasks');
+  const qDepthEl    = document.getElementById('queueDepth');
+  const qGauge      = document.getElementById('queueGauge');
+  const sqsTag      = document.getElementById('sqsTag');
+  const queueVis    = document.getElementById('queueVisual');
+
+  /* per-AZ counters */
+  const webA  = document.getElementById('webTaskA');
+  const webB  = document.getElementById('webTaskB');
+  const webC  = document.getElementById('webTaskC');
+  const wrkA  = document.getElementById('workerTaskA');
+  const wrkB  = document.getElementById('workerTaskB');
+  const wrkC  = document.getElementById('workerTaskC');
+
+  /* cost elements */
+  const costECS    = document.getElementById('costECS');
+  const costAurora = document.getElementById('costAurora');
+  const costCache  = document.getElementById('costCache');
+  const costNet    = document.getElementById('costNet');
+  const costOther  = document.getElementById('costOther');
+  const costTotal  = document.getElementById('costTotal');
+
+  /* scaling badges */
+  const badges = [
+    document.getElementById('scaleBadgeA'),
+    document.getElementById('scaleBadgeB'),
+    document.getElementById('scaleBadgeC'),
+  ];
+
+  /* ── Build SQS queue blocks ── */
+  const BLOCK_COUNT = 16;
+  const qBlocks = [];
+  for (let i = 0; i < BLOCK_COUNT; i++) {
+    const b = document.createElement('div');
+    b.className = 'q-block';
+    qBlocks.push(b);
+    queueVis.appendChild(b);
+  }
+  const dotsEl = document.createElement('span');
+  dotsEl.className = 'q-dots';
+  dotsEl.textContent = '···';
+  queueVis.appendChild(dotsEl);
+
+  /* ── Helpers ── */
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  /* Eased animated counter */
+  const tweens = {};
+  function animateTo(el, target) {
+    const id = el.id;
+    if (tweens[id] && tweens[id].target === target) return;
+    const startVal = parseInt(el.textContent) || 0;
+    if (startVal === target) return;
+    const start = performance.now();
+    const dur = 380;
+    tweens[id] = { target };
+    function step(now) {
+      if (tweens[id].target !== target) return; // superseded
+      const t = Math.min((now - start) / dur, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+      el.textContent = Math.round(lerp(startVal, target, ease));
+      if (t < 1) requestAnimationFrame(step);
+      else el.textContent = target;
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* ── Compute model: pct 0→1 ── */
+  function model(pct) {
+    // web tasks 2→8, log-ish curve
+    const webTotal = clamp(Math.round(2 + 6 * Math.pow(pct, 0.65)), 2, 8);
+
+    // worker tasks 1→20, steeper
+    const wrkTotal = clamp(Math.round(1 + 19 * Math.pow(pct, 0.5)), 1, 20);
+
+    // SQS queue depth: peaks around 45% load, empties at 100% (workers caught up)
+    const rawQ     = pct * (1 - pct * 0.55) * 300;
+    const queueD   = Math.round(clamp(rawQ, 0, 200));
+
+    // Cost model
+    const ecsCost    = Math.round(180 + 620 * Math.pow(pct, 1.15));
+    const auroraCost = Math.round(220 + 330 * pct);
+    const cacheCost  = 95; // fixed
+    const netCost    = Math.round(45 + 125 * pct);
+    const otherCost  = Math.round(60 + 85 * pct);
+    const total      = ecsCost + auroraCost + cacheCost + netCost + otherCost;
+
+    return { webTotal, wrkTotal, queueD, ecsCost, auroraCost, cacheCost, netCost, otherCost, total };
+  }
+
+  /* ── Distribute N tasks across 3 AZs ── */
+  function distribute3(total) {
+    const d = [0, 0, 0];
+    for (let i = 0; i < total; i++) d[i % 3]++;
+    return d;
+  }
+
+  /* ── Update queue blocks ── */
+  function updateQueueBlocks(depth) {
+    const filled = Math.round((depth / 200) * BLOCK_COUNT);
+    const proc   = Math.min(2, filled);
+    qBlocks.forEach((b, i) => {
+      if (i < proc)          b.className = 'q-block processing';
+      else if (i < filled)   b.className = 'q-block filled';
+      else                   b.className = 'q-block';
+    });
+  }
+
+  /* ── Main update ── */
+  let lastPct = -1;
+  function update() {
+    const raw = parseInt(slider.value);
+    const pct = (raw - 1) / 99;
+
+    // Gradient fill on track
+    slider.style.setProperty('--pct', (pct * 100).toFixed(1) + '%');
+
+    if (Math.abs(pct - lastPct) < 0.0005) return;
+    lastPct = pct;
+
+    sliderVal.textContent = raw;
+    const m = model(pct);
+
+    /* Totals */
+    animateTo(webTasksEl, m.webTotal);
+    animateTo(wrkTasksEl, m.wrkTotal);
+    animateTo(qDepthEl,   m.queueD);
+
+    /* Queue gauge + blocks */
+    qGauge.style.width = ((m.queueD / 200) * 100).toFixed(1) + '%';
+    sqsTag.textContent  = 'Depth: ' + m.queueD + ' msgs';
+    updateQueueBlocks(m.queueD);
+
+    /* Per-AZ web */
+    const wAZ = distribute3(m.webTotal);
+    animateTo(webA, wAZ[0]);
+    animateTo(webB, wAZ[1]);
+    animateTo(webC, wAZ[2]);
+
+    /* Per-AZ workers */
+    const rAZ = distribute3(m.wrkTotal);
+    animateTo(wrkA, rAZ[0]);
+    animateTo(wrkB, rAZ[1]);
+    animateTo(wrkC, rAZ[2]);
+
+    /* Scaling badge highlight when actively scaling */
+    const scaling = m.wrkTotal > 3;
+    badges.forEach(b => {
+      if (scaling) {
+        b.style.background   = 'rgba(79,195,247,0.15)';
+        b.style.color        = 'var(--accent)';
+        b.style.borderColor  = 'rgba(79,195,247,0.35)';
+        b.innerHTML          = '<span class="scale-icon">&#8597;</span> Scaling up…';
+      } else {
+        b.style.background  = '';
+        b.style.color       = '';
+        b.style.borderColor = '';
+        b.innerHTML         = '<span class="scale-icon">&#8597;</span> SQS Queue Depth';
+      }
+    });
+
+    /* Cost */
+    costECS.textContent    = '$' + m.ecsCost.toLocaleString();
+    costAurora.textContent = '$' + m.auroraCost.toLocaleString();
+    costCache.textContent  = '$' + m.cacheCost;
+    costNet.textContent    = '$' + m.netCost;
+    costOther.textContent  = '$' + m.otherCost;
+    costTotal.textContent  = '$' + m.total.toLocaleString();
+  }
+
+  slider.addEventListener('input', update);
+  update(); // initial paint
+
+  /* ── Idle hint: auto-play slider once on load ── */
+  let hinted = false;
+  setTimeout(function() {
+    if (hinted || parseInt(slider.value) !== 1) return;
+    hinted = true;
+    let v = 1, dir = 1;
+    const hint = setInterval(function() {
+      v += dir * 2;
+      if (v >= 60)  dir = -1;
+      if (v <= 1)  { clearInterval(hint); v = 1; }
+      slider.value = v;
+      update();
+    }, 30);
+  }, 2200);
+
+})();
+</script>
+</body>
+</html>

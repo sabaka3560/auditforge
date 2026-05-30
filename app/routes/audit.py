@@ -80,6 +80,12 @@ async def create_audit(
     queue: Queue = Depends(get_queue),
 ) -> JobCreatedResponse:
     """Upload the actual file, create an AuditJob, enqueue the RQ task."""
+    if not (50 <= fuzzy_threshold <= 100):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="fuzzy_threshold must be between 50 and 100.",
+        )
+
     actual_bytes = await actual_file.read()
 
     if len(actual_bytes) > _MAX_UPLOAD_BYTES:

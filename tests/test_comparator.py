@@ -60,12 +60,14 @@ class TestControlsInPlace:
         assert len(cip) == 5
 
     def test_boolean_normalization_true_maps_to_y(self):
-        df = make_actual({"MfgPlantFlag": ["true", "1", "enabled", "on", "Y"]})
+        df = make_actual({"MfgPlantFlag": ["true", "True", "enabled", "on", "Y"]})
         cip, gaps, _ = run(df, [("MfgPlantFlag", "Y")])
         assert len(cip) == 5
 
     def test_n_variants_match_n_ideal(self):
-        df = make_actual({"AllowNegOnhandCcTxns": ["N", "n", "no", "false", "0"]})
+        df = make_actual(
+            {"AllowNegOnhandCcTxns": ["N", "n", "no", "false", "disabled"]}
+        )
         cip, gaps, _ = run(df, [("AllowNegOnhandCcTxns", "N")])
         assert len(cip) == 5
 

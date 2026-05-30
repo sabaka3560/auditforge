@@ -785,8 +785,8 @@ class TestCrossCuttingAuditRules:
             "Audit Summary",
         }
 
-    def test_control_gaps_sheet_has_valid_options_column(self):
-        """Control gaps sheet must include the Valid Options column for auditor context."""
+    def test_control_gaps_sheet_has_four_columns(self):
+        """Control gaps sheet uses the standard 4-column format (no extra auditor columns)."""
         import io as _io
         import openpyxl
 
@@ -818,8 +818,12 @@ class TestCrossCuttingAuditRules:
         wb = openpyxl.load_workbook(_io.BytesIO(xlsx))
         ws = wb["Control gaps"]
         headers = [cell.value for cell in next(ws.iter_rows(min_row=1, max_row=1))]
-        assert "Valid Options" in headers
-        assert "Ideal Value" in headers
+        assert headers == [
+            "BU Name",
+            "Configuration Name",
+            "Actual Configuration Value",
+            "Comment",
+        ]
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -850,28 +854,26 @@ class TestIntegerLOVCodes:
         )
         assert ("Delhi HQ", "ReceivingRoutingId") in gap_keys(gaps)
 
-    def test_boolean_true_collides_with_lov_code_1(self):
-        # Known bug: normalize("true") == "y" == normalize("1").
-        # A boolean "true" export value is treated as equivalent to LOV code "1".
-        # This is a false CIP — the actual value is semantically different.
+    def test_boolean_true_does_not_collide_with_lov_code_1(self):
+        # Fixed: "1" no longer maps to "y". LOV code "1" stays as "1".
+        # "true" → "y" but "1" → "1", so they differ → Control gap.
         from engine.normalizer import normalize_value
 
-        assert normalize_value("true") == normalize_value("1") == "y"
+        assert normalize_value("true") == "y"
+        assert normalize_value("1") == "1"
 
         cip, gaps, _, _ = run(
             ["Mumbai Plant"],
-            {"ReceivingRoutingId": ["true"]},  # mis-exported as boolean
+            {"ReceivingRoutingId": ["true"]},
             [("ReceivingRoutingId", "1", "1-Direct, 2-Standard, 3-Inspection")],
         )
-        # Current behaviour: false CIP (both map to "y"). Asserted here to
-        # track the known limitation — fix via per-config comparison mode.
-        assert ("Mumbai Plant", "ReceivingRoutingId") in cip_keys(cip)
+        assert ("Mumbai Plant", "ReceivingRoutingId") in gap_keys(gaps)
 
-    def test_lov_code_0_maps_to_n_not_zero(self):
-        """LOV code '0' normalizes to 'n'. ideal='0', actual='0' → CIP via 'n'=='n'."""
+    def test_lov_code_0_stays_as_zero(self):
+        """LOV code '0' stays as '0' (not mapped to 'n'). ideal='0', actual='0' → CIP."""
         from engine.normalizer import normalize_value
 
-        assert normalize_value("0") == "n"
+        assert normalize_value("0") == "0"
 
         cip, gaps, _, _ = run(
             ["Mumbai Plant"],
@@ -990,8 +992,8 @@ class TestDuplicateBURows:
 
 
 class TestFuzzyFalsePositiveBoundary:
-    def test_score_below_90_gets_low_confidence_remark(self):
-        """Fuzzy score 80–89 → MappingResult.remarks contains 'Low confidence'."""
+    def test_fuzzy_match_carries_review_remark(self):
+        """All fuzzy matches carry 'Review recommended for fuzzy-mapped field'."""
         from thefuzz import fuzz
 
         ideal_name = "ReceivingRoutingFlag"
@@ -1008,10 +1010,10 @@ class TestFuzzyFalsePositiveBoundary:
         m = mapping[0]
         assert m.status == "Matched"
         assert m.match_method == "Fuzzy"
-        assert "Low confidence" in m.remarks
+        assert m.remarks == "Review recommended for fuzzy-mapped field"
 
-    def test_score_at_or_above_90_has_no_remark(self):
-        """Fuzzy score >= 90 → MappingResult.remarks is empty (high confidence)."""
+    def test_high_confidence_fuzzy_also_carries_review_remark(self):
+        """Fuzzy score >= 90 also carries the standard review remark."""
         from thefuzz import fuzz
 
         ideal_name = "AllowItemSubstitutionFlag"
@@ -1028,7 +1030,7 @@ class TestFuzzyFalsePositiveBoundary:
         m = mapping[0]
         assert m.status == "Matched"
         assert m.match_method == "Fuzzy"
-        assert m.remarks == ""
+        assert m.remarks == "Review recommended for fuzzy-mapped field"
 
     def test_below_threshold_is_unmatched_not_low_confidence(self):
         """Score below threshold → Unmatched, not a low-confidence match."""

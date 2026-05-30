@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AuditForge - EKS Microservices</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0d1117; --surface: #161b22; --surface2: #21262d;
+    --border: #30363d; --border-bright: #484f58;
+    --text: #e6edf3; --text-muted: #8b949e; --text-dim: #484f58;
+    --aws-orange: #ff9900; --aws-orange-dim: rgba(255,153,0,0.12); --aws-orange-border: rgba(255,153,0,0.4);
+    --k8s-blue: #326ce5; --k8s-blue-dim: rgba(50,108,229,0.1); --k8s-blue-border: rgba(50,108,229,0.35);
+    --green: #3fb950; --green-dim: rgba(63,185,80,0.12);
+    --orange: #f0883e; --blue: #58a6ff; --blue-dim: rgba(88,166,255,0.12);
+    --purple: #bc8cff; --purple-dim: rgba(188,140,255,0.12);
+    --red: #f85149; --yellow: #d29922; --cyan: #39d3c3; --pink: #f778ba;
+  }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+  /* ── HEADER ── */
+  .page-header {
+    background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100; backdrop-filter: blur(12px);
+  }
+  .page-header::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, rgba(50,108,229,0.05) 0%, transparent 40%, rgba(255,153,0,0.05) 100%);
+    pointer-events: none;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo-badge {
+    width: 38px; height: 38px; background: linear-gradient(135deg, var(--k8s-blue), var(--purple));
+    border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 800; color: #fff; box-shadow: 0 0 20px rgba(50,108,229,0.4);
+  }
+  .title-block h1 { font-size: 16px; font-weight: 700; color: var(--text); line-height: 1; }
+  .title-block p { font-size: 11px; color: var(--text-muted); margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+  .header-badges { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; border: 1px solid; }
+  .badge-orange { background: var(--aws-orange-dim); border-color: var(--aws-orange-border); color: var(--aws-orange); }
+  .badge-blue   { background: var(--k8s-blue-dim);   border-color: var(--k8s-blue-border);   color: var(--blue); }
+  .badge-green  { background: var(--green-dim);  border-color: rgba(63,185,80,0.35);   color: var(--green); }
+  .badge-purple { background: var(--purple-dim); border-color: rgba(188,140,255,0.35); color: var(--purple); }
+  .badge-cost   { background: rgba(210,153,34,0.12); border-color: rgba(210,153,34,0.35); color: var(--yellow); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+  .diagram-num  { font-size: 11px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; }
+
+  /* ── CONTROLS ── */
+  .control-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 32px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .control-bar > span { font-size: 11px; color: var(--text-muted); margin-right: 4px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn:not(:disabled):active { transform: scale(0.97); }
+  .btn-deploy   { background: linear-gradient(135deg, #238636, #2ea043); border-color: rgba(46,160,67,0.6); color: #fff; box-shadow: 0 2px 12px rgba(46,160,67,0.25); }
+  .btn-deploy:not(:disabled):hover { box-shadow: 0 2px 20px rgba(46,160,67,0.45); filter: brightness(1.1); }
+  .btn-loadtest { background: linear-gradient(135deg, #1f4e8c, #326ce5); border-color: rgba(50,108,229,0.6); color: #fff; box-shadow: 0 2px 12px rgba(50,108,229,0.25); }
+  .btn-loadtest:not(:disabled):hover { box-shadow: 0 2px 20px rgba(50,108,229,0.45); filter: brightness(1.1); }
+  .btn-reset { background: var(--surface2); border-color: var(--border); color: var(--text-muted); }
+  .btn-reset:hover { border-color: var(--border-bright); color: var(--text); }
+  .status-log { margin-left: auto; font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; min-width: 280px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .status-log .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--green); margin-right: 6px; animation: pulse-dot 2s infinite; }
+  @keyframes pulse-dot { 0%,100%{ opacity:1; } 50%{ opacity:0.3; } }
+
+  /* ── CANVAS ── */
+  .canvas { padding: 24px 28px 40px; max-width: 1600px; margin: 0 auto; }
+
+  /* ── PIPELINE ── */
+  .pipeline-row {
+    display: flex; align-items: center;
+    background: linear-gradient(90deg, rgba(30,40,55,0.6) 0%, rgba(20,28,42,0.8) 100%);
+    border: 1px solid rgba(88,166,255,0.2); border-radius: 12px;
+    padding: 22px 20px 14px; margin-bottom: 20px; position: relative; overflow: hidden;
+  }
+  .pipeline-row::before {
+    content: 'GitOps CI/CD Pipeline'; position: absolute; top: 6px; left: 14px;
+    font-size: 9px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px;
+  }
+  .pipe-stage { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 14px; border-radius: 8px; border: 1px solid transparent; flex: 1; min-width: 90px; }
+  .pipe-stage .icon { font-size: 20px; }
+  .pipe-stage .label { font-size: 10px; font-weight: 700; }
+  .pipe-stage .sublabel { font-size: 9px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+  .pipe-github  { background: rgba(22,27,34,0.8); border-color: var(--border); }
+  .pipe-github .label  { color: var(--text-muted); }
+  .pipe-actions { background: rgba(240,136,62,0.08); border-color: rgba(240,136,62,0.25); }
+  .pipe-actions .label { color: var(--orange); }
+  .pipe-ecr  { background: rgba(255,153,0,0.08);    border-color: rgba(255,153,0,0.25); }
+  .pipe-ecr .label     { color: var(--aws-orange); }
+  .pipe-argo { background: rgba(240,100,170,0.08);  border-color: rgba(240,100,170,0.25); }
+  .pipe-argo .label    { color: var(--pink); }
+  .pipe-eks  { background: rgba(50,108,229,0.08);   border-color: rgba(50,108,229,0.3); }
+  .pipe-eks .label     { color: var(--blue); }
+  .pipe-gate { display: flex; align-items: center; justify-content: center; width: 32px; flex-shrink: 0; flex-direction: column; gap: 2px; }
+  .pipe-gate .check { width: 16px; height: 16px; border-radius: 50%; background: rgba(63,185,80,0.2); border: 1px solid rgba(63,185,80,0.5); display: flex; align-items: center; justify-content: center; font-size: 8px; color: var(--green); transition: all 0.4s; }
+  .pipe-gate .arrow { font-size: 12px; color: var(--border-bright); }
+  .pipe-gate.deploying .check { background: rgba(255,153,0,0.2); border-color: rgba(255,153,0,0.5); color: var(--aws-orange); animation: spin-gate 1s linear infinite; }
+  @keyframes spin-gate { to { transform: rotate(360deg); } }
+
+  /* ── AWS OUTER ── */
+  .aws-outer { border: 2px solid var(--aws-orange-border); border-radius: 16px; padding: 20px; background: rgba(255,153,0,0.02); position: relative; }
+  .aws-outer::before { content: 'AWS Cloud'; position: absolute; top: -11px; left: 20px; background: var(--bg); padding: 0 8px; font-size: 11px; font-weight: 700; color: var(--aws-orange); }
+  .aws-label-right { position: absolute; top: -11px; right: 20px; background: var(--bg); padding: 0 8px; font-size: 10px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+
+  /* ── EDGE LAYOUT ── */
+  .edge-row { display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: start; margin-bottom: 16px; }
+  .edge-services-left, .edge-services-right { display: flex; flex-direction: column; gap: 10px; }
+  .conn-arrow { color: var(--text-dim); font-size: 18px; text-align: center; display: block; margin: -4px 0; }
+
+  /* ── AWS SERVICES ── */
+  .aws-service { border: 1px solid; border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; min-width: 165px; transition: box-shadow 0.3s; }
+  .aws-service:hover { box-shadow: 0 0 16px rgba(255,153,0,0.15); }
+  .aws-service .svc-icon { font-size: 22px; flex-shrink: 0; }
+  .aws-service .svc-name { font-size: 12px; font-weight: 700; }
+  .aws-service .svc-detail { font-size: 10px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; margin-top: 1px; }
+  .svc-r53     { background: rgba(153,102,255,0.08); border-color: rgba(153,102,255,0.3); }
+  .svc-r53 .svc-name     { color: #9966ff; }
+  .svc-alb     { background: rgba(255,153,0,0.08);   border-color: rgba(255,153,0,0.3); }
+  .svc-alb .svc-name     { color: var(--aws-orange); }
+  .svc-secrets { background: rgba(240,136,62,0.08);  border-color: rgba(240,136,62,0.3); }
+  .svc-secrets .svc-name { color: var(--orange); }
+  .svc-ecr     { background: rgba(255,153,0,0.08);   border-color: rgba(255,153,0,0.3); }
+  .svc-ecr .svc-name     { color: var(--aws-orange); }
+  .svc-aurora  { background: rgba(57,211,195,0.08);  border-color: rgba(57,211,195,0.3); }
+  .svc-aurora .svc-name  { color: var(--cyan); }
+  .svc-redis   { background: rgba(248,81,73,0.08);   border-color: rgba(248,81,73,0.3); }
+  .svc-redis .svc-name   { color: var(--red); }
+  .svc-s3      { background: rgba(63,185,80,0.08);   border-color: rgba(63,185,80,0.3); }
+  .svc-s3 .svc-name      { color: var(--green); }
+  .db-nodes-row { display: flex; gap: 5px; margin-top: 5px; }
+  .db-node { font-size: 9px; padding: 2px 7px; border-radius: 4px; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+  .db-writer { background: rgba(57,211,195,0.15); color: var(--cyan); border: 1px solid rgba(57,211,195,0.3); }
+  .db-reader { background: rgba(88,166,255,0.1);  color: var(--blue); border: 1px solid rgba(88,166,255,0.25); }
+
+  /* ── EKS CLUSTER ── */
+  .eks-cluster { border: 2px dashed var(--k8s-blue-border); border-radius: 16px; padding: 18px; background: var(--k8s-blue-dim); position: relative; }
+  .eks-cluster::before { content: 'EKS Cluster  \2022  ap-south-1'; position: absolute; top: -11px; left: 16px; background: var(--bg); padding: 0 8px; font-size: 11px; font-weight: 700; color: var(--k8s-blue); }
+
+  /* ── NODE GROUPS ── */
+  .node-groups-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .node-group { border: 1px solid; border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; }
+  .node-group-ondemand { border-style: solid;  background: rgba(88,166,255,0.06);  border-color: rgba(88,166,255,0.25); }
+  .node-group-spot     { border-style: dashed; background: rgba(188,140,255,0.06); border-color: rgba(188,140,255,0.3); }
+  .ng-icon { font-size: 22px; }
+  .ng-name { font-size: 11px; font-weight: 700; }
+  .node-group-ondemand .ng-name { color: var(--blue); }
+  .node-group-spot .ng-name     { color: var(--purple); }
+  .ng-spec    { font-size: 9px; color: var(--text-dim);  font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+  .ng-purpose { font-size: 9px; color: var(--text-muted); margin-top: 1px; }
+
+  /* ── NAMESPACE ── */
+  .namespace-box { border: 1px dashed rgba(88,166,255,0.4); border-radius: 12px; padding: 14px; background: rgba(13,17,23,0.5); position: relative; }
+  .namespace-box::before { content: 'namespace: auditforge'; position: absolute; top: -9px; left: 12px; background: var(--bg); padding: 0 6px; font-size: 9px; font-weight: 600; color: rgba(88,166,255,0.7); font-family: 'JetBrains Mono', monospace; }
+
+  /* ── PODS ── */
+  .pods-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+  .pod-card { border: 1px solid; border-radius: 10px; padding: 10px 12px; position: relative; transition: all 0.4s ease; }
+  .pod-card::after { content: attr(data-version); position: absolute; top: 6px; right: 8px; font-size: 8px; font-family: 'JetBrains Mono', monospace; color: var(--text-dim); background: var(--surface2); border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px; transition: color 0.3s; }
+  .pod-running     { background: rgba(63,185,80,0.07);  border-color: rgba(63,185,80,0.3); }
+  .pod-terminating { background: rgba(240,136,62,0.12); border-color: rgba(240,136,62,0.45); animation: flicker 0.4s ease-in-out infinite alternate; }
+  .pod-starting    { background: rgba(88,166,255,0.1);  border-color: rgba(88,166,255,0.45); animation: fade-in-blue 0.6s ease-out; }
+  @keyframes flicker      { from{opacity:0.7} to{opacity:1} }
+  @keyframes fade-in-blue { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+  .pod-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .pod-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; transition: background 0.4s; }
+  .dot-green  { background: var(--green);  box-shadow: 0 0 6px rgba(63,185,80,0.6);  animation: pulse-green 2.5s infinite; }
+  .dot-orange { background: var(--orange); box-shadow: 0 0 6px rgba(240,136,62,0.7); }
+  .dot-blue   { background: var(--blue);   box-shadow: 0 0 6px rgba(88,166,255,0.6); animation: pulse-blue 1.5s infinite; }
+  @keyframes pulse-green { 0%,100%{box-shadow:0 0 4px rgba(63,185,80,0.4)}  50%{box-shadow:0 0 10px rgba(63,185,80,0.8)} }
+  @keyframes pulse-blue  { 0%,100%{box-shadow:0 0 4px rgba(88,166,255,0.4)} 50%{box-shadow:0 0 12px rgba(88,166,255,0.9)} }
+  .pod-name { font-size: 11px; font-weight: 700; }
+  .pod-running .pod-name     { color: var(--green); }
+  .pod-terminating .pod-name { color: var(--orange); }
+  .pod-starting .pod-name    { color: var(--blue); }
+  .pod-replicas { font-size: 9px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; }
+  .pod-replicas span { color: var(--text-muted); }
+  .pod-hpa { display: inline-flex; align-items: center; gap: 3px; font-size: 9px; padding: 2px 6px; border-radius: 4px; border: 1px solid; margin-bottom: 4px; font-family: 'JetBrains Mono', monospace; }
+  .hpa-normal { background: rgba(63,185,80,0.08);  border-color: rgba(63,185,80,0.3);  color: var(--green); }
+  .hpa-keda   { background: rgba(188,140,255,0.1); border-color: rgba(188,140,255,0.35); color: var(--purple); }
+  .pod-resources { font-size: 9px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; display: flex; gap: 8px; margin-top: 3px; }
+  .res-cpu { color: rgba(88,166,255,0.7); }
+  .res-mem { color: rgba(57,211,195,0.7); }
+  .pod-role { font-size: 9px; color: var(--text-dim); margin-top: 2px; }
+  .replica-dots { display: flex; gap: 3px; margin-top: 5px; flex-wrap: wrap; }
+  .rdot { width: 10px; height: 10px; border-radius: 2px; background: rgba(63,185,80,0.3); border: 1px solid rgba(63,185,80,0.5); transition: all 0.4s; flex-shrink: 0; }
+  .rdot.term   { background: rgba(240,136,62,0.4);  border-color: rgba(240,136,62,0.6);  animation: flicker 0.3s infinite alternate; }
+  .rdot.new    { background: rgba(88,166,255,0.4);  border-color: rgba(88,166,255,0.6);  animation: pulse-blue 1s infinite; }
+  .rdot.scaled { background: rgba(188,140,255,0.4); border-color: rgba(188,140,255,0.6); animation: pulse-blue 0.8s infinite; }
+  .worker-scale-bar  { margin-top: 6px; height: 4px; border-radius: 4px; background: rgba(188,140,255,0.15); border: 1px solid rgba(188,140,255,0.2); overflow: hidden; }
+  .worker-scale-fill { height: 100%; background: linear-gradient(90deg, var(--purple), var(--blue)); border-radius: 4px; transition: width 0.8s ease; width: 6%; }
+  .worker-scale-label { font-size: 8px; color: var(--purple); font-family: 'JetBrains Mono', monospace; text-align: right; margin-top: 2px; }
+
+  /* ── AUTOSCALERS ── */
+  .autoscalers-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .autoscaler-box { border: 1px solid; border-radius: 8px; padding: 9px 12px; display: flex; align-items: center; gap: 10px; }
+  .as-hpa  { background: rgba(63,185,80,0.07);  border-color: rgba(63,185,80,0.25); }
+  .as-keda { background: rgba(188,140,255,0.07); border-color: rgba(188,140,255,0.25); }
+  .as-icon { font-size: 20px; }
+  .as-name { font-size: 11px; font-weight: 700; }
+  .as-hpa .as-name  { color: var(--green); }
+  .as-keda .as-name { color: var(--purple); }
+  .as-detail  { font-size: 9px; color: var(--text-dim);  font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+  .as-targets { font-size: 9px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ── REDIS GAUGE ── */
+  .redis-gauge-wrap { border: 1px solid rgba(248,81,73,0.3); border-radius: 8px; padding: 8px 12px; background: rgba(248,81,73,0.05); margin-top: 10px; display: flex; align-items: center; gap: 12px; }
+  .gauge-label    { font-size: 10px; color: var(--red); font-weight: 700; min-width: 80px; }
+  .gauge-bar-wrap { flex: 1; }
+  .gauge-track    { height: 8px; border-radius: 6px; background: rgba(248,81,73,0.1); border: 1px solid rgba(248,81,73,0.2); overflow: hidden; }
+  .gauge-fill     { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #f85149, #ff6b6b); transition: width 1s ease; width: 2%; }
+  .gauge-value    { font-size: 10px; color: var(--red); font-family: 'JetBrains Mono', monospace; min-width: 55px; text-align: right; }
+
+  /* ── DEPLOY PROGRESS ── */
+  .deploy-progress { margin-top: 12px; padding: 12px; display: none; background: rgba(22,27,34,0.9); border: 1px solid var(--border); border-radius: 8px; }
+  .deploy-progress.visible { display: block; }
+  .dp-title { font-size: 10px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+  .dp-steps { display: flex; flex-direction: column; gap: 4px; }
+  .dp-step  { display: flex; align-items: center; gap: 8px; font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+  .dp-step .step-icon { width: 14px; font-size: 11px; }
+  .dp-step.done   .step-label { color: var(--green); }
+  .dp-step.active .step-label { color: var(--aws-orange); animation: pulse-dot 0.6s infinite; }
+  .dp-step.pending .step-label { color: var(--text-dim); }
+
+  /* ── LEGEND ── */
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; padding: 14px 20px; margin-top: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; align-items: center; }
+  .legend-title { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-right: 4px; }
+  .legend-item  { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--text-muted); }
+  .legend-dot   { width: 8px;  height: 8px; border-radius: 50%; }
+  .legend-sq    { width: 10px; height: 6px; border-radius: 2px; }
+  .legend-line  { width: 20px; height: 2px; border-top: 2px dashed; }
+
+  /* ── FOOTER ── */
+  .page-footer { text-align: center; padding: 16px; font-size: 10px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; border-top: 1px solid var(--border); margin-top: 16px; }
+
+  /* ── TOAST ── */
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 16px; font-size: 12px; color: var(--text); box-shadow: 0 8px 32px rgba(0,0,0,0.5); transform: translateY(80px); opacity: 0; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); z-index: 200; max-width: 320px; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast-icon { font-size: 14px; margin-right: 6px; }
+</style>
+</head>
+<body>
+
+<!-- ── PAGE HEADER ── -->
+<header class="page-header">
+  <div class="header-left">
+    <div class="logo-badge">A</div>
+    <div class="title-block">
+      <h1>AuditForge &mdash; EKS Microservices</h1>
+      <p>AWS / Kubernetes &bull; Solutions Architect Diagram 3 of 6</p>
+    </div>
+  </div>
+  <div class="header-badges">
+    <span class="badge badge-orange">&#x2b21; AWS EKS</span>
+    <span class="badge badge-blue">&#x2388; Kubernetes</span>
+    <span class="badge badge-purple">&#x26a1; KEDA</span>
+    <span class="badge badge-green">GitOps / ArgoCD</span>
+    <span class="badge badge-cost">~$1,200/mo base + 60&ndash;70% spot savings</span>
+    <span class="diagram-num">3 / 6</span>
+  </div>
+</header>
+
+<!-- ── CONTROLS ── -->
+<div class="control-bar">
+  <span>Simulate:</span>
+  <button class="btn btn-deploy"   id="btnDeploy" onclick="runDeployment()">&#x1f680; Deploy v2.2</button>
+  <button class="btn btn-loadtest" id="btnLoad"   onclick="runLoadTest()">&#x26a1; Load Test</button>
+  <button class="btn btn-reset"    onclick="resetAll()">&#x21ba; Reset</button>
+  <div class="status-log" id="statusLog"><span class="dot"></span>All systems nominal &mdash; ap-south-1</div>
+</div>
+
+<!-- ── CANVAS ── -->
+<div class="canvas">
+
+  <!-- GitOps Pipeline -->
+  <div class="pipeline-row">
+    <div class="pipe-stage pipe-github">
+      <div class="icon">&#x1f419;</div>
+      <div class="label">GitHub</div>
+      <div class="sublabel">main branch</div>
+    </div>
+    <div class="pipe-gate" id="gate1">
+      <div class="arrow">&rarr;</div>
+      <div class="check" id="check1">&#x2713;</div>
+    </div>
+    <div class="pipe-stage pipe-actions">
+      <div class="icon">&#x2699;&#xfe0f;</div>
+      <div class="label">Actions</div>
+      <div class="sublabel">build + test</div>
+    </div>
+    <div class="pipe-gate" id="gate2">
+      <div class="arrow">&rarr;</div>
+      <div class="check" id="check2">&#x2713;</div>
+    </div>
+    <div class="pipe-stage pipe-ecr">
+      <div class="icon">&#x1f4e6;</div>
+      <div class="label">ECR</div>
+      <div class="sublabel">push image</div>
+    </div>
+    <div class="pipe-gate" id="gate3">
+      <div class="arrow">&rarr;</div>
+      <div class="check" id="check3">&#x2713;</div>
+    </div>
+    <div class="pipe-stage pipe-argo">
+      <div class="icon">&#x1f504;</div>
+      <div class="label">ArgoCD</div>
+      <div class="sublabel">GitOps sync</div>
+    </div>
+    <div class="pipe-gate" id="gate4">
+      <div class="arrow">&rarr;</div>
+      <div class="check" id="check4">&#x2713;</div>
+    </div>
+    <div class="pipe-stage pipe-eks">
+      <div class="icon">&#x2388;</div>
+      <div class="label">EKS Deploy</div>
+      <div class="sublabel">rolling update</div>
+    </div>
+  </div>
+
+  <!-- AWS Outer -->
+  <div class="aws-outer">
+    <div class="aws-label-right">ap-south-1 (Mumbai)</div>
+
+    <div class="edge-row">
+
+      <!-- Left: edge + secrets services -->
+      <div class="edge-services-left">
+        <div class="aws-service svc-r53">
+          <div class="svc-icon">&#x1f310;</div>
+          <div>
+            <div class="svc-name">Route 53</div>
+            <div class="svc-detail">DNS failover</div>
+          </div>
+        </div>
+        <span class="conn-arrow">&updownarrow;</span>
+        <div class="aws-service svc-alb">
+          <div class="svc-icon">&#x2696;&#xfe0f;</div>
+          <div>
+            <div class="svc-name">ALB Ingress</div>
+            <div class="svc-detail">aws-load-balancer-controller</div>
+          </div>
+        </div>
+        <span class="conn-arrow">&updownarrow;</span>
+        <div class="aws-service svc-secrets">
+          <div class="svc-icon">&#x1f510;</div>
+          <div>
+            <div class="svc-name">Secrets Manager</div>
+            <div class="svc-detail">External Secrets Operator</div>
+          </div>
+        </div>
+        <div class="aws-service svc-ecr" style="margin-top:6px">
+          <div class="svc-icon">&#x1f5c3;&#xfe0f;</div>
+          <div>
+            <div class="svc-name">ECR</div>
+            <div class="svc-detail">container images</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Centre: EKS Cluster -->
+      <div class="eks-cluster">
+
+        <!-- Node groups -->
+        <div class="node-groups-row">
+          <div class="node-group node-group-ondemand">
+            <div class="ng-icon">&#x1f4bb;</div>
+            <div>
+              <div class="ng-name">On-Demand Nodes</div>
+              <div class="ng-spec">t3.large &bull; 2 vCPU &bull; 8 GB</div>
+              <div class="ng-purpose">System / API workloads</div>
+            </div>
+          </div>
+          <div class="node-group node-group-spot">
+            <div class="ng-icon">&#x26a1;</div>
+            <div>
+              <div class="ng-name">Spot Nodes</div>
+              <div class="ng-spec">c5.2xlarge &bull; 8 vCPU &bull; 16 GB</div>
+              <div class="ng-purpose">Worker / batch &bull; 60&ndash;70% savings</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- namespace: auditforge -->
+        <div class="namespace-box">
+
+          <!-- Pod grid -->
+          <div class="pods-grid" id="podsGrid">
+
+            <div class="pod-card pod-running" id="pod-api" data-version="v2.1">
+              <div class="pod-header">
+                <div class="pod-status-dot dot-green" id="dot-api"></div>
+                <div class="pod-name">api-gateway</div>
+              </div>
+              <div class="pod-replicas">replicas: <span id="rep-api">2</span></div>
+              <div class="pod-hpa hpa-normal">HPA max 8</div>
+              <div class="pod-resources"><span class="res-cpu">cpu: 250m</span><span class="res-mem">mem: 256Mi</span></div>
+              <div class="pod-role">routes all traffic</div>
+              <div class="replica-dots" id="rdots-api"><div class="rdot"></div><div class="rdot"></div></div>
+            </div>
+
+            <div class="pod-card pod-running" id="pod-audit" data-version="v2.1">
+              <div class="pod-header">
+                <div class="pod-status-dot dot-green" id="dot-audit"></div>
+                <div class="pod-name">audit-service</div>
+              </div>
+              <div class="pod-replicas">replicas: <span id="rep-audit">2</span></div>
+              <div class="pod-hpa hpa-normal">HPA max 6</div>
+              <div class="pod-resources"><span class="res-cpu">cpu: 500m</span><span class="res-mem">mem: 512Mi</span></div>
+              <div class="pod-role">audit CRUD + logic</div>
+              <div class="replica-dots" id="rdots-audit"><div class="rdot"></div><div class="rdot"></div></div>
+            </div>
+
+            <div class="pod-card pod-running" id="pod-user" data-version="v2.1">
+              <div class="pod-header">
+                <div class="pod-status-dot dot-green" id="dot-user"></div>
+                <div class="pod-name">user-service</div>
+              </div>
+              <div class="pod-replicas">replicas: <span id="rep-user">1</span></div>
+              <div class="pod-resources"><span class="res-cpu">cpu: 200m</span><span class="res-mem">mem: 256Mi</span></div>
+              <div class="pod-role">user management</div>
+              <div class="replica-dots" id="rdots-user"><div class="rdot"></div></div>
+            </div>
+
+            <div class="pod-card pod-running" id="pod-ideal" data-version="v2.1">
+              <div class="pod-header">
+                <div class="pod-status-dot dot-green" id="dot-ideal"></div>
+                <div class="pod-name">ideal-service</div>
+              </div>
+              <div class="pod-replicas">replicas: <span id="rep-ideal">1</span></div>
+              <div class="pod-resources"><span class="res-cpu">cpu: 200m</span><span class="res-mem">mem: 256Mi</span></div>
+              <div class="pod-role">ideal file management</div>
+              <div class="replica-dots" id="rdots-ideal"><div class="rdot"></div></div>
+            </div>
+
+            <div class="pod-card pod-running" id="pod-worker" data-version="v2.1">
+              <div class="pod-header">
+                <div class="pod-status-dot dot-green" id="dot-worker"></div>
+                <div class="pod-name">audit-worker</div>
+              </div>
+              <div class="pod-replicas">replicas: <span id="rep-worker">3</span></div>
+              <div class="pod-hpa hpa-keda">KEDA max 50</div>
+              <div class="pod-resources"><span class="res-cpu">cpu: 1000m</span><span class="res-mem">mem: 1024Mi</span></div>
+              <div class="pod-role">Redis queue processor</div>
+              <div class="replica-dots" id="rdots-worker">
+                <div class="rdot"></div><div class="rdot"></div><div class="rdot"></div>
+              </div>
+              <div class="worker-scale-bar"><div class="worker-scale-fill" id="workerScaleFill"></div></div>
+              <div class="worker-scale-label" id="workerScaleLabel">3 / 50 pods</div>
+            </div>
+
+            <div class="pod-card pod-running" id="pod-notif" data-version="v2.1">
+              <div class="pod-header">
+                <div class="pod-status-dot dot-green" id="dot-notif"></div>
+                <div class="pod-name">notification-svc</div>
+              </div>
+              <div class="pod-replicas">replicas: <span id="rep-notif">2</span></div>
+              <div class="pod-resources"><span class="res-cpu">cpu: 200m</span><span class="res-mem">mem: 256Mi</span></div>
+              <div class="pod-role">WebSocket real-time</div>
+              <div class="replica-dots" id="rdots-notif"><div class="rdot"></div><div class="rdot"></div></div>
+            </div>
+
+          </div><!-- /pods-grid -->
+
+          <!-- Autoscalers -->
+          <div class="autoscalers-row">
+            <div class="autoscaler-box as-hpa">
+              <div class="as-icon">&#x1f4c8;</div>
+              <div>
+                <div class="as-name">HPA</div>
+                <div class="as-detail">Horizontal Pod Autoscaler</div>
+                <div class="as-targets">api-gateway, audit-service</div>
+              </div>
+            </div>
+            <div class="autoscaler-box as-keda">
+              <div class="as-icon">&#x26a1;</div>
+              <div>
+                <div class="as-name">KEDA</div>
+                <div class="as-detail">Kubernetes Event-Driven Autoscaler</div>
+                <div class="as-targets">audit-worker &bull; Redis queue depth</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Redis gauge -->
+          <div class="redis-gauge-wrap">
+            <div class="gauge-label">Redis Queue</div>
+            <div class="gauge-bar-wrap">
+              <div class="gauge-track"><div class="gauge-fill" id="gaugeFill"></div></div>
+            </div>
+            <div class="gauge-value" id="gaugeValue">0 jobs</div>
+          </div>
+
+        </div><!-- /namespace-box -->
+
+      </div><!-- /eks-cluster -->
+
+      <!-- Right: data services -->
+      <div class="edge-services-right">
+        <div class="aws-service svc-aurora">
+          <div class="svc-icon">&#x1f5c4;&#xfe0f;</div>
+          <div>
+            <div class="svc-name">Aurora PostgreSQL</div>
+            <div class="svc-detail">db.r6g.large cluster</div>
+            <div class="db-nodes-row">
+              <span class="db-node db-writer">writer</span>
+              <span class="db-node db-reader">read replica</span>
+            </div>
+          </div>
+        </div>
+        <span class="conn-arrow">&updownarrow;</span>
+        <div class="aws-service svc-redis">
+          <div class="svc-icon">&#x1f534;</div>
+          <div>
+            <div class="svc-name">ElastiCache Redis</div>
+            <div class="svc-detail">cache.t3.micro</div>
+            <div class="svc-detail" style="color:rgba(248,81,73,0.6)">job queue + sessions</div>
+          </div>
+        </div>
+        <span class="conn-arrow">&updownarrow;</span>
+        <div class="aws-service svc-s3">
+          <div class="svc-icon">&#x1faa3;</div>
+          <div>
+            <div class="svc-name">S3</div>
+            <div class="svc-detail">Excel uploads + reports</div>
+            <div class="svc-detail" style="color:rgba(63,185,80,0.6)">versioning enabled</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /edge-row -->
+
+    <!-- Deploy progress -->
+    <div class="deploy-progress" id="deployProgress">
+      <div class="dp-title">Rolling Update Progress</div>
+      <div class="dp-steps" id="deploySteps"></div>
+    </div>
+
+  </div><!-- /aws-outer -->
+
+  <!-- Legend -->
+  <div class="legend">
+    <span class="legend-title">Legend</span>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green);box-shadow:0 0 5px rgba(63,185,80,0.6)"></div>Running</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>Terminating</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--blue);box-shadow:0 0 5px rgba(88,166,255,0.6)"></div>Starting (new)</div>
+    <div class="legend-item"><div class="legend-sq" style="background:rgba(63,185,80,0.3);border:1px solid rgba(63,185,80,0.5)"></div>Replica (running)</div>
+    <div class="legend-item"><div class="legend-sq" style="background:rgba(188,140,255,0.3);border:1px solid rgba(188,140,255,0.5)"></div>Replica (KEDA scaled)</div>
+    <div class="legend-item"><div class="legend-line" style="border-color:var(--k8s-blue-border)"></div>Kubernetes boundary</div>
+    <div class="legend-item"><div class="legend-line" style="border-color:var(--aws-orange-border)"></div>AWS boundary</div>
+    <div class="legend-item" style="margin-left:auto;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text-dim)">HPA = CPU/memory autoscale &bull; KEDA = event-driven (Redis queue depth)</div>
+  </div>
+
+</div><!-- /canvas -->
+
+<div class="page-footer">
+  AuditForge Architecture Series &mdash; Diagram 3 of 6 &bull; AWS EKS Microservices &bull; ap-south-1 (Mumbai) &bull; Standalone HTML
+</div>
+
+<div class="toast" id="toast"><span class="toast-icon" id="toastIcon"></span><span id="toastMsg"></span></div>
+
+<script>
+/* ── State ── */
+var animating = false;
+var pods = ['api','audit','user','ideal','worker','notif'];
+
+function setLog(msg) {
+  document.getElementById('statusLog').innerHTML = '<span class="dot"></span>' + msg;
+}
+function showToast(icon, msg, dur) {
+  var t = document.getElementById('toast');
+  document.getElementById('toastIcon').textContent = icon;
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, dur || 3500);
+}
+function sleep(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
+
+/* ── Deploy v2.2 ── */
+async function runDeployment() {
+  if (animating) return;
+  animating = true;
+  document.getElementById('btnDeploy').disabled = true;
+  document.getElementById('btnLoad').disabled = true;
+  setLog('Starting rolling deployment v2.1 &rarr; v2.2...');
+  showToast('', 'Rolling deployment initiated: v2.1 to v2.2');
+
+  await animatePipeline();
+
+  var prog = document.getElementById('deployProgress');
+  prog.classList.add('visible');
+  var steps = [
+    {id:'s1', label:'Build image & push to ECR'},
+    {id:'s2', label:'ArgoCD detects manifest change'},
+    {id:'s3', label:'Rolling update: api-gateway'},
+    {id:'s4', label:'Rolling update: audit-service'},
+    {id:'s5', label:'Rolling update: user-service'},
+    {id:'s6', label:'Rolling update: ideal-service'},
+    {id:'s7', label:'Rolling update: audit-worker'},
+    {id:'s8', label:'Rolling update: notification-svc'},
+    {id:'s9', label:'Health checks passed  v2.2 live'}
+  ];
+  document.getElementById('deploySteps').innerHTML = steps.map(function(s){
+    return '<div class="dp-step pending" id="'+s.id+'"><span class="step-icon">&#x25cb;</span><span class="step-label">'+s.label+'</span></div>';
+  }).join('');
+
+  async function activateStep(id) {
+    var el = document.getElementById(id);
+    el.className = 'dp-step active';
+    el.querySelector('.step-icon').innerHTML = '&#x25cc;';
+    await sleep(600);
+    el.className = 'dp-step done';
+    el.querySelector('.step-icon').textContent = '✓';
+  }
+
+  await activateStep('s1');
+  await activateStep('s2');
+
+  var podOrder = ['api','audit','user','ideal','worker','notif'];
+  var stepIds  = ['s3','s4','s5','s6','s7','s8'];
+  for (var i = 0; i < podOrder.length; i++) {
+    activateStep(stepIds[i]);
+    await animatePodRolling(podOrder[i]);
+    await sleep(300);
+  }
+  await activateStep('s9');
+
+  setLog('Deployment complete &mdash; all pods running v2.2');
+  showToast('', 'Deployment complete! All pods running v2.2', 4000);
+  animating = false;
+  document.getElementById('btnDeploy').disabled = false;
+  document.getElementById('btnLoad').disabled = false;
+}
+
+async function animatePipeline() {
+  var gates  = ['gate1','gate2','gate3','gate4'];
+  var checks = ['check1','check2','check3','check4'];
+  for (var i = 0; i < gates.length; i++) {
+    var g = document.getElementById(gates[i]);
+    var c = document.getElementById(checks[i]);
+    g.classList.add('deploying');
+    c.innerHTML = '&#x21bb;';
+    await sleep(450);
+    g.classList.remove('deploying');
+    c.textContent = '✓';
+    c.style.background = 'rgba(63,185,80,0.3)';
+    c.style.color = 'var(--green)';
+    await sleep(120);
+  }
+  await sleep(300);
+  checks.forEach(function(id) {
+    var el = document.getElementById(id);
+    el.style.background = ''; el.style.color = '';
+    el.textContent = '✓';
+  });
+}
+
+async function animatePodRolling(podId) {
+  var card  = document.getElementById('pod-'   + podId);
+  var dot   = document.getElementById('dot-'   + podId);
+  var rdots = document.getElementById('rdots-' + podId);
+
+  card.className = 'pod-card pod-terminating';
+  dot.className  = 'pod-status-dot dot-orange';
+  Array.from(rdots.children).forEach(function(d){ d.classList.add('term'); });
+  card.setAttribute('data-version', 'terminating...');
+  await sleep(700);
+
+  card.className = 'pod-card pod-starting';
+  dot.className  = 'pod-status-dot dot-blue';
+  Array.from(rdots.children).forEach(function(d){ d.classList.remove('term'); d.classList.add('new'); });
+  card.setAttribute('data-version', 'v2.2 starting...');
+  await sleep(900);
+
+  card.className = 'pod-card pod-running';
+  dot.className  = 'pod-status-dot dot-green';
+  Array.from(rdots.children).forEach(function(d){ d.classList.remove('new'); });
+  card.setAttribute('data-version', 'v2.2');
+}
+
+/* ── Load Test / KEDA ── */
+async function runLoadTest() {
+  if (animating) return;
+  animating = true;
+  document.getElementById('btnDeploy').disabled = true;
+  document.getElementById('btnLoad').disabled = true;
+  setLog('Load test starting &mdash; KEDA scaling audit-worker...');
+  showToast('', 'Load test: KEDA scaling audit-worker 3 to 20 pods');
+
+  var repEl    = document.getElementById('rep-worker');
+  var fillEl   = document.getElementById('workerScaleFill');
+  var labelEl  = document.getElementById('workerScaleLabel');
+  var rdotsEl  = document.getElementById('rdots-worker');
+  var gaugeEl  = document.getElementById('gaugeFill');
+  var gaugeVal = document.getElementById('gaugeValue');
+
+  setLog('Redis queue depth rising &mdash; KEDA trigger firing...');
+  var jobs = 0;
+  var queueRamp = setInterval(function(){
+    jobs = Math.min(jobs + 120, 3000);
+    gaugeEl.style.width = (jobs / 3000 * 100) + '%';
+    gaugeVal.textContent = jobs.toLocaleString() + ' jobs';
+  }, 80);
+  await sleep(1200);
+  clearInterval(queueRamp);
+
+  var currentPods = 3;
+  var targetPods  = 20;
+  var scaleUp = setInterval(function(){
+    if (currentPods >= targetPods) { clearInterval(scaleUp); return; }
+    currentPods++;
+    repEl.textContent  = currentPods;
+    fillEl.style.width = (currentPods / 50 * 100) + '%';
+    labelEl.textContent = currentPods + ' / 50 pods';
+    var d = document.createElement('div');
+    d.className = 'rdot scaled';
+    rdotsEl.appendChild(d);
+  }, 80);
+  await sleep(1400);
+
+  setLog(targetPods + ' audit-worker pods running &mdash; processing queue...');
+  showToast('', 'KEDA scaled to 20 pods  queue draining', 2500);
+  await sleep(2000);
+
+  setLog('Queue draining &mdash; scaling down...');
+  var queueDrain = setInterval(function(){
+    jobs = Math.max(jobs - 200, 0);
+    gaugeEl.style.width = (jobs / 3000 * 100) + '%';
+    gaugeVal.textContent = jobs.toLocaleString() + ' jobs';
+  }, 80);
+  await sleep(1500);
+  clearInterval(queueDrain);
+
+  var scaleDown = setInterval(function(){
+    if (currentPods <= 3) { clearInterval(scaleDown); return; }
+    currentPods--;
+    repEl.textContent  = currentPods;
+    fillEl.style.width = (currentPods / 50 * 100) + '%';
+    labelEl.textContent = currentPods + ' / 50 pods';
+    var last = rdotsEl.querySelector('.scaled:last-child');
+    if (last) last.remove();
+  }, 120);
+  await sleep(2200);
+
+  gaugeEl.style.width   = '2%';
+  gaugeVal.textContent  = '0 jobs';
+  repEl.textContent     = 3;
+  fillEl.style.width    = '6%';
+  labelEl.textContent   = '3 / 50 pods';
+
+  setLog('Load test complete &mdash; scaled back to 3 pods, queue empty');
+  showToast('', 'Load test complete  KEDA scaled down to 3 workers', 4000);
+  animating = false;
+  document.getElementById('btnDeploy').disabled = false;
+  document.getElementById('btnLoad').disabled = false;
+}
+
+/* ── Reset ── */
+function resetAll() {
+  if (animating) return;
+  pods.forEach(function(pid) {
+    var card = document.getElementById('pod-' + pid);
+    var dot  = document.getElementById('dot-' + pid);
+    if (card) { card.className = 'pod-card pod-running'; card.setAttribute('data-version', 'v2.1'); }
+    if (dot)  dot.className = 'pod-status-dot dot-green';
+  });
+  var defaults = {api:2, audit:2, user:1, ideal:1, worker:3, notif:2};
+  pods.forEach(function(pid) {
+    var el = document.getElementById('rdots-' + pid);
+    if (!el) return;
+    el.innerHTML = '';
+    for (var i = 0; i < defaults[pid]; i++) {
+      var d = document.createElement('div'); d.className = 'rdot'; el.appendChild(d);
+    }
+    var r = document.getElementById('rep-' + pid);
+    if (r) r.textContent = defaults[pid];
+  });
+  document.getElementById('workerScaleFill').style.width   = '6%';
+  document.getElementById('workerScaleLabel').textContent  = '3 / 50 pods';
+  document.getElementById('gaugeFill').style.width         = '2%';
+  document.getElementById('gaugeValue').textContent        = '0 jobs';
+  ['check1','check2','check3','check4'].forEach(function(id){
+    var el = document.getElementById(id);
+    el.textContent = '✓'; el.style.background = ''; el.style.color = '';
+  });
+  document.getElementById('deployProgress').classList.remove('visible');
+  setLog('Reset complete &mdash; all systems nominal');
+  showToast('', 'Reset  showing v2.1 baseline', 2000);
+}
+
+/* ── Ambient heartbeat ── */
+setInterval(function(){
+  if (animating) return;
+  var pid = pods[Math.floor(Math.random() * pods.length)];
+  var dot = document.getElementById('dot-' + pid);
+  if (dot && dot.className.indexOf('dot-green') !== -1) {
+    dot.style.boxShadow = '0 0 14px rgba(63,185,80,1)';
+    setTimeout(function(){ dot.style.boxShadow = ''; }, 400);
+  }
+}, 1800);
+</script>
+</body>
+</html>

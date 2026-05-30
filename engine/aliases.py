@@ -8,5 +8,4 @@ MANUAL_ALIASES: dict[str, str] = {
     "ProfitCenterBuId": "ProfitCenterBuName",
     "SupplierId": "SupplierName",
     "SupplierSiteId": "SupplierSiteName",
-    "OrganizationId": "OrganizationCode",
 }
