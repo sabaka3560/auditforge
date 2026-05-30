@@ -29,17 +29,12 @@ def build_report(
     ideal_filename: str = "",
     total_bu_rows: int = 0,
     fuzzy_threshold: int = 80,
+    ideal_sha256: str = "",
 ) -> bytes:
     wb = Workbook()
 
     _data_sheet(wb.active, "Controls in place", controls_in_place, GREEN_FILL)
-    _data_sheet(
-        wb.create_sheet("Control gaps"),
-        "Control gaps",
-        control_gaps,
-        RED_FILL,
-        show_options=True,
-    )
+    _data_sheet(wb.create_sheet("Control gaps"), "Control gaps", control_gaps, RED_FILL)
     _data_sheet(
         wb.create_sheet("Controls additional data"),
         "Controls additional data",
@@ -57,6 +52,7 @@ def build_report(
         ideal_filename,
         total_bu_rows,
         fuzzy_threshold,
+        ideal_sha256,
     )
 
     buf = io.BytesIO()
@@ -134,7 +130,16 @@ def _mapping_sheet(ws, mapping: list[MappingResult]) -> None:
 
 
 def _summary_sheet(
-    ws, cip, gaps, extra, mapping, actual_fn, ideal_fn, bu_rows, threshold
+    ws,
+    cip,
+    gaps,
+    extra,
+    mapping,
+    actual_fn,
+    ideal_fn,
+    bu_rows,
+    threshold,
+    ideal_sha256: str = "",
 ) -> None:
     ws.title = "Audit Summary"
     _header_row(ws, ["Metric", "Value"])
@@ -156,6 +161,8 @@ def _summary_sheet(
         ("Controls in place row count", len(cip)),
         ("Control gaps row count", len(gaps)),
         ("Additional data row count", len(extra)),
+        # Row 15: ideal file integrity hash (written here when job system provides it)
+        ("Ideal file SHA-256", ideal_sha256),
         ("Fuzzy threshold used", threshold / 100),
     ]
     for metric, value in rows:

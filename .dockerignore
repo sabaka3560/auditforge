@@ -1,0 +1,15 @@
+.env
+.git
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.ruff_cache
+.mypy_cache
+storage
+dist
+build
+.claude
+findings

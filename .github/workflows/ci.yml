@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "feat/**", "fix/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: auditforge
+          POSTGRES_PASSWORD: auditforge
+          POSTGRES_DB: auditforge
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+        ports:
+          - 6379:6379
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://auditforge:auditforge@localhost:5432/auditforge
+      JWT_SECRET: ci-test-secret-not-for-production
+      REDIS_URL: redis://localhost:6379/0
+      STORAGE_PATH: /tmp/auditforge-storage
+      IDEALS_DIR: ideals
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Ruff format check
+        run: python -m ruff format --check engine/ tests/ app/
+
+      - name: Ruff lint
+        run: python -m ruff check engine/ tests/ app/
+
+      - name: Run Alembic migrations
+        run: alembic upgrade head
+
+      - name: Run tests with coverage
+        run: |
+          python -m pytest tests/ -v \
+            --tb=short \
+            --cov=engine \
+            --cov=app \
+            --cov-report=term-missing \
+            --cov-fail-under=70
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: .coverage
+          retention-days: 7

@@ -1,0 +1,77 @@
+services:
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: auditforge
+      POSTGRES_PASSWORD: auditforge
+      POSTGRES_DB: auditforge
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "auditforge"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    build: .
+    command: alembic upgrade head
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  web:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 7373 --workers 2
+    ports:
+      - "7373:7373"
+    env_file: .env
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - storage:/app/storage
+      - ./ideals:/app/ideals:ro
+
+  worker:
+    build: .
+    command: rq worker audits --url redis://redis:6379/0
+    env_file: .env
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - storage:/app/storage
+      - ./ideals:/app/ideals:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import redis; redis.from_url('redis://redis:6379/0').ping()"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  pgdata:
+  storage:
