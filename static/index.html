@@ -55,11 +55,41 @@ input[type=text],input[type=email],input[type=password],input[type=number],selec
 }
 input:focus,select:focus,textarea:focus{outline:none;background:var(--g2);border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-g)}
 input::placeholder,textarea::placeholder{color:var(--t4)}
-select{
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='rgba(255,255,255,0.4)' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 12px center;padding-right:34px;cursor:pointer;
+/* ── Custom glass dropdown (replaces native select) ──────────────────────── */
+.gsel{position:relative;user-select:none}
+.gsel-btn{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:10px 13px;min-height:42px;
+  background:var(--g1);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:1px solid var(--gb);border-radius:var(--rs);
+  cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s;
 }
-select option{background:#1e1b4b;color:var(--t1)}
+.gsel-btn:hover{background:var(--g2);border-color:var(--gb2)}
+.gsel-btn.open{background:var(--g2);border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-g)}
+.gsel-val{font-size:13px;color:var(--t1);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gsel-val.ph{color:var(--t4)}
+.gsel-arr{flex-shrink:0;color:var(--t4);transition:transform .18s}
+.gsel-btn.open .gsel-arr{transform:rotate(180deg)}
+.gsel-drop{
+  position:absolute;top:calc(100% + 6px);left:0;right:0;
+  background:rgba(10,8,26,0.94);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  border:1px solid var(--gb2);border-radius:var(--rs);
+  box-shadow:0 16px 48px rgba(0,0,0,.65),inset 0 0 0 1px rgba(255,255,255,.05);
+  z-index:400;overflow:hidden;display:none;max-height:280px;overflow-y:auto;
+}
+.gsel-drop.open{display:block;animation:fadeUp .12s ease}
+.gsel-opt{
+  padding:10px 14px;font-size:13px;color:var(--t2);
+  cursor:pointer;transition:background .1s,color .1s;
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
+.gsel-opt:last-child{border-bottom:none}
+.gsel-opt:hover{background:var(--g2);color:var(--t1)}
+.gsel-opt.active{background:rgba(129,140,248,.18);color:var(--blue)}
+.gsel-opt.ph{color:var(--t4);cursor:default}
+.gsel-drop::-webkit-scrollbar{width:4px}
+.gsel-drop::-webkit-scrollbar-track{background:transparent}
+.gsel-drop::-webkit-scrollbar-thumb{background:var(--gb2);border-radius:2px}
 input[type=file]{
   display:block;width:100%;padding:10px 13px;
   background:var(--g1);border:1px dashed var(--gb2);border-radius:var(--rs);
@@ -159,6 +189,13 @@ details summary:hover{color:var(--t1)}
 .sb-out:hover{color:var(--red)}
 
 .main{margin-left:220px;height:100vh;overflow-y:auto;padding:28px 32px}
+.main::-webkit-scrollbar{width:6px}
+.main::-webkit-scrollbar-track{background:transparent}
+.main::-webkit-scrollbar-thumb{background:var(--gb2);border-radius:3px}
+.main::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.35)}
+.sb-nav::-webkit-scrollbar{width:3px}
+.sb-nav::-webkit-scrollbar-track{background:transparent}
+.sb-nav::-webkit-scrollbar-thumb{background:var(--gb);border-radius:2px}
 .screen{display:none;animation:fadeUp .2s ease}
 .screen.active{display:block}
 .pg-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:12px}
@@ -423,7 +460,19 @@ details summary:hover{color:var(--t1)}
         <div class="sp" id="sp4">
           <button class="back-btn" id="sp4Back" onclick="gostep(3)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Back</button>
           <div class="trail" id="selTrail"></div>
-          <div class="field"><label class="lbl">Audit Check</label><select id="checkSel" onchange="onCheckChange()"><option value="">— select a check —</option></select></div>
+          <div class="field">
+            <label class="lbl">Audit Check</label>
+            <div class="gsel" id="gs-checkSel">
+              <div class="gsel-btn" onclick="gselToggle('checkSel')">
+                <span class="gsel-val ph" id="gv-checkSel">— select a check —</span>
+                <svg class="gsel-arr" width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </div>
+              <div class="gsel-drop" id="gd-checkSel">
+                <div class="gsel-opt ph">— select a check —</div>
+              </div>
+            </div>
+            <input type="hidden" id="checkSel" value="">
+          </div>
           <div id="noCheckMsg" style="display:none"><div class="alert a-warn show">No checks available for this combination.<span id="noCheckHint" style="display:none"> Go to <strong>Create Check</strong> to add one.</span></div></div>
           <div class="field"><label class="lbl">Client Export File <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--t4)">.xlsx / .xls / .csv</span></label><input type="file" id="actualFile" accept=".xlsx,.xls,.csv" onchange="chkReady()"></div>
           <details><summary>Advanced Options</summary><div class="db"><div class="g2"><div class="field"><label class="lbl">Sheet Name</label><input type="text" id="sheetName" placeholder="auto-detected"><p class="hint" id="sheetHint">Leave blank for CSV or single-sheet files</p></div><div class="field"><label class="lbl">Fuzzy Threshold</label><input type="number" id="fuzzyT" value="80" min="50" max="100"><p class="hint">50–100 · Default 80</p></div></div></div></details>
@@ -468,9 +517,46 @@ details summary:hover{color:var(--t1)}
           <div class="field"><label class="lbl">Display Name</label><input type="text" id="nName" placeholder="GL Ledger Setup"></div>
         </div>
         <div class="g3">
-          <div class="field"><label class="lbl">Process Type</label><select id="nProc"><option value="itac">Business Process (ITAC)</option><option value="itgc">ITGC</option></select></div>
-          <div class="field"><label class="lbl">ERP Platform</label><select id="nERP"><option value="oracle">Oracle Fusion</option><option value="sap">SAP</option><option value="generic">Generic</option></select></div>
-          <div class="field"><label class="lbl">Category</label><select id="nCat"><option value="configurations">Configuration</option><option value="detailed">Detailed</option></select></div>
+          <div class="field"><label class="lbl">Process Type</label>
+            <div class="gsel" id="gs-nProc">
+              <div class="gsel-btn" onclick="gselToggle('nProc')">
+                <span class="gsel-val" id="gv-nProc">Business Process (ITAC)</span>
+                <svg class="gsel-arr" width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </div>
+              <div class="gsel-drop" id="gd-nProc">
+                <div class="gsel-opt active" onclick="gselPick('nProc','itac','Business Process (ITAC)')">Business Process (ITAC)</div>
+                <div class="gsel-opt" onclick="gselPick('nProc','itgc','ITGC')">ITGC</div>
+              </div>
+            </div>
+            <input type="hidden" id="nProc" value="itac">
+          </div>
+          <div class="field"><label class="lbl">ERP Platform</label>
+            <div class="gsel" id="gs-nERP">
+              <div class="gsel-btn" onclick="gselToggle('nERP')">
+                <span class="gsel-val" id="gv-nERP">Oracle Fusion</span>
+                <svg class="gsel-arr" width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </div>
+              <div class="gsel-drop" id="gd-nERP">
+                <div class="gsel-opt active" onclick="gselPick('nERP','oracle','Oracle Fusion')">Oracle Fusion</div>
+                <div class="gsel-opt" onclick="gselPick('nERP','sap','SAP')">SAP</div>
+                <div class="gsel-opt" onclick="gselPick('nERP','generic','Generic')">Generic</div>
+              </div>
+            </div>
+            <input type="hidden" id="nERP" value="oracle">
+          </div>
+          <div class="field"><label class="lbl">Category</label>
+            <div class="gsel" id="gs-nCat">
+              <div class="gsel-btn" onclick="gselToggle('nCat')">
+                <span class="gsel-val" id="gv-nCat">Configuration Controls</span>
+                <svg class="gsel-arr" width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </div>
+              <div class="gsel-drop" id="gd-nCat">
+                <div class="gsel-opt active" onclick="gselPick('nCat','configurations','Configuration Controls')">Configuration Controls</div>
+                <div class="gsel-opt" onclick="gselPick('nCat','detailed','Detailed Controls')">Detailed Controls</div>
+              </div>
+            </div>
+            <input type="hidden" id="nCat" value="configurations">
+          </div>
         </div>
         <div class="g2">
           <div class="field"><label class="lbl">Default Sheet <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--t4)">(optional)</span></label><input type="text" id="nSheet" placeholder="e.g. GL_LEDGER"></div>
@@ -494,7 +580,19 @@ details summary:hover{color:var(--t1)}
         <div class="g3">
           <div class="field"><label class="lbl">Email</label><input type="email" id="uEmail" placeholder="user@company.com"></div>
           <div class="field"><label class="lbl">Password</label><input type="password" id="uPw" placeholder="min 8 chars"></div>
-          <div class="field"><label class="lbl">Role</label><select id="uRole"><option value="associate">Associate</option><option value="admin">Admin</option></select></div>
+          <div class="field"><label class="lbl">Role</label>
+            <div class="gsel" id="gs-uRole">
+              <div class="gsel-btn" onclick="gselToggle('uRole')">
+                <span class="gsel-val" id="gv-uRole">Associate</span>
+                <svg class="gsel-arr" width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </div>
+              <div class="gsel-drop" id="gd-uRole">
+                <div class="gsel-opt active" onclick="gselPick('uRole','associate','Associate')">Associate</div>
+                <div class="gsel-opt" onclick="gselPick('uRole','admin','Admin')">Admin</div>
+              </div>
+            </div>
+            <input type="hidden" id="uRole" value="associate">
+          </div>
         </div>
         <button class="btn btn-success btn-sm" style="margin-top:6px" onclick="createUser()">Add User</button>
         <div class="alert" id="userAlert" style="margin-top:12px"></div>
@@ -600,9 +698,54 @@ async function api(method,path,body){
 // ── Checks ────────────────────────────────────────────────────────────────────
 async function loadChecks(){const r=await fetch('/api/checks');_checks=await r.json()}
 
-function checkName(id){
-  const c=_checks.find(c=>c.id===id);
-  return c?c.name:id; // show display name, fallback to id
+function checkByIdOrName(val){
+  // val may be a check_id (from API) or a display name (legacy)
+  return _checks.find(c=>c.id===val)||_checks.find(c=>c.name===val)||null;
+}
+function resolveCheckName(id){
+  const c=_checks.find(c=>c.id===id);return c?c.name:id;
+}
+
+// ── Glass select system ───────────────────────────────────────────────────────
+let _openSel=null;
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.gsel')&&_openSel)gselClose(_openSel);
+});
+
+function gselToggle(id){
+  if(_openSel&&_openSel!==id)gselClose(_openSel);
+  const drop=document.getElementById('gd-'+id);
+  const btn=document.querySelector(`#gs-${id} .gsel-btn`);
+  const open=drop.classList.contains('open');
+  if(open){gselClose(id)}else{drop.classList.add('open');btn.classList.add('open');_openSel=id}
+}
+function gselClose(id){
+  const drop=document.getElementById('gd-'+id);
+  const btn=document.querySelector(`#gs-${id} .gsel-btn`);
+  if(drop)drop.classList.remove('open');
+  if(btn)btn.classList.remove('open');
+  if(_openSel===id)_openSel=null;
+}
+function gselPick(id,value,label){
+  const hid=document.getElementById(id);
+  const val=document.getElementById('gv-'+id);
+  if(hid)hid.value=value;
+  if(val){val.textContent=label;val.classList.toggle('ph',!value)}
+  // mark active
+  document.querySelectorAll(`#gd-${id} .gsel-opt`).forEach(o=>o.classList.remove('active'));
+  event.target.classList.add('active');
+  gselClose(id);
+  if(id==='checkSel')onCheckChange();
+}
+
+function gselSet(id,value,label){
+  // Programmatically set a gsel without triggering handlers
+  const hid=document.getElementById(id);const val=document.getElementById('gv-'+id);
+  if(hid)hid.value=value;
+  if(val){val.textContent=label||value;val.classList.toggle('ph',!value)}
+  document.querySelectorAll(`#gd-${id} .gsel-opt`).forEach(o=>o.classList.remove('active'));
+  const match=[...document.querySelectorAll(`#gd-${id} .gsel-opt`)].find(o=>o.textContent===label);
+  if(match)match.classList.add('active');
 }
 
 // ── Stepper ───────────────────────────────────────────────────────────────────
@@ -630,10 +773,24 @@ function selCat(c){_sel.cat=c;populateChecks();buildTrail();gostep(4)}
 
 function populateChecks(){
   const fil=_checks.filter(c=>c.process_type===_sel.proc&&c.erp===_sel.erp&&c.category===_sel.cat);
-  const sel=document.getElementById('checkSel');
-  sel.innerHTML='<option value="">— select a check —</option>';
-  fil.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.name;o.dataset.sheet=c.default_sheet||'';sel.appendChild(o)});
+  // Reset hidden input + label
+  gselSet('checkSel','','— select a check —');
+  // Rebuild dropdown options
+  const drop=document.getElementById('gd-checkSel');
+  drop.innerHTML=`<div class="gsel-opt ph">— select a check —</div>`
+    +fil.map(c=>`<div class="gsel-opt" data-id="${esc(c.id)}" data-sheet="${esc(c.default_sheet||'')}"
+        onclick="gselPickCheck('${esc(c.id)}','${esc(c.name)}','${esc(c.default_sheet||'')}')">${esc(c.name)}</div>`).join('');
   document.getElementById('noCheckMsg').style.display=fil.length===0?'block':'none';
+  chkReady();
+}
+
+function gselPickCheck(id,name,sheet){
+  gselSet('checkSel',id,name);
+  document.querySelectorAll('#gd-checkSel .gsel-opt').forEach(o=>o.classList.remove('active'));
+  event.target.classList.add('active');
+  gselClose('checkSel');
+  document.getElementById('sheetName').value=sheet;
+  document.getElementById('sheetHint').textContent=sheet?'Auto-filled — override if needed':'Leave blank for CSV or single-sheet files';
   chkReady();
 }
 
@@ -651,12 +808,7 @@ function buildTrail(){
     <span class="tp tp-b">${lc[_sel.cat]||''}</span>`;
 }
 
-function onCheckChange(){
-  const sel=document.getElementById('checkSel');
-  const opt=sel.options[sel.selectedIndex];
-  if(opt){const s=opt.dataset.sheet||'';document.getElementById('sheetName').value=s;document.getElementById('sheetHint').textContent=s?'Auto-filled — override if needed':'Leave blank for CSV or single-sheet files'}
-  chkReady();
-}
+function onCheckChange(){chkReady()}
 function chkReady(){
   const ok=document.getElementById('checkSel').value!==''&&document.getElementById('actualFile').files.length>0;
   document.getElementById('runBtn').disabled=!ok;
@@ -665,7 +817,7 @@ function chkReady(){
 // ── Submit ────────────────────────────────────────────────────────────────────
 async function submitAudit(){
   const cid=document.getElementById('checkSel').value;
-  const cname=document.getElementById('checkSel').options[document.getElementById('checkSel').selectedIndex].textContent;
+  const cname=document.getElementById('gv-checkSel').textContent;
   const sheet=document.getElementById('sheetName').value.trim();
   const thresh=parseInt(document.getElementById('fuzzyT').value)||80;
   const file=document.getElementById('actualFile').files[0];
@@ -677,16 +829,18 @@ async function submitAudit(){
     const res=await api('POST','/api/audits',fd);
     if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.detail||`HTTP ${res.status}`)}
     const {job_id}=await res.json();
-    setA('auditAlert','success',`Job submitted — ID <code>${job_id.slice(0,8)}</code> — tracking in <strong>My Jobs</strong>`);
-    trackJob(job_id,cname);
+    setA('auditAlert','success',`Job submitted — tracking <strong>${esc(cname)}</strong> in <strong>My Jobs</strong>`);
+    trackJob(job_id,cname,cid);  // pass both display name AND check_id
     document.getElementById('actualFile').value='';
     document.getElementById('runBtn').disabled=true;
   }catch(e){setA('auditAlert','error',esc(e.message));btn.disabled=false}
 }
 
 // ── Jobs ──────────────────────────────────────────────────────────────────────
-function trackJob(jid,cname){
-  _jobs[jid]={name:cname,status:'queued',timer:null};
+function trackJob(jid,cname,cid){
+  // cid = check_id (slug), cname = display name
+  const chk=cid?_checks.find(c=>c.id===cid):_checks.find(c=>c.name===cname)||null;
+  _jobs[jid]={name:cname,checkId:cid||chk?.id||'',status:'queued',timer:null};
   updateJBadge();renderJobs();
   const t=setInterval(async()=>{
     try{
@@ -717,19 +871,24 @@ function renderJobs(){
     return;
   }
   const bc={queued:'b-yellow pulse',running:'b-cyan pulse',done:'b-green',failed:'b-red'};
+  const erpLabel={oracle:'Oracle Fusion',sap:'SAP',itgc:'ITGC',generic:'Generic'};
   list.innerHTML=rows.map(([id,j])=>{
-    const chk=_checks.find(c=>c.id===j.name)||{};
+    const chk=_checks.find(c=>c.id===j.checkId)||{};  // use checkId, never display name as key
     const erpC={oracle:'rgba(251,146,60,.18)',sap:'rgba(96,165,250,.18)',itgc:'rgba(52,211,153,.18)'}[chk.erp]||'var(--g1)';
-    const erpIcon={oracle:oraIcon(),sap:sapIcon(),itgc:lockIcon(),generic:fileIcon()}[chk.erp||'generic']||fileIcon();
+    const erpIcon={oracle:oraIcon(),sap:sapIcon(),itgc:lockIcon()}[chk.erp]||fileIcon();
+    const erpTag=chk.erp?`<span class="badge b-${chk.erp==='oracle'?'oracle':chk.erp==='sap'?'sap':'itgc'}" style="font-size:9px;padding:2px 7px">${erpLabel[chk.erp]}</span>`:'';
+    const catTag=chk.category?`<span class="badge b-config" style="font-size:9px;padding:2px 7px">${chk.category==='configurations'?'Config':'Detailed'}</span>`:'';
     const dl=j.status==='done'?`<button class="btn btn-success btn-sm" onclick="dlRpt('${id}','${esc(j.name)}')">${dlIcon()} Download</button>`:'';
-    const retry=j.status==='failed'?`<button class="btn btn-ghost btn-sm" onclick="retryJob('${id}','${esc(j.name)}')">${retryIcon()} Retry</button>`:'';
+    const retry=j.status==='failed'?`<button class="btn btn-ghost btn-sm" onclick="retryJob('${id}','${esc(j.name)}','${esc(j.checkId)}')">${retryIcon()} Retry</button>`:'';
     const err=j.status==='failed'&&j.error?`<div class="jerr">${esc(j.error)}</div>`:'';
-    const ts=j.finished?'· '+new Date(j.finished).toLocaleString():'';
+    const ts=j.finished?new Date(j.finished).toLocaleString():'Running…';
     return `<div class="jcard">
       <div class="jico" style="background:${erpC}">${erpIcon}</div>
       <div class="jbody">
         <div class="jname">${esc(j.name)}</div>
-        <div class="jmeta">${id.slice(0,8)}… ${ts}</div>
+        <div class="jmeta" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:5px">
+          ${erpTag}${catTag}<span style="color:var(--t4);font-size:11px">${ts}</span>
+        </div>
         ${err}
       </div>
       <div class="jacts">
@@ -751,10 +910,9 @@ async function loadJobHistory(){
     const jobs=await r.json();
     jobs.forEach(j=>{
       if(_jobs[j.id])return;
-      // Resolve check name from loaded checks, fallback to check_id
-      const name=checkName(j.check_id);
-      _jobs[j.id]={name,status:j.status,error:j.error_message,timer:null,finished:j.finished_at};
-      if(j.status==='queued'||j.status==='running')trackJob(j.id,name);
+      const name=resolveCheckName(j.check_id);  // display name, fallback to slug
+      _jobs[j.id]={name,checkId:j.check_id,status:j.status,error:j.error_message,timer:null,finished:j.finished_at};
+      if(j.status==='queued'||j.status==='running')trackJob(j.id,name,j.check_id);
     });
     renderJobs();updateJBadge();
   }catch{}
@@ -769,11 +927,11 @@ async function dlRpt(jid,name){
   }catch(e){alert(e.message)}
 }
 
-async function retryJob(jid,name){
+async function retryJob(jid,name,checkId){
   try{
     const r=await api('POST',`/api/audits/${jid}/retry`);
     if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.detail||'Retry failed')}
-    const {job_id}=await r.json();delete _jobs[jid];trackJob(job_id,name);
+    const {job_id}=await r.json();delete _jobs[jid];trackJob(job_id,name,checkId);
   }catch(e){alert(e.message)}
 }
 

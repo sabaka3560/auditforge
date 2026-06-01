@@ -15,6 +15,55 @@
             "command": "python -m ruff check --fix --silent $(jq -r '.tool_input.file_path // empty' 2>/dev/null) 2>/dev/null || true",
             "timeout": 10,
             "statusMessage": "ruff check"
+          },
+          {
+            "type": "command",
+            "command": "FILE=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); if echo \"$FILE\" | grep -qiE '(engine|main)\\.py'; then python -m pytest tests/ -x -q --tb=short 2>&1 | tail -6; fi 2>/dev/null || true",
+            "timeout": 60,
+            "statusMessage": "pytest (engine guard)"
+          },
+          {
+            "type": "command",
+            "command": "FILE=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); if echo \"$FILE\" | grep -qi 'test_'; then python -m pytest \"$FILE\" -v --tb=short 2>&1 | tail -10; fi 2>/dev/null || true",
+            "timeout": 60,
+            "statusMessage": "pytest (test file)"
+          },
+          {
+            "type": "command",
+            "command": "FILE=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); if echo \"$FILE\" | grep -qi 'requirements.txt'; then pip install -r requirements.txt -q 2>&1 | tail -3; fi 2>/dev/null || true",
+            "timeout": 60,
+            "statusMessage": "pip sync"
+          },
+          {
+            "type": "command",
+            "command": "FILE=$(jq -r '.tool_input.file_path // empty' 2>/dev/null); if echo \"$FILE\" | grep -qiE '\\.json$'; then python -c \"import json; json.load(open('$FILE'))\" 2>&1 && echo 'JSON valid' || echo 'JSON INVALID'; fi 2>/dev/null || true",
+            "timeout": 5,
+            "statusMessage": "JSON lint"
+          },
+          {
+            "type": "command",
+            "command": "python scripts/arch_guard.py $(jq -r '.tool_input.file_path // empty' 2>/dev/null) 2>/dev/null || true",
+            "timeout": 10,
+            "statusMessage": "arch guard"
+          },
+          {
+            "type": "command",
+            "command": "python scripts/ui_consistency_check.py $(jq -r '.tool_input.file_path // empty' 2>/dev/null) 2>/dev/null || true",
+            "timeout": 5,
+            "statusMessage": "ui consistency"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CMD=$(jq -r '.tool_input.command // empty' 2>/dev/null); if echo \"$CMD\" | grep -q 'git commit'; then python -m pytest tests/ -x -q --tb=short 2>&1 | tail -6 && echo 'Tests passed — commit allowed' || echo 'TESTS FAILED — fix before committing'; fi 2>/dev/null || true",
+            "timeout": 60,
+            "statusMessage": "pre-commit guard"
           }
         ]
       }
@@ -25,7 +74,10 @@
       "Bash(python -m pytest*)",
       "Bash(python -m ruff*)",
       "Bash(python main.py*)",
-      "Bash(pip install*)"
+      "Bash(pip install*)",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)"
     ]
   }
 }
