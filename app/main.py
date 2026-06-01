@@ -62,17 +62,30 @@ def create_app() -> FastAPI:
 
     @application.get("/api/checks", include_in_schema=False)
     def list_checks() -> list[dict]:
-        """Return available audit checks from the bundled ideals directory."""
+        """Return available audit checks: bundled defaults merged with custom checks."""
         settings = get_settings()
+
+        # Bundled checks (read-only, shipped with image)
         checks_path = os.path.join(settings.ideals_dir, "checks.json")
         with open(checks_path) as f:
             data: dict = json.load(f)
+
+        # Custom checks created by admins (stored in the persistent storage volume)
+        custom_path = os.path.join(settings.storage_path, "custom_checks.json")
+        if os.path.isfile(custom_path):
+            with open(custom_path) as f:
+                custom: dict = json.load(f)
+            data = {**data, **custom}  # custom overrides bundled if same id
+
         return [
             {
                 "id": k,
                 "name": v["name"],
                 "default_sheet": v.get("default_sheet") or "",
                 "description": v.get("description") or "",
+                "process_type": v.get("process_type") or "itac",
+                "erp": v.get("erp") or "oracle",
+                "category": v.get("category") or "configurations",
             }
             for k, v in data.items()
         ]
