@@ -644,8 +644,9 @@ async function boot(){
   _user=JSON.parse(atob(p[1].replace(/-/g,'+').replace(/_/g,'/')));
   // Check expiry
   if(_user.exp&&_user.exp<Math.floor(Date.now()/1000)){throw new Error('Token expired')}
-  document.getElementById('sbAv').textContent=_user.sub.charAt(0).toUpperCase();
-  document.getElementById('sbEm').textContent=_user.sub.length>22?_user.sub.slice(0,20)+'…':_user.sub;
+  const email=_user.email||_user.sub||'';
+  document.getElementById('sbAv').textContent=email.charAt(0).toUpperCase();
+  document.getElementById('sbEm').textContent=email.length>24?email.slice(0,22)+'…':email;
   document.getElementById('sbRl').textContent=_user.role==='admin'?'Administrator':'Associate';
   await loadChecks();
   await loadJobHistory();
