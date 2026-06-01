@@ -10,10 +10,13 @@ POST   /api/ideals/admin/checks         — create a new check entry (admin only
 from __future__ import annotations
 
 import io
+import json
+import os
+import re
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import select
