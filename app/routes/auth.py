@@ -45,7 +45,7 @@ async def login(
     user_id = user.id.hex
     tenant_id = str(user.tenant_id)
 
-    access_token = create_access_token(user_id, tenant_id, user.role)
+    access_token = create_access_token(user_id, tenant_id, user.role, user.email)
 
     # Refresh token reuses the same JWT structure but with a 30-day expiry.
     # It is never accepted by protected endpoints — only by /auth/refresh.

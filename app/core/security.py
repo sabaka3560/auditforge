@@ -17,11 +17,14 @@ def verify_password(plain: str, hashed: str) -> bool:
     return _pwd_ctx.verify(plain, hashed)
 
 
-def create_access_token(user_id: str, tenant_id: str, role: str) -> str:
+def create_access_token(
+    user_id: str, tenant_id: str, role: str, email: str = ""
+) -> str:
     settings = get_settings()
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_expire_minutes)
     payload: dict[str, str | int] = {
         "sub": user_id,
+        "email": email,
         "tenant_id": tenant_id,
         "role": role,
         "exp": int(expire.timestamp()),
