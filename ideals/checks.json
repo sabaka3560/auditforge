@@ -3,30 +3,45 @@
     "name": "INV Organization Parameters",
     "file": "inv_organization_parameters.xlsx",
     "default_sheet": "INV_ORGANIZATION_PARAMETER",
-    "description": "Oracle Fusion INV Organization Parameters"
+    "description": "Inventory organization setup — flags, costing, sourcing, and capture of IDs",
+    "process_type": "itac",
+    "erp": "oracle",
+    "category": "configurations"
   },
   "receiving_parameters": {
     "name": "Receiving Parameters",
     "file": "receiving_parameters.xlsx",
     "default_sheet": "RCV_OPTIONS",
-    "description": "Oracle Fusion RCV Organization Parameters"
+    "description": "Receiving (RCV) organization parameters — routing, substitutions, cascade",
+    "process_type": "itac",
+    "erp": "oracle",
+    "category": "configurations"
   },
   "invoice_options": {
-    "name": "Invoice Options",
+    "name": "AP Invoice Options",
     "file": "invoice_options.xlsx",
     "default_sheet": null,
-    "description": "Oracle Fusion AP Invoice Options"
+    "description": "Accounts Payable invoice processing options — match, hold, tax settings",
+    "process_type": "itac",
+    "erp": "oracle",
+    "category": "configurations"
   },
   "invoice_tolerances": {
-    "name": "Invoice Tolerances",
+    "name": "AP Invoice Tolerances",
     "file": "invoice_tolerances.xlsx",
     "default_sheet": "AP_TOLERANCE_TEMPLATE",
-    "description": "Oracle Fusion AP Invoice Tolerance Templates"
+    "description": "Accounts Payable invoice matching tolerance templates",
+    "process_type": "itac",
+    "erp": "oracle",
+    "category": "configurations"
   },
   "common_pay_proc_options": {
-    "name": "Common Pay Proc Options",
+    "name": "AP Common Pay & Proc Options",
     "file": "common_pay_proc_options.xlsx",
     "default_sheet": "AP_FINANCIAL_SYS_PARAM",
-    "description": "Oracle Fusion AP Common Options (Financial System Parameters)"
+    "description": "Common payment processing options — positive pay, exchange rate, prepayment",
+    "process_type": "itac",
+    "erp": "oracle",
+    "category": "configurations"
   }
 }

@@ -4,6 +4,7 @@ GET    /api/ideals                      — list active ideal configs for this t
 GET    /api/ideals/{check_id}/download  — download active ideal file bytes
 POST   /api/ideals/{check_id}           — upload new ideal (admin only)
 DELETE /api/ideals/{check_id}           — revert to bundled default (admin only)
+POST   /api/ideals/admin/checks         — create a new check entry (admin only)
 """
 
 from __future__ import annotations
@@ -157,3 +158,99 @@ async def delete_ideal(
         )
     row.is_active = False
     await db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Admin: create a new custom check
+# ---------------------------------------------------------------------------
+
+
+class CheckCreatedResponse(BaseModel):
+    id: str
+    name: str
+    process_type: str
+    erp: str
+    category: str
+    default_sheet: str
+    description: str
+
+
+@router.post(
+    "/admin/checks",
+    status_code=status.HTTP_201_CREATED,
+    response_model=CheckCreatedResponse,
+)
+async def create_check(
+    check_id: str = Form(...),
+    name: str = Form(...),
+    process_type: str = Form(...),
+    erp: str = Form(...),
+    category: str = Form(...),
+    default_sheet: str = Form(""),
+    description: str = Form(""),
+    file: UploadFile = File(...),
+    admin: User = Depends(require_admin),
+    tenant: Tenant = Depends(get_tenant),
+    db: AsyncSession = Depends(get_db),
+) -> CheckCreatedResponse:
+    """Create a new audit check with uploaded ideal file. Admin only."""
+    # Validate slug: lowercase alphanumeric + underscores only
+    if not re.match(r"^[a-z0-9_]{2,64}$", check_id):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="check_id must be 2–64 lowercase alphanumeric characters or underscores.",
+        )
+
+    valid_process = {"itgc", "itac"}
+    valid_erp = {"oracle", "sap", "generic"}
+    valid_category = {"configurations", "detailed"}
+    if process_type not in valid_process:
+        raise HTTPException(422, f"process_type must be one of {valid_process}")
+    if erp not in valid_erp:
+        raise HTTPException(422, f"erp must be one of {valid_erp}")
+    if category not in valid_category:
+        raise HTTPException(422, f"category must be one of {valid_category}")
+
+    data = await file.read()
+    if not data:
+        raise HTTPException(422, "Ideal file is empty.")
+
+    settings = get_settings()
+
+    # Save ideal file via the existing versioned loader
+    loader = IdealsLoader(db=db, settings=settings)
+    await loader.save(
+        tenant_id=str(tenant.id),
+        check_id=check_id,
+        data=data,
+        uploaded_by_id=str(admin.id),
+    )
+
+    # Write metadata to custom_checks.json in the persistent storage volume
+    custom_path = os.path.join(settings.storage_path, "custom_checks.json")
+    os.makedirs(settings.storage_path, exist_ok=True)
+    existing: dict = {}
+    if os.path.isfile(custom_path):
+        with open(custom_path) as f:
+            existing = json.load(f)
+
+    existing[check_id] = {
+        "name": name,
+        "process_type": process_type,
+        "erp": erp,
+        "category": category,
+        "default_sheet": default_sheet,
+        "description": description,
+    }
+    with open(custom_path, "w") as f:
+        json.dump(existing, f, indent=2)
+
+    return CheckCreatedResponse(
+        id=check_id,
+        name=name,
+        process_type=process_type,
+        erp=erp,
+        category=category,
+        default_sheet=default_sheet,
+        description=description,
+    )

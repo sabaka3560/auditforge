@@ -8,312 +8,598 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:        #0d0d0d;
-      --surface:   #161616;
-      --surface2:  #1e1e1e;
-      --border:    #2a2a2a;
-      --border2:   #333;
-      --text:      #e5e7eb;
-      --muted:     #6b7280;
-      --dim:       #4b5563;
-      --accent:    #3b82f6;
-      --accent-dim:#1d4ed8;
-      --green:     #22c55e;
-      --red:       #ef4444;
-      --yellow:    #eab308;
-      --amber:     #f59e0b;
+      --bg:             #eef2f7;
+      --glass:          rgba(255,255,255,0.80);
+      --glass-strong:   rgba(255,255,255,0.95);
+      --glass-border:   rgba(255,255,255,0.85);
+      --border:         #e2e8f0;
+      --border-strong:  #cbd5e1;
+
+      --t1: #0f172a;
+      --t2: #1e293b;
+      --t3: #475569;
+      --t4: #94a3b8;
+
+      --accent:         #2563eb;
+      --accent-light:   #eff6ff;
+      --accent-border:  #bfdbfe;
+      --accent-hover:   #1d4ed8;
+
+      --oracle:         #ea580c;
+      --oracle-light:   #fff7ed;
+      --oracle-border:  #fed7aa;
+
+      --sap:            #0369a1;
+      --sap-light:      #f0f9ff;
+      --sap-border:     #bae6fd;
+
+      --generic:        #7c3aed;
+      --generic-light:  #f5f3ff;
+      --generic-border: #ddd6fe;
+
+      --itgc:           #0f766e;
+      --itgc-light:     #f0fdfa;
+      --itgc-border:    #99f6e4;
+
+      --success:        #16a34a;
+      --success-light:  #f0fdf4;
+      --success-border: #bbf7d0;
+      --warn:           #d97706;
+      --warn-light:     #fffbeb;
+      --warn-border:    #fde68a;
+      --error:          #dc2626;
+      --error-light:    #fef2f2;
+      --error-border:   #fecaca;
+
+      --radius:     14px;
+      --radius-sm:  8px;
+      --shadow:     0 4px 24px rgba(15,23,42,0.07);
+      --shadow-lg:  0 8px 40px rgba(15,23,42,0.12);
+      --blur:       blur(18px);
     }
 
     body {
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      background: linear-gradient(140deg, #dbeafe 0%, #ede9fe 40%, #fce7f3 80%, #f0fdf4 100%);
+      background-attachment: fixed;
+      color: var(--t1);
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      font-size: 13px;
+      font-size: 14px;
     }
 
     /* ── Login ─────────────────────────────────────────────────────────── */
-
     #loginWrap {
-      flex: 1;
+      min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 20px;
     }
-
     .login-card {
       width: 100%;
-      max-width: 360px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 32px;
+      max-width: 380px;
+      background: var(--glass-strong);
+      backdrop-filter: var(--blur);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 40px 36px;
+      box-shadow: var(--shadow-lg);
     }
-
+    .login-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .login-logo svg { flex-shrink: 0; }
     .login-card h1 {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 4px;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--t1);
+      letter-spacing: -0.02em;
     }
-
-    .login-card p {
-      font-size: 12px;
-      color: var(--muted);
+    .login-card h1 span { color: var(--accent); }
+    .login-card .sub {
+      font-size: 13px;
+      color: var(--t3);
       margin-bottom: 28px;
+      margin-top: 2px;
     }
 
     /* ── App shell ──────────────────────────────────────────────────────── */
+    #appWrap { display: none; flex-direction: column; min-height: 100vh; }
 
-    #appWrap { display: none; flex-direction: column; flex: 1; }
-
-    header {
-      background: var(--surface);
+    .top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: var(--blur);
       border-bottom: 1px solid var(--border);
-      padding: 0 24px;
-      height: 48px;
+      padding: 0 28px;
+      height: 56px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      flex-shrink: 0;
     }
-
-    .brand { font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: 0.02em; }
-    .brand span { color: var(--accent); }
-
-    .header-right { display: flex; align-items: center; gap: 14px; }
-
-    .user-badge {
-      font-size: 11px;
-      color: var(--muted);
+    .brand {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--t1);
+      letter-spacing: -0.02em;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
     }
-
-    .role-pill {
-      font-size: 10px;
-      padding: 2px 7px;
-      border-radius: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+    .brand span { color: var(--accent); }
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
-    .role-admin     { background: #1a1205; color: var(--amber); border: 1px solid #3d2a00; }
-    .role-associate { background: #0a1628; color: #60a5fa;      border: 1px solid #1d3a6e; }
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px 4px 4px;
+    }
+    .user-avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #7c3aed);
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 11px; font-weight: 700;
+    }
+    .user-email { font-size: 12px; color: var(--t2); font-weight: 500; }
+    .role-badge {
+      font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 10px;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .role-admin     { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .role-associate { background: var(--accent-light); color: #1e40af; border: 1px solid var(--accent-border); }
 
     main {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 32px 16px;
+      padding: 32px 16px 48px;
       gap: 20px;
-      overflow-y: auto;
     }
 
-    /* ── Cards ──────────────────────────────────────────────────────────── */
-
+    /* ── Glass card ─────────────────────────────────────────────────────── */
     .card {
       width: 100%;
-      max-width: 520px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 24px;
+      max-width: 600px;
+      background: var(--glass);
+      backdrop-filter: var(--blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: var(--shadow);
+    }
+    .card-wide { max-width: 760px; }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+    .card-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .card-icon-blue   { background: var(--accent-light); }
+    .card-icon-amber  { background: #fef3c7; }
+    .card-icon-green  { background: var(--success-light); }
+    .card-title {
+      font-size: 15px; font-weight: 700; color: var(--t1);
+    }
+    .card-subtitle { font-size: 12px; color: var(--t3); margin-top: 1px; }
+
+    /* ── Stepper ────────────────────────────────────────────────────────── */
+    .stepper {
+      display: flex;
+      align-items: center;
+      margin-bottom: 26px;
+      gap: 0;
+    }
+    .step-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
+      position: relative;
+      cursor: default;
+    }
+    .step-item:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      width: 100%;
+      height: 2px;
+      background: var(--border);
+      z-index: 0;
+    }
+    .step-item.done:not(:last-child)::after { background: var(--accent); }
+    .step-dot {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+      border: 2px solid var(--border);
+      background: white;
+      color: var(--t4);
+      position: relative; z-index: 1;
+      transition: all 0.2s;
+    }
+    .step-item.active .step-dot {
+      background: var(--accent); border-color: var(--accent);
+      color: white; box-shadow: 0 0 0 4px var(--accent-light);
+    }
+    .step-item.done .step-dot {
+      background: var(--accent); border-color: var(--accent); color: white;
+    }
+    .step-label {
+      font-size: 10px; font-weight: 600;
+      color: var(--t4); letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .step-item.active .step-label,
+    .step-item.done  .step-label { color: var(--accent); }
+
+    /* ── Step panels ────────────────────────────────────────────────────── */
+    .step-panel { display: none; animation: fadeIn 0.2s ease; }
+    .step-panel.active { display: block; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+
+    .step-heading {
+      font-size: 16px; font-weight: 700; color: var(--t1);
+      margin-bottom: 4px;
+    }
+    .step-desc { font-size: 13px; color: var(--t3); margin-bottom: 20px; }
+
+    .back-link {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 12px; color: var(--t3); cursor: pointer;
+      margin-bottom: 16px;
+      background: none; border: none; padding: 0;
+      transition: color 0.15s;
+    }
+    .back-link:hover { color: var(--accent); }
+
+    /* ── Option cards (step selection) ─────────────────────────────────── */
+    .option-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .option-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+    @media (max-width: 520px) {
+      .option-grid, .option-grid-3 { grid-template-columns: 1fr; }
     }
 
-    .card-title {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 18px;
+    .opt-card {
+      padding: 18px 16px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.18s;
+      background: rgba(255,255,255,0.6);
+      position: relative;
+      overflow: hidden;
     }
+    .opt-card:hover {
+      border-color: var(--accent-border);
+      background: var(--accent-light);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(37,99,235,0.10);
+    }
+    .opt-card.selected {
+      border-color: var(--accent);
+      background: var(--accent-light);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+    }
+    .opt-card.oracle:hover, .opt-card.oracle.selected {
+      border-color: var(--oracle); background: var(--oracle-light);
+      box-shadow: 0 0 0 3px rgba(234,88,12,0.10);
+    }
+    .opt-card.sap:hover, .opt-card.sap.selected {
+      border-color: var(--sap); background: var(--sap-light);
+      box-shadow: 0 0 0 3px rgba(3,105,161,0.10);
+    }
+    .opt-card.generic:hover, .opt-card.generic.selected {
+      border-color: var(--generic); background: var(--generic-light);
+      box-shadow: 0 0 0 3px rgba(124,58,237,0.10);
+    }
+    .opt-card.itgc:hover, .opt-card.itgc.selected {
+      border-color: var(--itgc); background: var(--itgc-light);
+      box-shadow: 0 0 0 3px rgba(15,118,110,0.10);
+    }
+    .opt-icon {
+      font-size: 26px; margin-bottom: 8px; display: block;
+      line-height: 1;
+    }
+    .opt-title {
+      font-size: 14px; font-weight: 700; color: var(--t1); margin-bottom: 4px;
+    }
+    .opt-desc { font-size: 12px; color: var(--t3); line-height: 1.45; }
+    .opt-tag {
+      display: inline-flex;
+      font-size: 10px; font-weight: 600;
+      padding: 2px 8px; border-radius: 8px;
+      margin-top: 8px;
+      background: var(--border); color: var(--t3);
+    }
+
+    /* ── Trail breadcrumb ───────────────────────────────────────────────── */
+    .trail {
+      display: flex; align-items: center; gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.5);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+    .trail-item {
+      font-size: 11px; font-weight: 600;
+      padding: 2px 8px; border-radius: 8px;
+      background: var(--accent-light); color: var(--accent);
+      border: 1px solid var(--accent-border);
+    }
+    .trail-item.oracle { background: var(--oracle-light); color: var(--oracle); border-color: var(--oracle-border); }
+    .trail-item.sap    { background: var(--sap-light);    color: var(--sap);    border-color: var(--sap-border); }
+    .trail-item.itgc   { background: var(--itgc-light);   color: var(--itgc);   border-color: var(--itgc-border); }
+    .trail-sep { font-size: 12px; color: var(--t4); }
 
     /* ── Form controls ──────────────────────────────────────────────────── */
-
     .field { margin-bottom: 16px; }
     .field:last-child { margin-bottom: 0; }
 
     label {
       display: block;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 5px;
+      font-size: 11px; font-weight: 700;
+      color: var(--t2);
+      text-transform: uppercase; letter-spacing: 0.07em;
+      margin-bottom: 6px;
     }
 
     input[type="text"],
     input[type="email"],
     input[type="password"],
     input[type="number"],
-    select {
-      display: block;
-      width: 100%;
-      padding: 8px 10px;
-      background: var(--bg);
-      border: 1px solid var(--border2);
-      border-radius: 5px;
-      color: var(--text);
+    select, textarea {
+      display: block; width: 100%;
+      padding: 9px 12px;
+      background: rgba(255,255,255,0.8);
+      border: 1.5px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      color: var(--t1);
       font-size: 13px;
-      transition: border-color 0.15s;
+      font-family: inherit;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    input:focus, select:focus { outline: none; border-color: var(--accent); }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.10);
+      background: white;
+    }
     select { cursor: pointer; }
 
     input[type="file"] {
-      display: block;
-      width: 100%;
-      padding: 8px 10px;
-      background: var(--bg);
-      border: 1px solid var(--border2);
-      border-radius: 5px;
-      color: var(--muted);
-      font-size: 12px;
-      cursor: pointer;
+      display: block; width: 100%;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.8);
+      border: 1.5px dashed var(--border-strong);
+      border-radius: var(--radius-sm);
+      color: var(--t3); font-size: 12px; cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    input[type="file"]:hover {
+      border-color: var(--accent); background: var(--accent-light);
     }
     input[type="file"]::file-selector-button {
-      background: var(--surface2);
-      border: 1px solid var(--border2);
-      border-radius: 4px;
-      color: var(--text);
-      font-size: 11px;
-      padding: 3px 10px;
-      margin-right: 10px;
-      cursor: pointer;
+      background: var(--accent-light);
+      border: 1px solid var(--accent-border);
+      border-radius: 6px;
+      color: var(--accent);
+      font-size: 11px; font-weight: 600;
+      padding: 4px 12px;
+      margin-right: 10px; cursor: pointer;
+      transition: background 0.15s;
     }
+    input[type="file"]::file-selector-button:hover { background: var(--accent-border); }
 
     .row { display: flex; gap: 12px; }
     .row .field { flex: 1; }
 
-    .hint { font-size: 11px; color: var(--dim); margin-top: 4px; }
-    .divider { border: none; border-top: 1px solid var(--border); margin: 8px 0 16px; }
+    .hint { font-size: 11px; color: var(--t4); margin-top: 4px; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 8px 0 18px; }
+
+    details summary {
+      font-size: 12px; font-weight: 600; color: var(--t3);
+      cursor: pointer; padding: 6px 0;
+      list-style: none;
+      display: flex; align-items: center; gap: 6px;
+    }
+    details summary::before { content: '▶'; font-size: 9px; }
+    details[open] summary::before { content: '▼'; }
+    details summary:hover { color: var(--accent); }
+    details .details-body { padding-top: 12px; }
 
     /* ── Buttons ────────────────────────────────────────────────────────── */
-
     .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 9px 16px;
-      border-radius: 5px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
-      border: 1px solid transparent;
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 6px; padding: 9px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.18s;
+      border: 1.5px solid transparent;
+      font-family: inherit; white-space: nowrap;
       text-decoration: none;
-      white-space: nowrap;
     }
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent-dim); width: 100%; }
-    .btn-primary:hover:not(:disabled) { background: var(--accent-dim); }
-
-    .btn-ghost { background: transparent; color: var(--muted); border-color: var(--border2); }
-    .btn-ghost:hover:not(:disabled) { color: var(--text); border-color: #555; }
-
-    .btn-sm { padding: 5px 11px; font-size: 11px; }
-
-    .btn-dl  { background: #0a1628; color: #60a5fa; border-color: #1d3a6e; }
-    .btn-dl:hover:not(:disabled)  { background: #1d3a6e; }
-    .btn-up  { background: #0a1a0a; color: #4ade80; border-color: #1a3a1a; }
-    .btn-up:hover:not(:disabled)  { background: #1a3a1a; }
-    .btn-danger { background: #1a0808; color: #f87171; border-color: #3a1a1a; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary {
+      background: var(--accent); color: white;
+      border-color: var(--accent-hover); width: 100%;
+      font-size: 14px; padding: 11px 18px;
+      box-shadow: 0 2px 8px rgba(37,99,235,0.20);
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+      box-shadow: 0 4px 14px rgba(37,99,235,0.30);
+    }
+    .btn-ghost {
+      background: rgba(255,255,255,0.7);
+      color: var(--t2);
+      border-color: var(--border-strong);
+    }
+    .btn-ghost:hover:not(:disabled) { background: white; border-color: var(--t4); }
+    .btn-sm { padding: 5px 12px; font-size: 11px; }
+    .btn-dl {
+      background: var(--accent-light); color: var(--accent);
+      border-color: var(--accent-border);
+    }
+    .btn-dl:hover:not(:disabled) { background: var(--accent-border); }
+    .btn-up {
+      background: var(--success-light); color: var(--success);
+      border-color: var(--success-border);
+    }
+    .btn-up:hover:not(:disabled) { background: var(--success-border); }
+    .btn-danger {
+      background: var(--error-light); color: var(--error);
+      border-color: var(--error-border);
+    }
+    .btn-oracle {
+      background: var(--oracle-light); color: var(--oracle);
+      border-color: var(--oracle-border); width: 100%;
+      font-size: 14px; padding: 11px 18px;
+      box-shadow: 0 2px 8px rgba(234,88,12,0.15);
+    }
+    .btn-oracle:hover:not(:disabled) {
+      background: var(--oracle-border);
+      box-shadow: 0 4px 14px rgba(234,88,12,0.25);
+    }
 
     /* ── Status banners ─────────────────────────────────────────────────── */
-
     .status {
-      margin-top: 14px;
-      font-size: 12px;
-      padding: 9px 12px;
-      border-radius: 5px;
-      display: none;
-      line-height: 1.5;
+      margin-top: 14px; font-size: 13px;
+      padding: 10px 14px; border-radius: var(--radius-sm);
+      display: none; line-height: 1.5;
     }
-    .status.show   { display: block; }
-    .status.info   { background: #0a1628; color: #93c5fd; border: 1px solid #1d3a6e; }
-    .status.ok     { background: #0a1a0a; color: #86efac; border: 1px solid #1a3a1a; }
-    .status.error  { background: #1a0808; color: #fca5a5; border: 1px solid #3a1a1a; }
-    .status.warn   { background: #1a1205; color: #fde68a; border: 1px solid #3d2a00; }
+    .status.show { display: block; }
+    .status.info    { background: var(--accent-light);  color: #1e40af; border: 1px solid var(--accent-border); }
+    .status.ok      { background: var(--success-light); color: #166534; border: 1px solid var(--success-border); }
+    .status.error   { background: var(--error-light);   color: #991b1b; border: 1px solid var(--error-border); }
+    .status.warn    { background: var(--warn-light);    color: #92400e; border: 1px solid var(--warn-border); }
 
-    /* ── Job status bar ─────────────────────────────────────────────────── */
-
+    /* ── Jobs panel ─────────────────────────────────────────────────────── */
     #jobPanel { display: none; }
-
     .job-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 10px 0;
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 12px;
+      padding: 12px 0;
       border-bottom: 1px solid var(--border);
     }
     .job-row:last-child { border-bottom: none; }
-
     .job-info { flex: 1; min-width: 0; }
-    .job-id   { font-size: 11px; color: var(--dim); font-family: monospace; }
-    .job-check { font-size: 12px; font-weight: 500; color: var(--text); }
+    .job-check { font-size: 13px; font-weight: 600; color: var(--t1); }
+    .job-meta  { font-size: 11px; color: var(--t4); font-family: monospace; margin-top: 2px; }
+    .job-err   { font-size: 11px; color: var(--error); margin-top: 4px; }
+    .job-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
     .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      flex-shrink: 0;
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10px; font-weight: 700;
+      padding: 3px 9px; border-radius: 10px;
+      text-transform: uppercase; letter-spacing: 0.05em;
     }
-    .badge-queued  { background: #1a1205; color: var(--amber);  border: 1px solid #3d2a00; }
-    .badge-running { background: #0a1628; color: #60a5fa;       border: 1px solid #1d3a6e; }
-    .badge-done    { background: #0a1a0a; color: var(--green);  border: 1px solid #1a3a1a; }
-    .badge-failed  { background: #1a0808; color: var(--red);    border: 1px solid #3a1a1a; }
-
+    .badge-queued  { background: var(--warn-light);    color: var(--warn);    border: 1px solid var(--warn-border); }
+    .badge-running { background: var(--accent-light);  color: var(--accent);  border: 1px solid var(--accent-border); }
+    .badge-done    { background: var(--success-light); color: var(--success); border: 1px solid var(--success-border); }
+    .badge-failed  { background: var(--error-light);   color: var(--error);   border: 1px solid var(--error-border); }
     .pulse { animation: pulse 1.4s ease-in-out infinite; }
-    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
 
-    /* ── Admin panel ────────────────────────────────────────────────────── */
+    /* ── Admin tabs ─────────────────────────────────────────────────────── */
+    .tab-bar {
+      display: flex; gap: 2px;
+      background: rgba(255,255,255,0.5);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      flex: 1; padding: 7px 12px;
+      font-size: 12px; font-weight: 600;
+      color: var(--t3); background: transparent;
+      border: none; border-radius: 7px;
+      cursor: pointer; transition: all 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+    }
+    .tab-btn:hover { background: rgba(255,255,255,0.7); color: var(--t1); }
+    .tab-btn.active {
+      background: white; color: var(--accent);
+      box-shadow: 0 1px 6px rgba(15,23,42,0.08);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeIn 0.15s ease; }
 
-    #adminPanel { max-width: 680px; display: none; }
-
-    .admin-row {
+    /* ── Admin ideal file row ────────────────────────────────────────────── */
+    .ideal-row {
       display: grid;
       grid-template-columns: 1fr auto auto auto;
-      align-items: center;
-      gap: 10px;
+      align-items: center; gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .ideal-row:last-child { border-bottom: none; }
+    .ideal-name { font-size: 13px; font-weight: 600; color: var(--t1); }
+    .ideal-meta { font-size: 11px; color: var(--t4); margin-top: 2px; }
+    .upload-wrap { display: flex; align-items: center; gap: 6px; }
+    .upload-wrap input[type="file"] {
+      width: 160px; padding: 5px 8px; font-size: 11px;
+    }
+    .up-st { font-size: 11px; min-width: 44px; text-align: center; font-weight: 600; }
+    .up-st.ok  { color: var(--success); }
+    .up-st.err { color: var(--error); }
+
+    /* ── Create check form ──────────────────────────────────────────────── */
+    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 520px) { .form-grid-2 { grid-template-columns: 1fr; } }
+
+    /* ── Users table ────────────────────────────────────────────────────── */
+    .user-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      align-items: center; gap: 10px;
       padding: 10px 0;
       border-bottom: 1px solid var(--border);
     }
-    .admin-row:last-child { border-bottom: none; }
-
-    .check-name  { font-size: 12px; font-weight: 500; color: var(--text); }
-    .check-sheet { font-size: 11px; color: var(--dim); }
-
-    .upload-wrap { display: flex; align-items: center; gap: 6px; }
-    .upload-wrap input[type="file"] { width: 160px; padding: 5px 8px; font-size: 11px; }
-    .upload-wrap input[type="file"]::file-selector-button { padding: 2px 7px; font-size: 11px; margin-right: 6px; }
-
-    .up-st { font-size: 11px; min-width: 40px; text-align: center; }
-    .up-st.ok  { color: var(--green); }
-    .up-st.err { color: var(--red); }
+    .user-row:last-child { border-bottom: none; }
+    .user-email-cell { font-size: 13px; font-weight: 500; color: var(--t1); }
+    .active-dot {
+      display: inline-block; width: 6px; height: 6px;
+      border-radius: 50%; margin-right: 4px;
+    }
+    .active-dot.on  { background: var(--success); }
+    .active-dot.off { background: var(--t4); }
 
     footer {
-      text-align: center;
-      font-size: 11px;
-      color: #1f1f1f;
-      padding: 14px;
-      flex-shrink: 0;
+      text-align: center; font-size: 11px; color: var(--t4);
+      padding: 14px; flex-shrink: 0;
     }
   </style>
 </head>
@@ -322,17 +608,23 @@
 <!-- ═══ LOGIN ════════════════════════════════════════════════════════════ -->
 <div id="loginWrap">
   <div class="login-card">
-    <h1>AuditForge</h1>
-    <p>Deterministic configuration audit</p>
+    <div class="login-logo">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <rect width="32" height="32" rx="8" fill="#2563eb"/>
+        <path d="M8 22L13 10L18 18L21 13L26 22" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h1>Audit<span>Forge</span></h1>
+    </div>
+    <p class="sub">Deterministic ERP configuration audit</p>
 
     <div class="field">
       <label>Email</label>
-      <input type="email" id="loginEmail" value="admin@auditforge.local"
+      <input type="email" id="loginEmail" placeholder="admin@company.com"
              onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <div class="field">
       <label>Password</label>
-      <input type="password" id="loginPw" value="admin123"
+      <input type="password" id="loginPw" placeholder="••••••••"
              onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <div class="status" id="loginErr"></div>
@@ -343,100 +635,305 @@
 
 <!-- ═══ APP ══════════════════════════════════════════════════════════════ -->
 <div id="appWrap">
-  <header>
-    <div class="brand">Audit<span>Forge</span></div>
-    <div class="header-right">
-      <div class="user-badge">
-        <span id="hdrEmail"></span>
-        <span class="role-pill" id="hdrRole"></span>
+  <nav class="top-nav">
+    <div class="brand">
+      <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
+        <rect width="32" height="32" rx="8" fill="#2563eb"/>
+        <path d="M8 22L13 10L18 18L21 13L26 22" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Audit<span>Forge</span>
+    </div>
+    <div class="nav-right">
+      <div class="user-chip">
+        <div class="user-avatar" id="hdrAvatar">A</div>
+        <span class="user-email" id="hdrEmail"></span>
+        <span class="role-badge" id="hdrRole"></span>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="logout()">Sign out</button>
     </div>
-  </header>
+  </nav>
 
   <main>
 
-    <!-- Audit form -->
-    <div class="card">
-      <div class="card-title">New Audit</div>
-
-      <div class="field">
-        <label>Audit Check</label>
-        <select id="checkSel" onchange="onCheckChange()">
-          <option value="">— select a check —</option>
-        </select>
-      </div>
-
-      <div class="field">
-        <label>Client File <span style="color:var(--dim);font-weight:400;text-transform:none">.xlsx / .xls / .csv</span></label>
-        <input type="file" id="actualFile" accept=".xlsx,.xls,.csv" onchange="checkFormReady()">
-      </div>
-
-      <hr class="divider">
-
-      <div class="row">
-        <div class="field">
-          <label>Sheet Name</label>
-          <input type="text" id="sheetName" placeholder="auto">
-          <p class="hint" id="sheetHint"></p>
-        </div>
-        <div class="field">
-          <label>Fuzzy Threshold</label>
-          <input type="number" id="fuzzyThresh" value="80" min="50" max="100">
+    <!-- ── Audit form ─────────────────────────────────────────────────── -->
+    <div class="card" id="auditCard">
+      <div class="card-header">
+        <div class="card-icon card-icon-blue">🔍</div>
+        <div>
+          <div class="card-title">New Audit</div>
+          <div class="card-subtitle">Run a configuration compliance check</div>
         </div>
       </div>
 
-      <button class="btn btn-primary" id="runBtn" onclick="submitAudit()" disabled>
-        Run Audit
-      </button>
-      <div class="status" id="auditStatus"></div>
+      <!-- Stepper -->
+      <div class="stepper" id="stepper">
+        <div class="step-item active" id="si1">
+          <div class="step-dot">1</div>
+          <div class="step-label">Process</div>
+        </div>
+        <div class="step-item" id="si2">
+          <div class="step-dot">2</div>
+          <div class="step-label">Platform</div>
+        </div>
+        <div class="step-item" id="si3">
+          <div class="step-dot">3</div>
+          <div class="step-label">Category</div>
+        </div>
+        <div class="step-item" id="si4">
+          <div class="step-dot">4</div>
+          <div class="step-label">Run</div>
+        </div>
+      </div>
+
+      <!-- Step 1: Process Type -->
+      <div class="step-panel active" id="sp1">
+        <div class="step-heading">What type of control are you auditing?</div>
+        <div class="step-desc">Select the control category for this engagement.</div>
+        <div class="option-grid">
+          <div class="opt-card itgc" onclick="selectProcess('itgc')">
+            <span class="opt-icon">🔐</span>
+            <div class="opt-title">ITGC</div>
+            <div class="opt-desc">IT General Controls — access management, change management, operations &amp; availability</div>
+            <span class="opt-tag">Platform-level</span>
+          </div>
+          <div class="opt-card" onclick="selectProcess('itac')">
+            <span class="opt-icon">⚙️</span>
+            <div class="opt-title">Business Process (ITAC)</div>
+            <div class="opt-desc">Application Controls — ERP configuration, transaction controls, process compliance</div>
+            <span class="opt-tag">Oracle · SAP · ERP</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: ERP Platform -->
+      <div class="step-panel" id="sp2">
+        <button class="back-link" onclick="goStep(1)">← Back</button>
+        <div class="step-heading">Which ERP platform?</div>
+        <div class="step-desc">Select the system you are auditing.</div>
+        <div class="option-grid option-grid-3">
+          <div class="opt-card oracle" onclick="selectERP('oracle')">
+            <span class="opt-icon">🔴</span>
+            <div class="opt-title">Oracle Fusion</div>
+            <div class="opt-desc">Oracle Fusion Cloud ERP — INV, AP, AR, GL, SCM modules</div>
+            <span class="opt-tag">Cloud ERP</span>
+          </div>
+          <div class="opt-card sap" onclick="selectERP('sap')">
+            <span class="opt-icon">🔷</span>
+            <div class="opt-title">SAP</div>
+            <div class="opt-desc">SAP ECC / S/4HANA — FI, MM, SD, PP, BASIS modules</div>
+            <span class="opt-tag">ECC · S/4HANA</span>
+          </div>
+          <div class="opt-card generic" onclick="selectERP('generic')">
+            <span class="opt-icon">📋</span>
+            <div class="opt-title">Generic / Other</div>
+            <div class="opt-desc">Custom ideal templates for any ERP or system</div>
+            <span class="opt-tag">Flexible</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Category -->
+      <div class="step-panel" id="sp3">
+        <button class="back-link" onclick="goStep(2)">← Back</button>
+        <div class="step-heading">Which category of controls?</div>
+        <div class="step-desc">Select the control type within the selected platform.</div>
+        <div class="option-grid">
+          <div class="opt-card" onclick="selectCategory('configurations')">
+            <span class="opt-icon">🗂️</span>
+            <div class="opt-title">Configuration Controls</div>
+            <div class="opt-desc">Compare ERP system parameters against an approved ideal baseline file</div>
+            <span class="opt-tag">Parameter audit</span>
+          </div>
+          <div class="opt-card" onclick="selectCategory('detailed')">
+            <span class="opt-icon">🔬</span>
+            <div class="opt-title">Detailed Controls</div>
+            <div class="opt-desc">Transaction-level and process-specific control testing against defined criteria</div>
+            <span class="opt-tag">Process audit</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Check + Upload -->
+      <div class="step-panel" id="sp4">
+        <button class="back-link" id="sp4Back" onclick="goStep(3)">← Back</button>
+
+        <div class="trail" id="selTrail"></div>
+
+        <div class="field">
+          <label>Audit Check</label>
+          <select id="checkSel" onchange="onCheckChange()">
+            <option value="">— select a check —</option>
+          </select>
+        </div>
+
+        <div class="field" id="noChecksMsg" style="display:none">
+          <div class="status show warn">
+            No checks available for this combination yet.
+            <span id="noChecksAdmin" style="display:none">
+              Go to the <strong>Admin → Create Check</strong> tab to add one.
+            </span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Client Export File <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t4)">.xlsx / .xls / .csv</span></label>
+          <input type="file" id="actualFile" accept=".xlsx,.xls,.csv" onchange="checkFormReady()">
+        </div>
+
+        <details>
+          <summary>Advanced Options</summary>
+          <div class="details-body">
+            <div class="row">
+              <div class="field">
+                <label>Sheet Name</label>
+                <input type="text" id="sheetName" placeholder="auto-detected">
+                <p class="hint" id="sheetHint">Leave blank for CSV or single-sheet workbooks</p>
+              </div>
+              <div class="field">
+                <label>Fuzzy Threshold</label>
+                <input type="number" id="fuzzyThresh" value="80" min="50" max="100">
+                <p class="hint">50–100. Default 80.</p>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <br>
+        <button class="btn btn-primary" id="runBtn" onclick="submitAudit()" disabled>
+          ▶&nbsp; Run Audit
+        </button>
+        <div class="status" id="auditStatus"></div>
+      </div>
     </div>
 
-    <!-- Job tracker -->
+    <!-- ── Job tracker ────────────────────────────────────────────────── -->
     <div class="card" id="jobPanel">
-      <div class="card-title">Jobs</div>
+      <div class="card-header">
+        <div class="card-icon card-icon-green">📋</div>
+        <div>
+          <div class="card-title">Jobs</div>
+          <div class="card-subtitle">Recent audit runs</div>
+        </div>
+      </div>
       <div id="jobList"></div>
     </div>
 
-    <!-- Admin panel (admin role only) -->
-    <div class="card" id="adminPanel">
-      <div class="card-title" style="color:var(--amber)">Ideal File Management</div>
-      <div id="adminList"></div>
-    </div>
-
-    <!-- User management (admin role only) -->
-    <div class="card" id="userPanel" style="max-width:680px;display:none">
-      <div class="card-title" style="color:var(--amber)">User Management</div>
-
-      <!-- Create user form -->
-      <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:10px;align-items:end;margin-bottom:18px">
+    <!-- ── Admin area ─────────────────────────────────────────────────── -->
+    <div class="card card-wide" id="adminArea" style="display:none">
+      <div class="card-header">
+        <div class="card-icon card-icon-amber">🛠️</div>
         <div>
-          <label>Email</label>
-          <input type="email" id="newEmail" placeholder="user@company.com">
+          <div class="card-title" style="color:#92400e">Admin Panel</div>
+          <div class="card-subtitle">Manage checks, ideal files, and users</div>
         </div>
-        <div>
-          <label>Password</label>
-          <input type="password" id="newPw" placeholder="min 8 chars">
-        </div>
-        <div>
-          <label>Role</label>
-          <select id="newRole">
-            <option value="associate">Associate</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-        <button class="btn btn-up btn-sm" style="margin-bottom:1px" onclick="createUser()">Add User</button>
       </div>
-      <div class="status" id="userStatus"></div>
 
-      <!-- User list -->
-      <div id="userList" style="margin-top:16px"></div>
+      <div class="tab-bar">
+        <button class="tab-btn active" id="tab-ideals" onclick="switchTab('ideals')">📁 Ideal Files</button>
+        <button class="tab-btn" id="tab-create"  onclick="switchTab('create')">➕ Create Check</button>
+        <button class="tab-btn" id="tab-users"   onclick="switchTab('users')">👤 Users</button>
+      </div>
+
+      <!-- Tab: Ideal Files -->
+      <div class="tab-panel active" id="tp-ideals">
+        <div id="adminList"></div>
+      </div>
+
+      <!-- Tab: Create Check -->
+      <div class="tab-panel" id="tp-create">
+        <p style="font-size:13px;color:var(--t3);margin-bottom:18px">
+          Create a new audit check by defining its metadata and uploading an ideal baseline file.
+          It will immediately appear in the audit form for all users.
+        </p>
+
+        <div class="form-grid-2">
+          <div class="field">
+            <label>Check ID <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t4)">(slug, e.g. gl_setup)</span></label>
+            <input type="text" id="newId" placeholder="e.g. gl_ledger_setup"
+                   pattern="[a-z0-9_]+" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,'')">
+          </div>
+          <div class="field">
+            <label>Display Name</label>
+            <input type="text" id="newName" placeholder="e.g. GL Ledger Setup">
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="field">
+            <label>Process Type</label>
+            <select id="newProcType">
+              <option value="itac">Business Process (ITAC)</option>
+              <option value="itgc">ITGC</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>ERP Platform</label>
+            <select id="newERP">
+              <option value="oracle">Oracle Fusion</option>
+              <option value="sap">SAP</option>
+              <option value="generic">Generic / Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="field">
+            <label>Category</label>
+            <select id="newCategory">
+              <option value="configurations">Configuration Controls</option>
+              <option value="detailed">Detailed Controls</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Default Sheet Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t4)">(optional)</span></label>
+            <input type="text" id="newSheet" placeholder="e.g. GL_LEDGER">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Description <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t4)">(optional)</span></label>
+          <input type="text" id="newDesc" placeholder="Brief description of this check">
+        </div>
+
+        <div class="field">
+          <label>Ideal Baseline File <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t4)">.xlsx / .csv</span></label>
+          <input type="file" id="newIdealFile" accept=".xlsx,.xls,.csv">
+        </div>
+
+        <button class="btn btn-primary" style="max-width:240px" onclick="createCheck()">
+          ➕&nbsp; Create Check
+        </button>
+        <div class="status" id="createStatus"></div>
+      </div>
+
+      <!-- Tab: Users -->
+      <div class="tab-panel" id="tp-users">
+        <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:10px;align-items:end;margin-bottom:18px">
+          <div>
+            <label>Email</label>
+            <input type="email" id="newEmail" placeholder="user@company.com">
+          </div>
+          <div>
+            <label>Password</label>
+            <input type="password" id="newPw" placeholder="min 8 chars">
+          </div>
+          <div>
+            <label>Role</label>
+            <select id="newRole">
+              <option value="associate">Associate</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <button class="btn btn-up btn-sm" style="margin-bottom:1px" onclick="createUser()">Add User</button>
+        </div>
+        <div class="status" id="userStatus"></div>
+        <div id="userList" style="margin-top:16px"></div>
+      </div>
     </div>
 
   </main>
+  <footer>AuditForge v2.1 &nbsp;·&nbsp; Deterministic ERP Configuration Audit</footer>
 </div>
-
-<footer>AuditForge v2.0</footer>
 
 <script>
 'use strict';
@@ -444,12 +941,15 @@
 // ── State ────────────────────────────────────────────────────────────────────
 let _token = sessionStorage.getItem('af_token');
 let _user  = null;
-let _jobs  = {};   // jobId → { check_id, status, timer }
+let _jobs  = {};
+let _checks = [];
+const _sel = { processType: null, erp: null, category: null };
+let _step = 1;
 
 // ── Bootstrap ────────────────────────────────────────────────────────────────
 (async () => {
   if (_token) {
-    try { await initApp(); return; } catch { /* token expired */ }
+    try { await initApp(); return; } catch { /* expired */ }
   }
   showLogin();
 })();
@@ -460,12 +960,8 @@ async function doLogin() {
   const pw    = document.getElementById('loginPw').value;
   const btn   = document.getElementById('loginBtn');
   const err   = document.getElementById('loginErr');
-
-  err.className = 'status';
-  err.textContent = '';
-  btn.disabled = true;
-  btn.textContent = 'Signing in…';
-
+  err.className = 'status'; err.textContent = '';
+  btn.disabled = true; btn.textContent = 'Signing in…';
   const form = new URLSearchParams({ username: email, password: pw });
   try {
     const res = await fetch('/auth/token', {
@@ -475,7 +971,7 @@ async function doLogin() {
     });
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
-      throw new Error(d.detail || 'Login failed');
+      throw new Error(d.detail || 'Invalid email or password');
     }
     const data = await res.json();
     _token = data.access_token;
@@ -484,14 +980,12 @@ async function doLogin() {
   } catch (e) {
     err.textContent = e.message;
     err.className = 'status show error';
-    btn.disabled = false;
-    btn.textContent = 'Sign in';
+    btn.disabled = false; btn.textContent = 'Sign in';
   }
 }
 
 function logout() {
-  _token = null;
-  _user  = null;
+  _token = null; _user = null;
   sessionStorage.removeItem('af_token');
   Object.values(_jobs).forEach(j => clearInterval(j.timer));
   _jobs = {};
@@ -499,77 +993,64 @@ function logout() {
 }
 
 function showLogin() {
-  // Hard-reset every piece of UI state that could be stale after logout
-  const btn = document.getElementById('loginBtn');
-  btn.disabled    = false;
-  btn.textContent = 'Sign in';
-
+  document.getElementById('loginBtn').disabled    = false;
+  document.getElementById('loginBtn').textContent = 'Sign in';
   document.getElementById('loginEmail').value = '';
   document.getElementById('loginPw').value    = '';
-  document.getElementById('loginErr').textContent = '';
   document.getElementById('loginErr').className   = 'status';
-
-  // Hide app panels
-  document.getElementById('appWrap').style.display   = 'none';
-  document.getElementById('adminPanel').style.display = 'none';
-  document.getElementById('userPanel').style.display  = 'none';
-  document.getElementById('jobPanel').style.display   = 'none';
-
-  // Clear job list so previous user's jobs don't flash on next login
+  document.getElementById('loginErr').textContent = '';
+  document.getElementById('appWrap').style.display  = 'none';
+  document.getElementById('adminArea').style.display = 'none';
+  document.getElementById('jobPanel').style.display  = 'none';
   document.getElementById('jobList').innerHTML = '';
-
-  // Reset audit form
-  document.getElementById('checkSel').selectedIndex = 0;
-  document.getElementById('actualFile').value        = '';
-  document.getElementById('sheetName').value         = '';
-  document.getElementById('auditStatus').textContent = '';
-  document.getElementById('auditStatus').className   = 'status';
-  document.getElementById('runBtn').disabled         = true;
-
-  // Reset user management form (visible to admins on re-login)
-  document.getElementById('newEmail').value       = '';
-  document.getElementById('newPw').value          = '';
-  document.getElementById('newRole').selectedIndex = 0;
-  document.getElementById('userStatus').textContent = '';
-  document.getElementById('userStatus').className   = 'status';
-
-  // Reset fuzzy threshold to default
-  document.getElementById('fuzzyThresh').value = '80';
-
+  document.getElementById('jobPanel').style.display = 'none';
+  resetAuditForm();
   document.getElementById('loginWrap').style.display = 'flex';
+}
+
+function resetAuditForm() {
+  _sel.processType = null; _sel.erp = null; _sel.category = null;
+  _step = 1;
+  goStep(1);
+  document.getElementById('checkSel').selectedIndex = 0;
+  document.getElementById('actualFile').value = '';
+  document.getElementById('sheetName').value  = '';
+  document.getElementById('fuzzyThresh').value = '80';
+  document.getElementById('auditStatus').className = 'status';
+  document.getElementById('auditStatus').textContent = '';
+  document.getElementById('runBtn').disabled = true;
 }
 
 // ── App init ──────────────────────────────────────────────────────────────────
 async function initApp() {
-  // Decode JWT payload to get user info (no verification needed client-side)
   const parts = _token.split('.');
   _user = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
 
-  document.getElementById('hdrEmail').textContent = _user.sub.slice(0, 8) + '…';
+  const avatar = _user.sub.charAt(0).toUpperCase();
+  document.getElementById('hdrAvatar').textContent = avatar;
+  document.getElementById('hdrEmail').textContent  = _user.sub.length > 20
+    ? _user.sub.slice(0, 18) + '…' : _user.sub;
   const rolePill = document.getElementById('hdrRole');
   rolePill.textContent = _user.role;
-  rolePill.className = 'role-pill ' + (_user.role === 'admin' ? 'role-admin' : 'role-associate');
+  rolePill.className   = 'role-badge ' + (_user.role === 'admin' ? 'role-admin' : 'role-associate');
 
   await loadChecks();
   await loadJobHistory();
 
   if (_user.role === 'admin') {
+    document.getElementById('adminArea').style.display = 'block';
+    document.getElementById('noChecksAdmin').style.display = 'inline';
     await loadAdminPanel();
     await loadUsers();
-    document.getElementById('adminPanel').style.display = 'block';
-    document.getElementById('userPanel').style.display  = 'block';
   }
 
   document.getElementById('loginWrap').style.display = 'none';
   document.getElementById('appWrap').style.display   = 'flex';
 }
 
-// ── API helpers ───────────────────────────────────────────────────────────────
+// ── API ───────────────────────────────────────────────────────────────────────
 async function api(method, path, body) {
-  const opts = {
-    method,
-    headers: { Authorization: `Bearer ${_token}` },
-  };
+  const opts = { method, headers: { Authorization: `Bearer ${_token}` } };
   if (body instanceof FormData) {
     opts.body = body;
   } else if (body) {
@@ -582,29 +1063,109 @@ async function api(method, path, body) {
 }
 
 // ── Checks ────────────────────────────────────────────────────────────────────
-let _checks = [];
-
 async function loadChecks() {
   const res = await fetch('/api/checks');
   _checks = await res.json();
+}
+
+// ── Step machine ──────────────────────────────────────────────────────────────
+function goStep(n) {
+  _step = n;
+  // Update panels
+  [1,2,3,4].forEach(i => {
+    document.getElementById('sp' + i).classList.toggle('active', i === n);
+  });
+  // Update stepper dots
+  [1,2,3,4].forEach(i => {
+    const el = document.getElementById('si' + i);
+    el.classList.remove('active','done');
+    if (i < n) el.classList.add('done');
+    if (i === n) el.classList.add('active');
+  });
+}
+
+function selectProcess(type) {
+  _sel.processType = type;
+  if (type === 'itgc') {
+    // ITGC: skip ERP/category steps — go straight to run
+    _sel.erp = 'generic'; _sel.category = 'configurations';
+    populateChecks();
+    buildTrail();
+    goStep(4);
+    // Update stepper to show steps 2+3 as done
+    document.getElementById('si2').classList.add('done');
+    document.getElementById('si3').classList.add('done');
+  } else {
+    goStep(2);
+  }
+}
+
+function selectERP(erp) {
+  _sel.erp = erp;
+  if (erp === 'generic') {
+    _sel.category = 'configurations';
+    populateChecks();
+    buildTrail();
+    goStep(4);
+    document.getElementById('si3').classList.add('done');
+  } else {
+    goStep(3);
+  }
+}
+
+function selectCategory(cat) {
+  _sel.category = cat;
+  populateChecks();
+  buildTrail();
+  goStep(4);
+}
+
+function populateChecks() {
   const sel = document.getElementById('checkSel');
+  const filtered = _checks.filter(c =>
+    c.process_type === _sel.processType &&
+    c.erp          === _sel.erp &&
+    c.category     === _sel.category
+  );
   sel.innerHTML = '<option value="">— select a check —</option>';
-  _checks.forEach(c => {
+  filtered.forEach(c => {
     const o = document.createElement('option');
-    o.value = c.id;
-    o.textContent = c.name;
+    o.value = c.id; o.textContent = c.name;
     o.dataset.sheet = c.default_sheet || '';
+    o.dataset.desc  = c.description   || '';
     sel.appendChild(o);
   });
+  const none = document.getElementById('noChecksMsg');
+  none.style.display = filtered.length === 0 ? 'block' : 'none';
+  checkFormReady();
+}
+
+function buildTrail() {
+  const labels = {
+    processType: { itac: 'Business Process (ITAC)', itgc: 'ITGC' },
+    erp:         { oracle: 'Oracle Fusion', sap: 'SAP', generic: 'Generic' },
+    category:    { configurations: 'Configuration Controls', detailed: 'Detailed Controls' },
+  };
+  const erpClass = { oracle: 'oracle', sap: 'sap', generic: '' }[_sel.erp] || '';
+  const procClass = _sel.processType === 'itgc' ? 'itgc' : '';
+  document.getElementById('selTrail').innerHTML = `
+    <span class="trail-item ${procClass}">${labels.processType[_sel.processType] || ''}</span>
+    <span class="trail-sep">›</span>
+    <span class="trail-item ${erpClass}">${labels.erp[_sel.erp] || ''}</span>
+    <span class="trail-sep">›</span>
+    <span class="trail-item">${labels.category[_sel.category] || ''}</span>
+  `;
 }
 
 function onCheckChange() {
   const sel = document.getElementById('checkSel');
-  const sheet = sel.options[sel.selectedIndex]?.dataset.sheet || '';
-  document.getElementById('sheetName').value = sheet;
-  document.getElementById('sheetHint').textContent = sheet
-    ? 'Auto-filled — override if needed'
-    : 'Leave blank for CSV or single-sheet files';
+  const opt = sel.options[sel.selectedIndex];
+  if (opt) {
+    document.getElementById('sheetName').value   = opt.dataset.sheet || '';
+    document.getElementById('sheetHint').textContent = opt.dataset.sheet
+      ? 'Auto-filled — override if needed'
+      : 'Leave blank for CSV or single-sheet files';
+  }
   checkFormReady();
 }
 
@@ -617,7 +1178,8 @@ function checkFormReady() {
 // ── Submit audit ──────────────────────────────────────────────────────────────
 async function submitAudit() {
   const checkId   = document.getElementById('checkSel').value;
-  const checkName = document.getElementById('checkSel').options[document.getElementById('checkSel').selectedIndex].textContent;
+  const checkName = document.getElementById('checkSel').options[
+    document.getElementById('checkSel').selectedIndex].textContent;
   const sheet     = document.getElementById('sheetName').value.trim();
   const threshold = parseInt(document.getElementById('fuzzyThresh').value) || 80;
   const file      = document.getElementById('actualFile').files[0];
@@ -640,14 +1202,12 @@ async function submitAudit() {
       throw new Error(d.detail || `HTTP ${res.status}`);
     }
     const { job_id } = await res.json();
-    setStatus(st, 'ok', `Job submitted — tracking ${job_id.slice(0, 8)}…`);
+    setStatus(st, 'ok', `Job submitted — tracking ${job_id.slice(0,8)}…`);
     trackJob(job_id, checkName);
-
-    // Reset file input
     document.getElementById('actualFile').value = '';
-    btn.disabled = true;
+    document.getElementById('runBtn').disabled = true;
   } catch (e) {
-    setStatus(st, 'error', e.message);
+    setStatus(st, 'error', escHtml(e.message));
     btn.disabled = false;
   }
 }
@@ -656,7 +1216,6 @@ async function submitAudit() {
 function trackJob(jobId, checkName) {
   _jobs[jobId] = { checkName, status: 'queued', timer: null };
   renderJobs();
-
   const timer = setInterval(async () => {
     try {
       const res = await api('GET', `/api/audits/${jobId}`);
@@ -665,56 +1224,38 @@ function trackJob(jobId, checkName) {
       _jobs[jobId].status = data.status;
       _jobs[jobId].error  = data.error_message;
       renderJobs();
-      if (data.status === 'done' || data.status === 'failed') {
+      if (data.status === 'done' || data.status === 'failed')
         clearInterval(_jobs[jobId].timer);
-      }
-    } catch { /* retry next tick */ }
+    } catch { /* retry */ }
   }, 2000);
-
   _jobs[jobId].timer = timer;
 }
 
 function renderJobs() {
   const panel = document.getElementById('jobPanel');
   const list  = document.getElementById('jobList');
-
-  if (Object.keys(_jobs).length === 0) {
-    panel.style.display = 'none';
-    return;
-  }
-
+  if (Object.keys(_jobs).length === 0) { panel.style.display = 'none'; return; }
   panel.style.display = 'block';
-
   list.innerHTML = Object.entries(_jobs).reverse().map(([id, j]) => {
-    const badgeClass = {
-      queued:  'badge-queued',
-      running: 'badge-running pulse',
-      done:    'badge-done',
-      failed:  'badge-failed',
-    }[j.status] || 'badge-queued';
-
-    const dlBtn = j.status === 'done'
-      ? `<button class="btn btn-dl btn-sm" onclick="downloadReport('${id}','${j.checkName}')">Download</button>`
-      : '';
-
-    const retryBtn = j.status === 'failed'
-      ? `<button class="btn btn-sm" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text)" onclick="retryJob('${id}','${j.checkName}')">Retry</button>`
-      : '';
-
+    const badgeClass = { queued:'badge-queued', running:'badge-running pulse',
+                         done:'badge-done', failed:'badge-failed' }[j.status] || 'badge-queued';
+    const dlBtn  = j.status === 'done'
+      ? `<button class="btn btn-dl btn-sm" onclick="downloadReport('${id}','${escHtml(j.checkName)}')">⬇ Download</button>` : '';
+    const retry  = j.status === 'failed'
+      ? `<button class="btn btn-ghost btn-sm" onclick="retryJob('${id}','${escHtml(j.checkName)}')">↺ Retry</button>` : '';
     const errTip = j.status === 'failed' && j.error
-      ? `<div style="font-size:11px;color:var(--red);margin-top:4px">${escHtml(j.error)}</div>`
-      : '';
-
-    return `
-      <div class="job-row">
-        <div class="job-info">
-          <div class="job-check">${j.checkName}</div>
-          <div class="job-id">${id.slice(0, 8)}…</div>
-          ${errTip}
-        </div>
+      ? `<div class="job-err">${escHtml(j.error)}</div>` : '';
+    return `<div class="job-row">
+      <div class="job-info">
+        <div class="job-check">${escHtml(j.checkName)}</div>
+        <div class="job-meta">${id.slice(0,8)}…</div>
+        ${errTip}
+      </div>
+      <div class="job-actions">
         <span class="badge ${badgeClass}">${j.status}</span>
-        ${dlBtn}${retryBtn}
-      </div>`;
+        ${dlBtn}${retry}
+      </div>
+    </div>`;
   }).join('');
 }
 
@@ -726,75 +1267,73 @@ async function downloadReport(jobId, checkName) {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `AuditForge_${checkName.replace(/\s+/g,'_')}_${jobId.slice(0,8)}.xlsx`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  } catch (e) {
-    alert(e.message);
-  }
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  } catch (e) { alert(e.message); }
 }
 
 async function retryJob(jobId, checkName) {
   try {
     const res = await api('POST', `/api/audits/${jobId}/retry`);
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      throw new Error(d.detail || 'Retry failed');
-    }
+    if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.detail || 'Retry failed'); }
     const { job_id } = await res.json();
-    // Remove old failed entry, start tracking the new job
     delete _jobs[jobId];
     trackJob(job_id, checkName);
-  } catch (e) {
-    alert(e.message);
-  }
+  } catch (e) { alert(e.message); }
 }
 
-// ── Job history (on login) ────────────────────────────────────────────────────
 async function loadJobHistory() {
   try {
     const res = await api('GET', '/api/audits');
     if (!res.ok) return;
     const jobs = await res.json();
     jobs.forEach(j => {
-      if (_jobs[j.id]) return; // already tracked live
+      if (_jobs[j.id]) return;
       _jobs[j.id] = { checkName: j.check_id, status: j.status, error: j.error_message, timer: null };
-      // Resume polling for any still-running jobs
       if (j.status === 'queued' || j.status === 'running') trackJob(j.id, j.check_id);
     });
     renderJobs();
   } catch { /* non-fatal */ }
 }
 
-// ── Admin panel ───────────────────────────────────────────────────────────────
+// ── Admin tabs ────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  ['ideals','create','users'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('active', t === name);
+    document.getElementById('tp-' + t).classList.toggle('active', t === name);
+  });
+}
+
+// ── Admin: Ideal Files ────────────────────────────────────────────────────────
 async function loadAdminPanel() {
   const res = await api('GET', '/api/ideals');
   const ideals = res.ok ? await res.json() : [];
-
-  // Index active ideals by check_id
   const byCheck = {};
   ideals.forEach(i => byCheck[i.check_id] = i);
 
   document.getElementById('adminList').innerHTML = _checks.map(c => {
-    const active = byCheck[c.id];
-    const version = active ? `v${active.version}` : 'bundled';
-    const hash    = active ? active.content_hash.slice(0,12) + '…' : '—';
-
-    return `
-      <div class="admin-row">
-        <div>
-          <div class="check-name">${c.name}</div>
-          <div class="check-sheet">${c.default_sheet || 'CSV/auto'} &nbsp;·&nbsp; ${version} &nbsp;·&nbsp; <span style="font-family:monospace;font-size:10px;color:var(--dim)">${hash}</span></div>
-        </div>
-        <button class="btn btn-dl btn-sm" onclick="downloadIdeal('${c.id}','${c.name}')">Download</button>
-        <div class="upload-wrap">
-          <input type="file" id="upf-${c.id}" accept=".xlsx,.xls,.csv"
-                 onchange="document.getElementById('upb-${c.id}').disabled=!this.files.length">
-          <button class="btn btn-up btn-sm" id="upb-${c.id}" disabled
-                  onclick="uploadIdeal('${c.id}')">Upload</button>
-        </div>
-        <span class="up-st" id="ups-${c.id}"></span>
-      </div>`;
+    const active  = byCheck[c.id];
+    const version = active ? `v${active.version}` : 'bundled default';
+    const hash    = active ? active.content_hash.slice(0,10) + '…' : '—';
+    const erpPill = `<span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:6px;
+      background:${c.erp==='oracle'?'var(--oracle-light)':c.erp==='sap'?'var(--sap-light)':'var(--generic-light)'};
+      color:${c.erp==='oracle'?'var(--oracle)':c.erp==='sap'?'var(--sap)':'var(--generic)'};
+      border:1px solid ${c.erp==='oracle'?'var(--oracle-border)':c.erp==='sap'?'var(--sap-border)':'var(--generic-border)'}
+    ">${c.erp.toUpperCase()}</span>`;
+    return `<div class="ideal-row">
+      <div>
+        <div class="ideal-name">${escHtml(c.name)} ${erpPill}</div>
+        <div class="ideal-meta">${c.default_sheet||'CSV/auto'} &nbsp;·&nbsp; ${version}
+          &nbsp;·&nbsp; <span style="font-family:monospace;font-size:10px">${hash}</span></div>
+      </div>
+      <button class="btn btn-dl btn-sm" onclick="downloadIdeal('${c.id}','${escHtml(c.name)}')">⬇ Download</button>
+      <div class="upload-wrap">
+        <input type="file" id="upf-${c.id}" accept=".xlsx,.xls,.csv"
+               onchange="document.getElementById('upb-${c.id}').disabled=!this.files.length">
+        <button class="btn btn-up btn-sm" id="upb-${c.id}" disabled
+                onclick="uploadIdeal('${c.id}')">↑ Upload</button>
+      </div>
+      <span class="up-st" id="ups-${c.id}"></span>
+    </div>`;
   }).join('');
 }
 
@@ -804,11 +1343,8 @@ async function downloadIdeal(checkId, name) {
     if (!res.ok) throw new Error('Download failed');
     const blob = await res.blob();
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${checkId}_ideal.xlsx`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    a.href = URL.createObjectURL(blob); a.download = `${checkId}_ideal.xlsx`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
   } catch (e) { alert(e.message); }
 }
 
@@ -817,48 +1353,79 @@ async function uploadIdeal(checkId) {
   const btn = document.getElementById(`upb-${checkId}`);
   const st  = document.getElementById(`ups-${checkId}`);
   if (!fi.files.length) return;
-
-  btn.disabled = true;
-  st.textContent = '…';
-  st.className = 'up-st';
-
+  btn.disabled = true; st.textContent = '…'; st.className = 'up-st';
   const form = new FormData();
   form.append('file', fi.files[0]);
-
   try {
     const res = await api('POST', `/api/ideals/${checkId}`, form);
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      throw new Error(d.detail || 'Upload failed');
-    }
-    st.textContent = 'Saved ✓';
-    st.className = 'up-st ok';
+    if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.detail || 'Upload failed'); }
+    st.textContent = '✓ Saved'; st.className = 'up-st ok';
     fi.value = '';
-    await loadAdminPanel(); // refresh versions
+    await loadAdminPanel();
   } catch (e) {
-    st.textContent = e.message;
-    st.className = 'up-st err';
-    btn.disabled = false;
+    st.textContent = e.message; st.className = 'up-st err'; btn.disabled = false;
   }
 }
 
-// ── User management ───────────────────────────────────────────────────────────
+// ── Admin: Create Check ───────────────────────────────────────────────────────
+async function createCheck() {
+  const id       = document.getElementById('newId').value.trim();
+  const name     = document.getElementById('newName').value.trim();
+  const procType = document.getElementById('newProcType').value;
+  const erp      = document.getElementById('newERP').value;
+  const category = document.getElementById('newCategory').value;
+  const sheet    = document.getElementById('newSheet').value.trim();
+  const desc     = document.getElementById('newDesc').value.trim();
+  const file     = document.getElementById('newIdealFile').files[0];
+  const st       = document.getElementById('createStatus');
+
+  if (!id)   { setStatus(st,'error','Check ID is required (e.g. gl_ledger_setup)'); return; }
+  if (!name) { setStatus(st,'error','Display name is required'); return; }
+  if (!file) { setStatus(st,'error','Ideal baseline file is required'); return; }
+
+  setStatus(st,'info','Creating check…');
+  const form = new FormData();
+  form.append('check_id',    id);
+  form.append('name',        name);
+  form.append('process_type',procType);
+  form.append('erp',         erp);
+  form.append('category',    category);
+  form.append('default_sheet', sheet);
+  form.append('description', desc);
+  form.append('file',        file);
+
+  try {
+    const res = await api('POST', '/api/ideals/admin/checks', form);
+    if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.detail || `HTTP ${res.status}`); }
+    const created = await res.json();
+    setStatus(st, 'ok', `✓ Check "${created.name}" created successfully`);
+    // Clear form
+    ['newId','newName','newSheet','newDesc'].forEach(f => document.getElementById(f).value = '');
+    document.getElementById('newIdealFile').value = '';
+    // Reload checks + admin panel
+    await loadChecks();
+    await loadAdminPanel();
+  } catch (e) {
+    setStatus(st, 'error', escHtml(e.message));
+  }
+}
+
+// ── Admin: Users ──────────────────────────────────────────────────────────────
 async function loadUsers() {
   const res = await api('GET', '/api/users');
   const users = res.ok ? await res.json() : [];
-
   document.getElementById('userList').innerHTML = users.length === 0
-    ? '<p style="color:var(--dim);font-size:12px">No users yet.</p>'
-    : users.map(u => `
-      <div style="display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
-        <div>
-          <span style="font-size:12px;color:var(--text)">${u.email}</span>
-        </div>
-        <span class="role-pill ${u.role === 'admin' ? 'role-admin' : 'role-associate'}">${u.role}</span>
-        <span style="font-size:11px;color:${u.is_active ? 'var(--green)' : 'var(--dim)'}">${u.is_active ? 'Active' : 'Inactive'}</span>
+    ? '<p style="color:var(--t4);font-size:13px">No users yet.</p>'
+    : users.map(u => `<div class="user-row">
+        <div class="user-email-cell">${escHtml(u.email)}</div>
+        <span class="role-badge ${u.role==='admin'?'role-admin':'role-associate'}">${u.role}</span>
+        <span style="font-size:12px;color:${u.is_active?'var(--success)':'var(--t4)'}">
+          <span class="active-dot ${u.is_active?'on':'off'}"></span>
+          ${u.is_active?'Active':'Inactive'}
+        </span>
         ${u.is_active
-          ? `<button class="btn btn-danger btn-sm" onclick="deactivateUser('${u.id}','${u.email}')">Deactivate</button>`
-          : '<span style="width:75px"></span>'}
+          ? `<button class="btn btn-danger btn-sm" onclick="deactivateUser('${u.id}','${escHtml(u.email)}')">Deactivate</button>`
+          : '<span></span>'}
       </div>`).join('');
 }
 
@@ -867,25 +1434,18 @@ async function createUser() {
   const pw    = document.getElementById('newPw').value;
   const role  = document.getElementById('newRole').value;
   const st    = document.getElementById('userStatus');
-
-  if (!email || !pw) { setStatus(st, 'error', 'Email and password are required.'); return; }
-  if (pw.length < 8)  { setStatus(st, 'error', 'Password must be at least 8 characters.'); return; }
-
-  setStatus(st, 'info', 'Creating…');
+  if (!email||!pw) { setStatus(st,'error','Email and password are required.'); return; }
+  if (pw.length<8) { setStatus(st,'error','Password must be at least 8 characters.'); return; }
+  setStatus(st,'info','Creating…');
   try {
     const res = await api('POST', '/api/users', { email, password: pw, role });
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      throw new Error(d.detail || `HTTP ${res.status}`);
-    }
+    if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.detail || `HTTP ${res.status}`); }
     const u = await res.json();
-    setStatus(st, 'ok', `Created ${u.email} (${u.role})`);
+    setStatus(st,'ok',`✓ Created ${u.email} (${u.role})`);
     document.getElementById('newEmail').value = '';
     document.getElementById('newPw').value    = '';
     await loadUsers();
-  } catch (e) {
-    setStatus(st, 'error', e.message);
-  }
+  } catch (e) { setStatus(st,'error',escHtml(e.message)); }
 }
 
 async function deactivateUser(id, email) {
@@ -893,25 +1453,18 @@ async function deactivateUser(id, email) {
   const st = document.getElementById('userStatus');
   try {
     const res = await api('DELETE', `/api/users/${id}`);
-    if (!res.ok && res.status !== 204) {
-      const d = await res.json().catch(() => ({}));
-      throw new Error(d.detail || `HTTP ${res.status}`);
-    }
-    setStatus(st, 'warn', `${email} deactivated.`);
+    if (!res.ok && res.status !== 204) { const d = await res.json().catch(() => ({})); throw new Error(d.detail || `HTTP ${res.status}`); }
+    setStatus(st,'warn',`${email} deactivated.`);
     await loadUsers();
-  } catch (e) {
-    setStatus(st, 'error', e.message);
-  }
+  } catch (e) { setStatus(st,'error',escHtml(e.message)); }
 }
 
-// ── Utility ───────────────────────────────────────────────────────────────────
+// ── Utils ─────────────────────────────────────────────────────────────────────
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-
 function setStatus(el, type, msg) {
-  el.textContent = msg;
-  el.className = `status show ${type}`;
+  el.innerHTML = msg; el.className = `status show ${type}`;
 }
 </script>
 </body>
