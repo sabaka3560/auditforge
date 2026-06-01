@@ -5,1466 +5,930 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AuditForge</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ─────────────────────────────────────────────────────────────────────────────
+   DESIGN SYSTEM
+───────────────────────────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --mesh:#0c0c1e;
+  --g0:rgba(255,255,255,0.04); --g1:rgba(255,255,255,0.08);
+  --g2:rgba(255,255,255,0.13); --g3:rgba(255,255,255,0.20);
+  --gb:rgba(255,255,255,0.13); --gb2:rgba(255,255,255,0.24);
+  --t1:rgba(255,255,255,0.95); --t2:rgba(255,255,255,0.72);
+  --t3:rgba(255,255,255,0.48); --t4:rgba(255,255,255,0.28);
+  --blue:#818cf8;  --blue-g:rgba(129,140,248,0.26);
+  --oracle:#fb923c;--oracle-g:rgba(251,146,60,0.22);
+  --sap:#60a5fa;   --sap-g:rgba(96,165,250,0.22);
+  --itgc:#34d399;  --itgc-g:rgba(52,211,153,0.22);
+  --gen:#c084fc;   --gen-g:rgba(192,132,252,0.22);
+  --green:#4ade80; --yellow:#fbbf24; --red:#f87171; --cyan:#67e8f9;
+  --r:12px; --rs:8px;
+  --blur:blur(20px);
+  --sh:0 8px 32px rgba(0,0,0,0.40);
+  --sh-sm:0 4px 16px rgba(0,0,0,0.30);
+}
+body{
+  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+  background:
+    radial-gradient(ellipse 90% 70% at 15% 40%,rgba(99,102,241,.45) 0%,transparent 55%),
+    radial-gradient(ellipse 70% 70% at 85% 20%,rgba(168,85,247,.35) 0%,transparent 55%),
+    radial-gradient(ellipse 60% 60% at 50% 95%,rgba(59,130,246,.40) 0%,transparent 55%),
+    radial-gradient(ellipse 50% 50% at 80% 80%,rgba(236,72,153,.25) 0%,transparent 50%),
+    var(--mesh);
+  background-attachment:fixed;
+  color:var(--t1); min-height:100vh; font-size:14px; line-height:1.5;
+}
 
-    :root {
-      --bg:             #eef2f7;
-      --glass:          rgba(255,255,255,0.80);
-      --glass-strong:   rgba(255,255,255,0.95);
-      --glass-border:   rgba(255,255,255,0.85);
-      --border:         #e2e8f0;
-      --border-strong:  #cbd5e1;
+/* Glass primitives */
+.glass{background:var(--g1);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--gb);border-radius:var(--r)}
+.gcard{background:var(--g1);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--gb);border-radius:var(--r);transition:background .18s,border-color .18s,transform .18s,box-shadow .18s}
+.gcard:hover{background:var(--g2);border-color:var(--gb2);transform:translateY(-1px);box-shadow:var(--sh-sm)}
 
-      --t1: #0f172a;
-      --t2: #1e293b;
-      --t3: #475569;
-      --t4: #94a3b8;
+/* Inputs */
+input[type=text],input[type=email],input[type=password],input[type=number],select,textarea{
+  display:block;width:100%;padding:10px 13px;
+  background:var(--g1);backdrop-filter:var(--blur);
+  border:1px solid var(--gb);border-radius:var(--rs);
+  color:var(--t1);font-size:13px;font-family:inherit;
+  transition:background .15s,border-color .15s,box-shadow .15s;
+  appearance:none;-webkit-appearance:none;
+}
+input:focus,select:focus,textarea:focus{outline:none;background:var(--g2);border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-g)}
+input::placeholder,textarea::placeholder{color:var(--t4)}
+select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='rgba(255,255,255,0.4)' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:34px;cursor:pointer;
+}
+select option{background:#1e1b4b;color:var(--t1)}
+input[type=file]{
+  display:block;width:100%;padding:10px 13px;
+  background:var(--g1);border:1px dashed var(--gb2);border-radius:var(--rs);
+  color:var(--t3);font-size:12px;cursor:pointer;transition:all .15s;
+}
+input[type=file]:hover{background:var(--g2);border-color:var(--blue);color:var(--t2)}
+input[type=file]::file-selector-button{
+  background:rgba(129,140,248,.18);border:1px solid rgba(129,140,248,.32);border-radius:6px;
+  color:var(--blue);font-size:11px;font-weight:700;padding:4px 12px;margin-right:10px;cursor:pointer;
+}
 
-      --accent:         #2563eb;
-      --accent-light:   #eff6ff;
-      --accent-border:  #bfdbfe;
-      --accent-hover:   #1d4ed8;
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:9px 18px;border-radius:var(--rs);font-size:13px;font-weight:600;
+  cursor:pointer;border:1px solid transparent;font-family:inherit;white-space:nowrap;
+  transition:all .18s;text-decoration:none;backdrop-filter:var(--blur);
+}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.btn-sm{padding:6px 13px;font-size:12px}
+.btn-lg{padding:12px 28px;font-size:15px;font-weight:700;width:100%}
+.btn-primary{background:var(--blue);color:#fff;border-color:rgba(99,102,241,.6);box-shadow:0 4px 20px var(--blue-g)}
+.btn-primary:hover:not(:disabled){background:#6366f1;box-shadow:0 6px 28px rgba(99,102,241,.50);transform:translateY(-1px)}
+.btn-ghost{background:var(--g1);color:var(--t2);border-color:var(--gb)}
+.btn-ghost:hover:not(:disabled){background:var(--g2);color:var(--t1);border-color:var(--gb2)}
+.btn-success{background:rgba(74,222,128,.15);color:var(--green);border-color:rgba(74,222,128,.28)}
+.btn-success:hover:not(:disabled){background:rgba(74,222,128,.25)}
+.btn-danger{background:rgba(248,113,113,.15);color:var(--red);border-color:rgba(248,113,113,.28)}
+.btn-danger:hover:not(:disabled){background:rgba(248,113,113,.25)}
 
-      --oracle:         #ea580c;
-      --oracle-light:   #fff7ed;
-      --oracle-border:  #fed7aa;
+/* Badges */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.b-blue{background:rgba(129,140,248,.18);color:var(--blue);border:1px solid rgba(129,140,248,.30)}
+.b-oracle{background:rgba(251,146,60,.18);color:var(--oracle);border:1px solid rgba(251,146,60,.30)}
+.b-sap{background:rgba(96,165,250,.18);color:var(--sap);border:1px solid rgba(96,165,250,.30)}
+.b-itgc{background:rgba(52,211,153,.18);color:var(--itgc);border:1px solid rgba(52,211,153,.30)}
+.b-gen{background:rgba(192,132,252,.18);color:var(--gen);border:1px solid rgba(192,132,252,.30)}
+.b-green{background:rgba(74,222,128,.15);color:var(--green);border:1px solid rgba(74,222,128,.28)}
+.b-yellow{background:rgba(251,191,36,.15);color:var(--yellow);border:1px solid rgba(251,191,36,.28)}
+.b-red{background:rgba(248,113,113,.15);color:var(--red);border:1px solid rgba(248,113,113,.28)}
+.b-cyan{background:rgba(103,232,249,.15);color:var(--cyan);border:1px solid rgba(103,232,249,.28)}
+.b-config{background:rgba(129,140,248,.12);color:#a5b4fc;border:1px solid rgba(129,140,248,.22)}
+.b-detail{background:rgba(192,132,252,.12);color:#d8b4fe;border:1px solid rgba(192,132,252,.22)}
 
-      --sap:            #0369a1;
-      --sap-light:      #f0f9ff;
-      --sap-border:     #bae6fd;
+/* Alerts */
+.alert{padding:11px 14px;border-radius:var(--rs);font-size:13px;line-height:1.5;display:none;backdrop-filter:var(--blur)}
+.alert.show{display:block}
+.a-info{background:rgba(96,165,250,.12);color:#93c5fd;border:1px solid rgba(96,165,250,.25)}
+.a-success{background:rgba(74,222,128,.12);color:#86efac;border:1px solid rgba(74,222,128,.25)}
+.a-warn{background:rgba(251,191,36,.12);color:#fde68a;border:1px solid rgba(251,191,36,.25)}
+.a-error{background:rgba(248,113,113,.12);color:#fca5a5;border:1px solid rgba(248,113,113,.25)}
 
-      --generic:        #7c3aed;
-      --generic-light:  #f5f3ff;
-      --generic-border: #ddd6fe;
+/* Form helpers */
+.field{margin-bottom:16px}.field:last-child{margin-bottom:0}
+.lbl{display:block;font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.hint{font-size:11px;color:var(--t4);margin-top:5px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+@media(max-width:560px){.g2,.g3{grid-template-columns:1fr}}
+.divider{border:none;border-top:1px solid var(--gb);margin:16px 0}
+details summary{font-size:12px;font-weight:600;color:var(--t3);cursor:pointer;padding:6px 0;list-style:none;display:flex;align-items:center;gap:6px;transition:color .15s}
+details summary::before{content:'▶';font-size:9px;color:var(--t4)}
+details[open] summary::before{content:'▼'}
+details summary:hover{color:var(--t1)}
+.db{padding-top:14px}
+.pulse{animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
-      --itgc:           #0f766e;
-      --itgc-light:     #f0fdfa;
-      --itgc-border:    #99f6e4;
+/* ─── LAYOUT ──────────────────────────────────────────────────────────────── */
+#app{display:none;height:100vh;overflow:hidden}
+.sidebar{
+  position:fixed;top:0;left:0;width:220px;height:100vh;
+  background:var(--g0);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border-right:1px solid var(--gb);display:flex;flex-direction:column;z-index:100;
+}
+.sb-logo{display:flex;align-items:center;gap:10px;padding:20px 20px 16px;border-bottom:1px solid var(--gb)}
+.sb-logo-text{font-size:16px;font-weight:800;letter-spacing:-.02em}
+.sb-logo-text span{color:var(--blue)}
+.sb-nav{flex:1;padding:12px 10px;overflow-y:auto}
+.sb-sec{font-size:9px;font-weight:800;color:var(--t4);text-transform:uppercase;letter-spacing:.12em;padding:12px 10px 6px}
+.sb-item{
+  display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--rs);
+  color:var(--t3);font-size:13px;font-weight:500;cursor:pointer;
+  transition:all .15s;border:1px solid transparent;margin-bottom:2px;
+}
+.sb-item:hover{background:var(--g2);color:var(--t1)}
+.sb-item.active{background:rgba(129,140,248,.16);color:var(--blue);border-color:rgba(129,140,248,.25);font-weight:600}
+.sb-item .si{width:18px;height:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.sb-badge{margin-left:auto;font-size:10px;font-weight:700;background:var(--g2);color:var(--t3);padding:1px 7px;border-radius:10px;border:1px solid var(--gb)}
+.sb-user{padding:14px 16px;border-top:1px solid var(--gb);display:flex;align-items:center;gap:10px}
+.sb-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--gen));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0}
+.sb-uinfo{flex:1;min-width:0}
+.sb-uemail{font-size:11px;color:var(--t2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-urole{font-size:10px;color:var(--t4)}
+.sb-out{background:none;border:none;color:var(--t4);cursor:pointer;padding:5px;border-radius:6px;transition:color .15s;display:flex;align-items:center}
+.sb-out:hover{color:var(--red)}
 
-      --success:        #16a34a;
-      --success-light:  #f0fdf4;
-      --success-border: #bbf7d0;
-      --warn:           #d97706;
-      --warn-light:     #fffbeb;
-      --warn-border:    #fde68a;
-      --error:          #dc2626;
-      --error-light:    #fef2f2;
-      --error-border:   #fecaca;
+.main{margin-left:220px;height:100vh;overflow-y:auto;padding:28px 32px}
+.screen{display:none;animation:fadeUp .2s ease}
+.screen.active{display:block}
+.pg-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:12px}
+.pg-title{font-size:22px;font-weight:800;color:var(--t1);letter-spacing:-.02em}
+.pg-sub{font-size:13px;color:var(--t3);margin-top:3px}
 
-      --radius:     14px;
-      --radius-sm:  8px;
-      --shadow:     0 4px 24px rgba(15,23,42,0.07);
-      --shadow-lg:  0 8px 40px rgba(15,23,42,0.12);
-      --blur:       blur(18px);
-    }
+/* ─── LOGIN ───────────────────────────────────────────────────────────────── */
+#login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-box{width:100%;max-width:380px;background:var(--g1);backdrop-filter:var(--blur);border:1px solid var(--gb);border-radius:20px;padding:40px 36px;box-shadow:var(--sh)}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.login-title{font-size:24px;font-weight:800;letter-spacing:-.03em}
+.login-title span{color:var(--blue)}
+.login-sub{font-size:13px;color:var(--t3);margin-bottom:28px}
 
-    body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: linear-gradient(140deg, #dbeafe 0%, #ede9fe 40%, #fce7f3 80%, #f0fdf4 100%);
-      background-attachment: fixed;
-      color: var(--t1);
-      min-height: 100vh;
-      font-size: 14px;
-    }
+/* ─── STEPPER ─────────────────────────────────────────────────────────────── */
+.audit-wrap{max-width:580px}
+.stepper{display:flex;align-items:center;margin-bottom:28px}
+.snode{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1;position:relative}
+.snode:not(:last-child)::after{content:'';position:absolute;top:14px;left:55%;width:90%;height:1.5px;background:var(--gb);z-index:0}
+.snode.done:not(:last-child)::after{background:var(--blue)}
+.sdot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:var(--g1);border:1.5px solid var(--gb);color:var(--t4);position:relative;z-index:1;transition:all .2s}
+.snode.active .sdot{background:var(--blue);border-color:var(--blue);color:white;box-shadow:0 0 0 4px var(--blue-g)}
+.snode.done .sdot{background:var(--blue);border-color:var(--blue);color:white}
+.slbl{font-size:10px;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:.05em}
+.snode.active .slbl,.snode.done .slbl{color:var(--blue)}
+.sp{display:none}.sp.active{display:block;animation:fadeUp .18s ease}
+.step-h{font-size:17px;font-weight:700;color:var(--t1);margin-bottom:4px}
+.step-d{font-size:13px;color:var(--t3);margin-bottom:20px}
+.back-btn{display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--t3);font-size:12px;font-weight:600;cursor:pointer;padding:0;margin-bottom:16px;transition:color .15s}
+.back-btn:hover{color:var(--blue)}
 
-    /* ── Login ─────────────────────────────────────────────────────────── */
-    #loginWrap {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    .login-card {
-      width: 100%;
-      max-width: 380px;
-      background: var(--glass-strong);
-      backdrop-filter: var(--blur);
-      border: 1px solid var(--glass-border);
-      border-radius: 20px;
-      padding: 40px 36px;
-      box-shadow: var(--shadow-lg);
-    }
-    .login-logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 6px;
-    }
-    .login-logo svg { flex-shrink: 0; }
-    .login-card h1 {
-      font-size: 22px;
-      font-weight: 800;
-      color: var(--t1);
-      letter-spacing: -0.02em;
-    }
-    .login-card h1 span { color: var(--accent); }
-    .login-card .sub {
-      font-size: 13px;
-      color: var(--t3);
-      margin-bottom: 28px;
-      margin-top: 2px;
-    }
+/* Option cards */
+.og{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.og3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:520px){.og,.og3{grid-template-columns:1fr}}
+.opt{padding:20px 18px;background:var(--g1);border:1.5px solid var(--gb);border-radius:var(--r);cursor:pointer;transition:all .18s}
+.opt:hover{background:var(--g2);border-color:var(--gb2);transform:translateY(-2px);box-shadow:var(--sh-sm)}
+.opt.sel{border-color:var(--blue);background:rgba(129,140,248,.12);box-shadow:0 0 0 2px var(--blue-g)}
+.opt.oracle:hover,.opt.oracle.sel{border-color:var(--oracle);background:rgba(251,146,60,.10);box-shadow:0 0 0 2px var(--oracle-g)}
+.opt.sap:hover,.opt.sap.sel{border-color:var(--sap);background:rgba(96,165,250,.10);box-shadow:0 0 0 2px var(--sap-g)}
+.opt.itgc:hover,.opt.itgc.sel{border-color:var(--itgc);background:rgba(52,211,153,.10);box-shadow:0 0 0 2px var(--itgc-g)}
+.opt.gen:hover,.opt.gen.sel{border-color:var(--gen);background:rgba(192,132,252,.10);box-shadow:0 0 0 2px var(--gen-g)}
+.opt-ico{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.opt-ico-blue{background:rgba(129,140,248,.18)}
+.opt-ico-oracle{background:rgba(251,146,60,.18)}
+.opt-ico-sap{background:rgba(96,165,250,.18)}
+.opt-ico-itgc{background:rgba(52,211,153,.18)}
+.opt-ico-gen{background:rgba(192,132,252,.18)}
+.opt-title{font-size:14px;font-weight:700;color:var(--t1);margin-bottom:5px}
+.opt-desc{font-size:12px;color:var(--t3);line-height:1.45}
+.opt-tag{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:8px;margin-top:10px;background:var(--g2);color:var(--t3);border:1px solid var(--gb)}
 
-    /* ── App shell ──────────────────────────────────────────────────────── */
-    #appWrap { display: none; flex-direction: column; min-height: 100vh; }
+/* Trail */
+.trail{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:10px 14px;background:var(--g0);border:1px solid var(--gb);border-radius:var(--rs);margin-bottom:20px}
+.tp{font-size:11px;font-weight:600;padding:2px 9px;border-radius:8px}
+.tp-b{background:rgba(129,140,248,.18);color:var(--blue);border:1px solid rgba(129,140,248,.28)}
+.tp-oracle{background:rgba(251,146,60,.18);color:var(--oracle);border:1px solid rgba(251,146,60,.28)}
+.tp-sap{background:rgba(96,165,250,.18);color:var(--sap);border:1px solid rgba(96,165,250,.28)}
+.tp-itgc{background:rgba(52,211,153,.18);color:var(--itgc);border:1px solid rgba(52,211,153,.28)}
+.tp-gen{background:rgba(192,132,252,.18);color:var(--gen);border:1px solid rgba(192,132,252,.28)}
+.tsep{color:var(--t4);font-size:13px}
 
-    .top-nav {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: rgba(255,255,255,0.88);
-      backdrop-filter: var(--blur);
-      border-bottom: 1px solid var(--border);
-      padding: 0 28px;
-      height: 56px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .brand {
-      font-size: 16px;
-      font-weight: 800;
-      color: var(--t1);
-      letter-spacing: -0.02em;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .brand span { color: var(--accent); }
-    .nav-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .user-chip {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--glass);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 4px 12px 4px 4px;
-    }
-    .user-avatar {
-      width: 28px; height: 28px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), #7c3aed);
-      display: flex; align-items: center; justify-content: center;
-      color: white; font-size: 11px; font-weight: 700;
-    }
-    .user-email { font-size: 12px; color: var(--t2); font-weight: 500; }
-    .role-badge {
-      font-size: 10px; font-weight: 700;
-      padding: 2px 8px; border-radius: 10px;
-      text-transform: uppercase; letter-spacing: 0.05em;
-    }
-    .role-admin     { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
-    .role-associate { background: var(--accent-light); color: #1e40af; border: 1px solid var(--accent-border); }
+/* ─── JOBS ────────────────────────────────────────────────────────────────── */
+.jobs-wrap{max-width:760px}
+.ftabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+.ft{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:var(--g1);color:var(--t3);border:1px solid var(--gb);transition:all .15s}
+.ft:hover{background:var(--g2);color:var(--t1)}
+.ft.on{background:rgba(129,140,248,.18);color:var(--blue);border-color:rgba(129,140,248,.30)}
+.jcard{display:flex;align-items:flex-start;gap:14px;padding:16px 18px;margin-bottom:10px;background:var(--g1);border:1px solid var(--gb);border-radius:var(--r);transition:background .15s}
+.jcard:hover{background:var(--g2)}
+.jico{width:42px;height:42px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.jbody{flex:1;min-width:0}
+.jname{font-size:14px;font-weight:600;color:var(--t1)}
+.jmeta{font-size:11px;color:var(--t4);font-family:monospace;margin-top:3px}
+.jerr{font-size:12px;color:var(--red);margin-top:5px}
+.jacts{display:flex;align-items:center;gap:8px;flex-shrink:0;padding-top:2px}
+.empty{text-align:center;padding:60px 20px;color:var(--t3)}
+.empty .eico{width:48px;height:48px;margin:0 auto 14px;opacity:.4}
+.empty .etxt{font-size:15px;font-weight:600;color:var(--t2);margin-bottom:6px}
+.empty .esub{font-size:13px}
 
-    main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 32px 16px 48px;
-      gap: 20px;
-    }
+/* ─── LIBRARY ─────────────────────────────────────────────────────────────── */
+.lib-wrap{max-width:900px}
+.erp-sec{margin-bottom:32px}
+.erp-hdr{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--gb)}
+.erp-ico{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.erp-ico-oracle{background:rgba(251,146,60,.18)}.erp-ico-sap{background:rgba(96,165,250,.18)}
+.erp-ico-itgc{background:rgba(52,211,153,.18)}.erp-ico-gen{background:rgba(192,132,252,.18)}
+.erp-title{font-size:15px;font-weight:700;color:var(--t1)}
+.erp-desc{font-size:12px;color:var(--t3)}
+.erp-count{margin-left:auto;font-size:12px;font-weight:600;color:var(--t3);background:var(--g1);border:1px solid var(--gb);padding:3px 10px;border-radius:12px}
+.cc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(256px,1fr));gap:14px}
+.ccard{padding:20px;background:var(--g1);border:1px solid var(--gb);border-radius:var(--r);transition:all .18s}
+.ccard:hover{background:var(--g2);border-color:var(--gb2);transform:translateY(-2px);box-shadow:var(--sh-sm)}
+.ccard-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+.ccard-name{font-size:14px;font-weight:700;color:var(--t1);line-height:1.3}
+.ccard-desc{font-size:12px;color:var(--t3);line-height:1.45;margin-bottom:12px}
+.ccard-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.ccard-sheet{font-size:11px;color:var(--t4);font-family:monospace;background:var(--g1);border:1px solid var(--gb);padding:2px 8px;border-radius:6px}
+.ccard-ver{font-size:11px;color:var(--itgc);font-weight:600}
+.ccard-acts{display:flex;gap:8px}
+.upl-row{display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;background:var(--g0);border:1px dashed var(--gb2);border-radius:var(--rs)}
+.upl-row input[type=file]{flex:1;padding:6px 10px;font-size:11px}
+.ust{font-size:11px;font-weight:600;min-width:50px;text-align:center}
+.ust.ok{color:var(--green)}.ust.err{color:var(--red)}
 
-    /* ── Glass card ─────────────────────────────────────────────────────── */
-    .card {
-      width: 100%;
-      max-width: 600px;
-      background: var(--glass);
-      backdrop-filter: var(--blur);
-      border: 1px solid var(--glass-border);
-      border-radius: var(--radius);
-      padding: 28px;
-      box-shadow: var(--shadow);
-    }
-    .card-wide { max-width: 760px; }
-
-    .card-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 22px;
-    }
-    .card-icon {
-      width: 36px; height: 36px;
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px;
-      flex-shrink: 0;
-    }
-    .card-icon-blue   { background: var(--accent-light); }
-    .card-icon-amber  { background: #fef3c7; }
-    .card-icon-green  { background: var(--success-light); }
-    .card-title {
-      font-size: 15px; font-weight: 700; color: var(--t1);
-    }
-    .card-subtitle { font-size: 12px; color: var(--t3); margin-top: 1px; }
-
-    /* ── Stepper ────────────────────────────────────────────────────────── */
-    .stepper {
-      display: flex;
-      align-items: center;
-      margin-bottom: 26px;
-      gap: 0;
-    }
-    .step-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      flex: 1;
-      position: relative;
-      cursor: default;
-    }
-    .step-item:not(:last-child)::after {
-      content: '';
-      position: absolute;
-      top: 14px;
-      left: 50%;
-      width: 100%;
-      height: 2px;
-      background: var(--border);
-      z-index: 0;
-    }
-    .step-item.done:not(:last-child)::after { background: var(--accent); }
-    .step-dot {
-      width: 28px; height: 28px;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 700;
-      border: 2px solid var(--border);
-      background: white;
-      color: var(--t4);
-      position: relative; z-index: 1;
-      transition: all 0.2s;
-    }
-    .step-item.active .step-dot {
-      background: var(--accent); border-color: var(--accent);
-      color: white; box-shadow: 0 0 0 4px var(--accent-light);
-    }
-    .step-item.done .step-dot {
-      background: var(--accent); border-color: var(--accent); color: white;
-    }
-    .step-label {
-      font-size: 10px; font-weight: 600;
-      color: var(--t4); letter-spacing: 0.04em; text-transform: uppercase;
-    }
-    .step-item.active .step-label,
-    .step-item.done  .step-label { color: var(--accent); }
-
-    /* ── Step panels ────────────────────────────────────────────────────── */
-    .step-panel { display: none; animation: fadeIn 0.2s ease; }
-    .step-panel.active { display: block; }
-    @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
-
-    .step-heading {
-      font-size: 16px; font-weight: 700; color: var(--t1);
-      margin-bottom: 4px;
-    }
-    .step-desc { font-size: 13px; color: var(--t3); margin-bottom: 20px; }
-
-    .back-link {
-      display: inline-flex; align-items: center; gap: 4px;
-      font-size: 12px; color: var(--t3); cursor: pointer;
-      margin-bottom: 16px;
-      background: none; border: none; padding: 0;
-      transition: color 0.15s;
-    }
-    .back-link:hover { color: var(--accent); }
-
-    /* ── Option cards (step selection) ─────────────────────────────────── */
-    .option-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    .option-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
-    @media (max-width: 520px) {
-      .option-grid, .option-grid-3 { grid-template-columns: 1fr; }
-    }
-
-    .opt-card {
-      padding: 18px 16px;
-      border: 2px solid var(--border);
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      transition: all 0.18s;
-      background: rgba(255,255,255,0.6);
-      position: relative;
-      overflow: hidden;
-    }
-    .opt-card:hover {
-      border-color: var(--accent-border);
-      background: var(--accent-light);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 16px rgba(37,99,235,0.10);
-    }
-    .opt-card.selected {
-      border-color: var(--accent);
-      background: var(--accent-light);
-      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
-    }
-    .opt-card.oracle:hover, .opt-card.oracle.selected {
-      border-color: var(--oracle); background: var(--oracle-light);
-      box-shadow: 0 0 0 3px rgba(234,88,12,0.10);
-    }
-    .opt-card.sap:hover, .opt-card.sap.selected {
-      border-color: var(--sap); background: var(--sap-light);
-      box-shadow: 0 0 0 3px rgba(3,105,161,0.10);
-    }
-    .opt-card.generic:hover, .opt-card.generic.selected {
-      border-color: var(--generic); background: var(--generic-light);
-      box-shadow: 0 0 0 3px rgba(124,58,237,0.10);
-    }
-    .opt-card.itgc:hover, .opt-card.itgc.selected {
-      border-color: var(--itgc); background: var(--itgc-light);
-      box-shadow: 0 0 0 3px rgba(15,118,110,0.10);
-    }
-    .opt-icon {
-      font-size: 26px; margin-bottom: 8px; display: block;
-      line-height: 1;
-    }
-    .opt-title {
-      font-size: 14px; font-weight: 700; color: var(--t1); margin-bottom: 4px;
-    }
-    .opt-desc { font-size: 12px; color: var(--t3); line-height: 1.45; }
-    .opt-tag {
-      display: inline-flex;
-      font-size: 10px; font-weight: 600;
-      padding: 2px 8px; border-radius: 8px;
-      margin-top: 8px;
-      background: var(--border); color: var(--t3);
-    }
-
-    /* ── Trail breadcrumb ───────────────────────────────────────────────── */
-    .trail {
-      display: flex; align-items: center; gap: 6px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-      padding: 8px 12px;
-      background: rgba(255,255,255,0.5);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-    }
-    .trail-item {
-      font-size: 11px; font-weight: 600;
-      padding: 2px 8px; border-radius: 8px;
-      background: var(--accent-light); color: var(--accent);
-      border: 1px solid var(--accent-border);
-    }
-    .trail-item.oracle { background: var(--oracle-light); color: var(--oracle); border-color: var(--oracle-border); }
-    .trail-item.sap    { background: var(--sap-light);    color: var(--sap);    border-color: var(--sap-border); }
-    .trail-item.itgc   { background: var(--itgc-light);   color: var(--itgc);   border-color: var(--itgc-border); }
-    .trail-sep { font-size: 12px; color: var(--t4); }
-
-    /* ── Form controls ──────────────────────────────────────────────────── */
-    .field { margin-bottom: 16px; }
-    .field:last-child { margin-bottom: 0; }
-
-    label {
-      display: block;
-      font-size: 11px; font-weight: 700;
-      color: var(--t2);
-      text-transform: uppercase; letter-spacing: 0.07em;
-      margin-bottom: 6px;
-    }
-
-    input[type="text"],
-    input[type="email"],
-    input[type="password"],
-    input[type="number"],
-    select, textarea {
-      display: block; width: 100%;
-      padding: 9px 12px;
-      background: rgba(255,255,255,0.8);
-      border: 1.5px solid var(--border-strong);
-      border-radius: var(--radius-sm);
-      color: var(--t1);
-      font-size: 13px;
-      font-family: inherit;
-      transition: border-color 0.15s, box-shadow 0.15s;
-    }
-    input:focus, select:focus, textarea:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(37,99,235,0.10);
-      background: white;
-    }
-    select { cursor: pointer; }
-
-    input[type="file"] {
-      display: block; width: 100%;
-      padding: 8px 12px;
-      background: rgba(255,255,255,0.8);
-      border: 1.5px dashed var(--border-strong);
-      border-radius: var(--radius-sm);
-      color: var(--t3); font-size: 12px; cursor: pointer;
-      transition: border-color 0.15s, background 0.15s;
-    }
-    input[type="file"]:hover {
-      border-color: var(--accent); background: var(--accent-light);
-    }
-    input[type="file"]::file-selector-button {
-      background: var(--accent-light);
-      border: 1px solid var(--accent-border);
-      border-radius: 6px;
-      color: var(--accent);
-      font-size: 11px; font-weight: 600;
-      padding: 4px 12px;
-      margin-right: 10px; cursor: pointer;
-      transition: background 0.15s;
-    }
-    input[type="file"]::file-selector-button:hover { background: var(--accent-border); }
-
-    .row { display: flex; gap: 12px; }
-    .row .field { flex: 1; }
-
-    .hint { font-size: 11px; color: var(--t4); margin-top: 4px; }
-    .divider { border: none; border-top: 1px solid var(--border); margin: 8px 0 18px; }
-
-    details summary {
-      font-size: 12px; font-weight: 600; color: var(--t3);
-      cursor: pointer; padding: 6px 0;
-      list-style: none;
-      display: flex; align-items: center; gap: 6px;
-    }
-    details summary::before { content: '▶'; font-size: 9px; }
-    details[open] summary::before { content: '▼'; }
-    details summary:hover { color: var(--accent); }
-    details .details-body { padding-top: 12px; }
-
-    /* ── Buttons ────────────────────────────────────────────────────────── */
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center;
-      gap: 6px; padding: 9px 18px;
-      border-radius: var(--radius-sm);
-      font-size: 13px; font-weight: 600;
-      cursor: pointer; transition: all 0.18s;
-      border: 1.5px solid transparent;
-      font-family: inherit; white-space: nowrap;
-      text-decoration: none;
-    }
-    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn-primary {
-      background: var(--accent); color: white;
-      border-color: var(--accent-hover); width: 100%;
-      font-size: 14px; padding: 11px 18px;
-      box-shadow: 0 2px 8px rgba(37,99,235,0.20);
-    }
-    .btn-primary:hover:not(:disabled) {
-      background: var(--accent-hover);
-      box-shadow: 0 4px 14px rgba(37,99,235,0.30);
-    }
-    .btn-ghost {
-      background: rgba(255,255,255,0.7);
-      color: var(--t2);
-      border-color: var(--border-strong);
-    }
-    .btn-ghost:hover:not(:disabled) { background: white; border-color: var(--t4); }
-    .btn-sm { padding: 5px 12px; font-size: 11px; }
-    .btn-dl {
-      background: var(--accent-light); color: var(--accent);
-      border-color: var(--accent-border);
-    }
-    .btn-dl:hover:not(:disabled) { background: var(--accent-border); }
-    .btn-up {
-      background: var(--success-light); color: var(--success);
-      border-color: var(--success-border);
-    }
-    .btn-up:hover:not(:disabled) { background: var(--success-border); }
-    .btn-danger {
-      background: var(--error-light); color: var(--error);
-      border-color: var(--error-border);
-    }
-    .btn-oracle {
-      background: var(--oracle-light); color: var(--oracle);
-      border-color: var(--oracle-border); width: 100%;
-      font-size: 14px; padding: 11px 18px;
-      box-shadow: 0 2px 8px rgba(234,88,12,0.15);
-    }
-    .btn-oracle:hover:not(:disabled) {
-      background: var(--oracle-border);
-      box-shadow: 0 4px 14px rgba(234,88,12,0.25);
-    }
-
-    /* ── Status banners ─────────────────────────────────────────────────── */
-    .status {
-      margin-top: 14px; font-size: 13px;
-      padding: 10px 14px; border-radius: var(--radius-sm);
-      display: none; line-height: 1.5;
-    }
-    .status.show { display: block; }
-    .status.info    { background: var(--accent-light);  color: #1e40af; border: 1px solid var(--accent-border); }
-    .status.ok      { background: var(--success-light); color: #166534; border: 1px solid var(--success-border); }
-    .status.error   { background: var(--error-light);   color: #991b1b; border: 1px solid var(--error-border); }
-    .status.warn    { background: var(--warn-light);    color: #92400e; border: 1px solid var(--warn-border); }
-
-    /* ── Jobs panel ─────────────────────────────────────────────────────── */
-    #jobPanel { display: none; }
-    .job-row {
-      display: flex; align-items: flex-start;
-      justify-content: space-between; gap: 12px;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .job-row:last-child { border-bottom: none; }
-    .job-info { flex: 1; min-width: 0; }
-    .job-check { font-size: 13px; font-weight: 600; color: var(--t1); }
-    .job-meta  { font-size: 11px; color: var(--t4); font-family: monospace; margin-top: 2px; }
-    .job-err   { font-size: 11px; color: var(--error); margin-top: 4px; }
-    .job-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-
-    .badge {
-      display: inline-flex; align-items: center; gap: 4px;
-      font-size: 10px; font-weight: 700;
-      padding: 3px 9px; border-radius: 10px;
-      text-transform: uppercase; letter-spacing: 0.05em;
-    }
-    .badge-queued  { background: var(--warn-light);    color: var(--warn);    border: 1px solid var(--warn-border); }
-    .badge-running { background: var(--accent-light);  color: var(--accent);  border: 1px solid var(--accent-border); }
-    .badge-done    { background: var(--success-light); color: var(--success); border: 1px solid var(--success-border); }
-    .badge-failed  { background: var(--error-light);   color: var(--error);   border: 1px solid var(--error-border); }
-    .pulse { animation: pulse 1.4s ease-in-out infinite; }
-    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
-
-    /* ── Admin tabs ─────────────────────────────────────────────────────── */
-    .tab-bar {
-      display: flex; gap: 2px;
-      background: rgba(255,255,255,0.5);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 4px;
-      margin-bottom: 20px;
-    }
-    .tab-btn {
-      flex: 1; padding: 7px 12px;
-      font-size: 12px; font-weight: 600;
-      color: var(--t3); background: transparent;
-      border: none; border-radius: 7px;
-      cursor: pointer; transition: all 0.15s;
-      display: flex; align-items: center; justify-content: center; gap: 5px;
-    }
-    .tab-btn:hover { background: rgba(255,255,255,0.7); color: var(--t1); }
-    .tab-btn.active {
-      background: white; color: var(--accent);
-      box-shadow: 0 1px 6px rgba(15,23,42,0.08);
-    }
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; animation: fadeIn 0.15s ease; }
-
-    /* ── Admin ideal file row ────────────────────────────────────────────── */
-    .ideal-row {
-      display: grid;
-      grid-template-columns: 1fr auto auto auto;
-      align-items: center; gap: 10px;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .ideal-row:last-child { border-bottom: none; }
-    .ideal-name { font-size: 13px; font-weight: 600; color: var(--t1); }
-    .ideal-meta { font-size: 11px; color: var(--t4); margin-top: 2px; }
-    .upload-wrap { display: flex; align-items: center; gap: 6px; }
-    .upload-wrap input[type="file"] {
-      width: 160px; padding: 5px 8px; font-size: 11px;
-    }
-    .up-st { font-size: 11px; min-width: 44px; text-align: center; font-weight: 600; }
-    .up-st.ok  { color: var(--success); }
-    .up-st.err { color: var(--error); }
-
-    /* ── Create check form ──────────────────────────────────────────────── */
-    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    @media (max-width: 520px) { .form-grid-2 { grid-template-columns: 1fr; } }
-
-    /* ── Users table ────────────────────────────────────────────────────── */
-    .user-row {
-      display: grid;
-      grid-template-columns: 1fr auto auto auto;
-      align-items: center; gap: 10px;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .user-row:last-child { border-bottom: none; }
-    .user-email-cell { font-size: 13px; font-weight: 500; color: var(--t1); }
-    .active-dot {
-      display: inline-block; width: 6px; height: 6px;
-      border-radius: 50%; margin-right: 4px;
-    }
-    .active-dot.on  { background: var(--success); }
-    .active-dot.off { background: var(--t4); }
-
-    footer {
-      text-align: center; font-size: 11px; color: var(--t4);
-      padding: 14px; flex-shrink: 0;
-    }
-  </style>
+/* ─── USERS ───────────────────────────────────────────────────────────────── */
+.utbl{width:100%;border-collapse:collapse}
+.utbl th{text-align:left;font-size:11px;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:.07em;padding:0 16px 12px;border-bottom:1px solid var(--gb)}
+.utbl td{padding:13px 16px;font-size:13px;color:var(--t2);border-bottom:1px solid var(--gb)}
+.utbl tr:last-child td{border-bottom:none}
+.utbl tr:hover td{background:var(--g0)}
+.uem{color:var(--t1);font-weight:500}
+.udot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px}
+</style>
 </head>
 <body>
 
-<!-- ═══ LOGIN ════════════════════════════════════════════════════════════ -->
-<div id="loginWrap">
-  <div class="login-card">
+<!-- ═══ LOGIN ════════════════════════════════════════════════════════════════ -->
+<div id="login">
+  <div class="login-box">
     <div class="login-logo">
-      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-        <rect width="32" height="32" rx="8" fill="#2563eb"/>
-        <path d="M8 22L13 10L18 18L21 13L26 22" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+        <rect width="36" height="36" rx="10" fill="url(#lg)"/>
+        <defs><linearGradient id="lg" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>
+        <path d="M9 26L14 12L19 21L22 16L28 26" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <h1>Audit<span>Forge</span></h1>
+      <div class="login-title">Audit<span>Forge</span></div>
     </div>
-    <p class="sub">Deterministic ERP configuration audit</p>
-
-    <div class="field">
-      <label>Email</label>
-      <input type="email" id="loginEmail" placeholder="admin@company.com"
-             onkeydown="if(event.key==='Enter')doLogin()">
-    </div>
-    <div class="field">
-      <label>Password</label>
-      <input type="password" id="loginPw" placeholder="••••••••"
-             onkeydown="if(event.key==='Enter')doLogin()">
-    </div>
-    <div class="status" id="loginErr"></div>
+    <p class="login-sub">ERP configuration compliance audit</p>
+    <div class="field"><label class="lbl">Email</label><input type="email" id="lEmail" placeholder="admin@company.com" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="field"><label class="lbl">Password</label><input type="password" id="lPw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="alert" id="lErr" style="margin:14px 0 0"></div>
     <br>
-    <button class="btn btn-primary" onclick="doLogin()" id="loginBtn">Sign in</button>
+    <button class="btn btn-primary btn-lg" id="lBtn" onclick="doLogin()">Sign in</button>
   </div>
 </div>
 
-<!-- ═══ APP ══════════════════════════════════════════════════════════════ -->
-<div id="appWrap">
-  <nav class="top-nav">
-    <div class="brand">
-      <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
-        <rect width="32" height="32" rx="8" fill="#2563eb"/>
-        <path d="M8 22L13 10L18 18L21 13L26 22" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      Audit<span>Forge</span>
+<!-- ═══ APP ══════════════════════════════════════════════════════════════════ -->
+<div id="app">
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <svg width="28" height="28" viewBox="0 0 36 36" fill="none"><rect width="36" height="36" rx="10" fill="url(#lg2)"/><defs><linearGradient id="lg2" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs><path d="M9 26L14 12L19 21L22 16L28 26" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="sb-logo-text">Audit<span>Forge</span></div>
     </div>
-    <div class="nav-right">
-      <div class="user-chip">
-        <div class="user-avatar" id="hdrAvatar">A</div>
-        <span class="user-email" id="hdrEmail"></span>
-        <span class="role-badge" id="hdrRole"></span>
+    <nav class="sb-nav">
+      <div class="sb-sec">Audit</div>
+      <div class="sb-item active" id="nav-audit" onclick="nav('audit')">
+        <span class="si"><?xml version="1.0"?><svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35" stroke-linecap="round"/></svg></span> New Audit
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="logout()">Sign out</button>
+      <div class="sb-item" id="nav-jobs" onclick="nav('jobs')">
+        <span class="si"><svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" stroke-linecap="round" stroke-linejoin="round"/></svg></span> My Jobs
+        <span class="sb-badge" id="jBadge" style="display:none">0</span>
+      </div>
+      <div id="adminNav" style="display:none">
+        <div class="sb-sec">Admin</div>
+        <div class="sb-item" id="nav-library" onclick="nav('library')">
+          <span class="si"><svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span> Checks Library
+        </div>
+        <div class="sb-item" id="nav-create" onclick="nav('create')">
+          <span class="si"><svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8" stroke-linecap="round"/></svg></span> Create Check
+        </div>
+        <div class="sb-item" id="nav-users" onclick="nav('users')">
+          <span class="si"><svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></span> Users
+        </div>
+      </div>
+    </nav>
+    <div class="sb-user">
+      <div class="sb-avatar" id="sbAv">A</div>
+      <div class="sb-uinfo"><div class="sb-uemail" id="sbEm"></div><div class="sb-urole" id="sbRl"></div></div>
+      <button class="sb-out" onclick="logout()" title="Sign out">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
     </div>
-  </nav>
+  </aside>
 
-  <main>
+  <main class="main">
 
-    <!-- ── Audit form ─────────────────────────────────────────────────── -->
-    <div class="card" id="auditCard">
-      <div class="card-header">
-        <div class="card-icon card-icon-blue">🔍</div>
-        <div>
-          <div class="card-title">New Audit</div>
-          <div class="card-subtitle">Run a configuration compliance check</div>
-        </div>
+    <!-- Screen: New Audit -->
+    <div class="screen active audit-wrap" id="sc-audit">
+      <div class="pg-hdr">
+        <div><div class="pg-title">New Audit</div><div class="pg-sub">Run a configuration compliance check against your ideal baseline</div></div>
       </div>
-
-      <!-- Stepper -->
-      <div class="stepper" id="stepper">
-        <div class="step-item active" id="si1">
-          <div class="step-dot">1</div>
-          <div class="step-label">Process</div>
-        </div>
-        <div class="step-item" id="si2">
-          <div class="step-dot">2</div>
-          <div class="step-label">Platform</div>
-        </div>
-        <div class="step-item" id="si3">
-          <div class="step-dot">3</div>
-          <div class="step-label">Category</div>
-        </div>
-        <div class="step-item" id="si4">
-          <div class="step-dot">4</div>
-          <div class="step-label">Run</div>
-        </div>
-      </div>
-
-      <!-- Step 1: Process Type -->
-      <div class="step-panel active" id="sp1">
-        <div class="step-heading">What type of control are you auditing?</div>
-        <div class="step-desc">Select the control category for this engagement.</div>
-        <div class="option-grid">
-          <div class="opt-card itgc" onclick="selectProcess('itgc')">
-            <span class="opt-icon">🔐</span>
-            <div class="opt-title">ITGC</div>
-            <div class="opt-desc">IT General Controls — access management, change management, operations &amp; availability</div>
-            <span class="opt-tag">Platform-level</span>
-          </div>
-          <div class="opt-card" onclick="selectProcess('itac')">
-            <span class="opt-icon">⚙️</span>
-            <div class="opt-title">Business Process (ITAC)</div>
-            <div class="opt-desc">Application Controls — ERP configuration, transaction controls, process compliance</div>
-            <span class="opt-tag">Oracle · SAP · ERP</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 2: ERP Platform -->
-      <div class="step-panel" id="sp2">
-        <button class="back-link" onclick="goStep(1)">← Back</button>
-        <div class="step-heading">Which ERP platform?</div>
-        <div class="step-desc">Select the system you are auditing.</div>
-        <div class="option-grid option-grid-3">
-          <div class="opt-card oracle" onclick="selectERP('oracle')">
-            <span class="opt-icon">🔴</span>
-            <div class="opt-title">Oracle Fusion</div>
-            <div class="opt-desc">Oracle Fusion Cloud ERP — INV, AP, AR, GL, SCM modules</div>
-            <span class="opt-tag">Cloud ERP</span>
-          </div>
-          <div class="opt-card sap" onclick="selectERP('sap')">
-            <span class="opt-icon">🔷</span>
-            <div class="opt-title">SAP</div>
-            <div class="opt-desc">SAP ECC / S/4HANA — FI, MM, SD, PP, BASIS modules</div>
-            <span class="opt-tag">ECC · S/4HANA</span>
-          </div>
-          <div class="opt-card generic" onclick="selectERP('generic')">
-            <span class="opt-icon">📋</span>
-            <div class="opt-title">Generic / Other</div>
-            <div class="opt-desc">Custom ideal templates for any ERP or system</div>
-            <span class="opt-tag">Flexible</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 3: Category -->
-      <div class="step-panel" id="sp3">
-        <button class="back-link" onclick="goStep(2)">← Back</button>
-        <div class="step-heading">Which category of controls?</div>
-        <div class="step-desc">Select the control type within the selected platform.</div>
-        <div class="option-grid">
-          <div class="opt-card" onclick="selectCategory('configurations')">
-            <span class="opt-icon">🗂️</span>
-            <div class="opt-title">Configuration Controls</div>
-            <div class="opt-desc">Compare ERP system parameters against an approved ideal baseline file</div>
-            <span class="opt-tag">Parameter audit</span>
-          </div>
-          <div class="opt-card" onclick="selectCategory('detailed')">
-            <span class="opt-icon">🔬</span>
-            <div class="opt-title">Detailed Controls</div>
-            <div class="opt-desc">Transaction-level and process-specific control testing against defined criteria</div>
-            <span class="opt-tag">Process audit</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 4: Check + Upload -->
-      <div class="step-panel" id="sp4">
-        <button class="back-link" id="sp4Back" onclick="goStep(3)">← Back</button>
-
-        <div class="trail" id="selTrail"></div>
-
-        <div class="field">
-          <label>Audit Check</label>
-          <select id="checkSel" onchange="onCheckChange()">
-            <option value="">— select a check —</option>
-          </select>
+      <div class="glass" style="padding:28px">
+        <!-- Stepper -->
+        <div class="stepper">
+          <div class="snode active" id="sn1"><div class="sdot">1</div><div class="slbl">Process</div></div>
+          <div class="snode"        id="sn2"><div class="sdot">2</div><div class="slbl">Platform</div></div>
+          <div class="snode"        id="sn3"><div class="sdot">3</div><div class="slbl">Category</div></div>
+          <div class="snode"        id="sn4"><div class="sdot">4</div><div class="slbl">Run</div></div>
         </div>
 
-        <div class="field" id="noChecksMsg" style="display:none">
-          <div class="status show warn">
-            No checks available for this combination yet.
-            <span id="noChecksAdmin" style="display:none">
-              Go to the <strong>Admin → Create Check</strong> tab to add one.
-            </span>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Client Export File <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t4)">.xlsx / .xls / .csv</span></label>
-          <input type="file" id="actualFile" accept=".xlsx,.xls,.csv" onchange="checkFormReady()">
-        </div>
-
-        <details>
-          <summary>Advanced Options</summary>
-          <div class="details-body">
-            <div class="row">
-              <div class="field">
-                <label>Sheet Name</label>
-                <input type="text" id="sheetName" placeholder="auto-detected">
-                <p class="hint" id="sheetHint">Leave blank for CSV or single-sheet workbooks</p>
-              </div>
-              <div class="field">
-                <label>Fuzzy Threshold</label>
-                <input type="number" id="fuzzyThresh" value="80" min="50" max="100">
-                <p class="hint">50–100. Default 80.</p>
-              </div>
+        <!-- Step 1 -->
+        <div class="sp active" id="sp1">
+          <div class="step-h">What type of control are you auditing?</div>
+          <div class="step-d">Select the audit control category for this engagement.</div>
+          <div class="og">
+            <div class="opt itgc" onclick="selProc('itgc')">
+              <div class="opt-ico opt-ico-itgc"><svg width="22" height="22" fill="none" stroke="#34d399" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4" stroke-linecap="round"/></svg></div>
+              <div class="opt-title">ITGC</div>
+              <div class="opt-desc">IT General Controls — access management, change management, operations and availability</div>
+              <span class="opt-tag">Platform-level controls</span>
+            </div>
+            <div class="opt" onclick="selProc('itac')">
+              <div class="opt-ico opt-ico-blue"><svg width="22" height="22" fill="none" stroke="#818cf8" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14" stroke-linecap="round"/><path d="M15.54 8.46a5 5 0 010 7.07M8.46 8.46a5 5 0 000 7.07" stroke-linecap="round"/></svg></div>
+              <div class="opt-title">Business Process (ITAC)</div>
+              <div class="opt-desc">Application Controls — ERP configuration, transaction controls, process compliance</div>
+              <span class="opt-tag">Oracle · SAP · ERP</span>
             </div>
           </div>
-        </details>
+        </div>
 
+        <!-- Step 2 -->
+        <div class="sp" id="sp2">
+          <button class="back-btn" onclick="gostep(1)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Back</button>
+          <div class="step-h">Which ERP platform?</div>
+          <div class="step-d">Select the system being audited.</div>
+          <div class="og3">
+            <div class="opt oracle" onclick="selERP('oracle')">
+              <div class="opt-ico opt-ico-oracle"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="9" stroke="#fb923c" stroke-width="1.8"/><ellipse cx="11" cy="11" rx="5" ry="9" stroke="#fb923c" stroke-width="1.4"/><line x1="2" y1="11" x2="20" y2="11" stroke="#fb923c" stroke-width="1.4"/></svg></div>
+              <div class="opt-title">Oracle Fusion</div>
+              <div class="opt-desc">Oracle Fusion Cloud — INV, AP, AR, GL, SCM modules</div>
+              <span class="opt-tag">Cloud ERP</span>
+            </div>
+            <div class="opt sap" onclick="selERP('sap')">
+              <div class="opt-ico opt-ico-sap"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="2" y="2" width="18" height="18" rx="4" stroke="#60a5fa" stroke-width="1.8"/><path d="M6 15V9l3.5 5 3.5-5v6M15.5 9v6" stroke="#60a5fa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="opt-title">SAP</div>
+              <div class="opt-desc">SAP ECC / S/4HANA — FI, MM, SD, PP, BASIS modules</div>
+              <span class="opt-tag">ECC · S/4HANA</span>
+            </div>
+            <div class="opt gen" onclick="selERP('generic')">
+              <div class="opt-ico opt-ico-gen"><svg width="22" height="22" fill="none" stroke="#c084fc" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8" stroke-linecap="round" stroke-linejoin="round"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg></div>
+              <div class="opt-title">Generic</div>
+              <div class="opt-desc">Custom ideal templates for any ERP or system</div>
+              <span class="opt-tag">Flexible</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="sp" id="sp3">
+          <button class="back-btn" onclick="gostep(2)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Back</button>
+          <div class="step-h">Which category of controls?</div>
+          <div class="step-d">Select the control type within the selected platform.</div>
+          <div class="og">
+            <div class="opt" onclick="selCat('configurations')">
+              <div class="opt-ico opt-ico-blue"><svg width="22" height="22" fill="none" stroke="#818cf8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="opt-title">Configuration Controls</div>
+              <div class="opt-desc">Compare ERP system parameters against an approved ideal baseline file</div>
+              <span class="opt-tag">Parameter audit</span>
+            </div>
+            <div class="opt" onclick="selCat('detailed')">
+              <div class="opt-ico opt-ico-blue"><svg width="22" height="22" fill="none" stroke="#818cf8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="opt-title">Detailed Controls</div>
+              <div class="opt-desc">Transaction-level and process-specific control testing</div>
+              <span class="opt-tag">Process audit</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="sp" id="sp4">
+          <button class="back-btn" id="sp4Back" onclick="gostep(3)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Back</button>
+          <div class="trail" id="selTrail"></div>
+          <div class="field"><label class="lbl">Audit Check</label><select id="checkSel" onchange="onCheckChange()"><option value="">— select a check —</option></select></div>
+          <div id="noCheckMsg" style="display:none"><div class="alert a-warn show">No checks available for this combination.<span id="noCheckHint" style="display:none"> Go to <strong>Create Check</strong> to add one.</span></div></div>
+          <div class="field"><label class="lbl">Client Export File <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--t4)">.xlsx / .xls / .csv</span></label><input type="file" id="actualFile" accept=".xlsx,.xls,.csv" onchange="chkReady()"></div>
+          <details><summary>Advanced Options</summary><div class="db"><div class="g2"><div class="field"><label class="lbl">Sheet Name</label><input type="text" id="sheetName" placeholder="auto-detected"><p class="hint" id="sheetHint">Leave blank for CSV or single-sheet files</p></div><div class="field"><label class="lbl">Fuzzy Threshold</label><input type="number" id="fuzzyT" value="80" min="50" max="100"><p class="hint">50–100 · Default 80</p></div></div></div></details>
+          <br>
+          <button class="btn btn-primary btn-lg" id="runBtn" onclick="submitAudit()" disabled>
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor" stroke="none"/></svg>
+            Run Audit
+          </button>
+          <div class="alert" id="auditAlert" style="margin-top:14px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen: Jobs -->
+    <div class="screen jobs-wrap" id="sc-jobs">
+      <div class="pg-hdr"><div><div class="pg-title">My Jobs</div><div class="pg-sub">Recent audit runs and their status</div></div></div>
+      <div class="ftabs">
+        <div class="ft on"  onclick="filterJ('all',this)">All</div>
+        <div class="ft"     onclick="filterJ('queued',this)">Queued</div>
+        <div class="ft"     onclick="filterJ('running',this)">Running</div>
+        <div class="ft"     onclick="filterJ('done',this)">Done</div>
+        <div class="ft"     onclick="filterJ('failed',this)">Failed</div>
+      </div>
+      <div id="jobsList"></div>
+    </div>
+
+    <!-- Screen: Checks Library -->
+    <div class="screen lib-wrap" id="sc-library">
+      <div class="pg-hdr">
+        <div><div class="pg-title">Checks Library</div><div class="pg-sub">All audit checks grouped by platform and control type</div></div>
+        <button class="btn btn-primary" onclick="nav('create')"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg> Create Check</button>
+      </div>
+      <div id="libContent"></div>
+    </div>
+
+    <!-- Screen: Create Check -->
+    <div class="screen" id="sc-create" style="max-width:600px">
+      <div class="pg-hdr"><div><div class="pg-title">Create Check</div><div class="pg-sub">Add a new audit check with its ideal baseline file</div></div></div>
+      <div class="glass" style="padding:28px">
+        <div class="g2">
+          <div class="field"><label class="lbl">Check ID <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--t4)">(slug, e.g. gl_ledger)</span></label><input type="text" id="nId" placeholder="gl_ledger_setup" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,'')"></div>
+          <div class="field"><label class="lbl">Display Name</label><input type="text" id="nName" placeholder="GL Ledger Setup"></div>
+        </div>
+        <div class="g3">
+          <div class="field"><label class="lbl">Process Type</label><select id="nProc"><option value="itac">Business Process (ITAC)</option><option value="itgc">ITGC</option></select></div>
+          <div class="field"><label class="lbl">ERP Platform</label><select id="nERP"><option value="oracle">Oracle Fusion</option><option value="sap">SAP</option><option value="generic">Generic</option></select></div>
+          <div class="field"><label class="lbl">Category</label><select id="nCat"><option value="configurations">Configuration</option><option value="detailed">Detailed</option></select></div>
+        </div>
+        <div class="g2">
+          <div class="field"><label class="lbl">Default Sheet <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--t4)">(optional)</span></label><input type="text" id="nSheet" placeholder="e.g. GL_LEDGER"></div>
+          <div class="field"><label class="lbl">Description <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--t4)">(optional)</span></label><input type="text" id="nDesc" placeholder="Brief description"></div>
+        </div>
+        <div class="field"><label class="lbl">Ideal Baseline File <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--t4)">.xlsx / .csv</span></label><input type="file" id="nFile" accept=".xlsx,.xls,.csv"></div>
         <br>
-        <button class="btn btn-primary" id="runBtn" onclick="submitAudit()" disabled>
-          ▶&nbsp; Run Audit
+        <button class="btn btn-primary" style="max-width:220px" onclick="createCheck()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+          Create Check
         </button>
-        <div class="status" id="auditStatus"></div>
+        <div class="alert" id="createAlert" style="margin-top:14px"></div>
       </div>
     </div>
 
-    <!-- ── Job tracker ────────────────────────────────────────────────── -->
-    <div class="card" id="jobPanel">
-      <div class="card-header">
-        <div class="card-icon card-icon-green">📋</div>
-        <div>
-          <div class="card-title">Jobs</div>
-          <div class="card-subtitle">Recent audit runs</div>
+    <!-- Screen: Users -->
+    <div class="screen" id="sc-users" style="max-width:700px">
+      <div class="pg-hdr"><div><div class="pg-title">Users</div><div class="pg-sub">Manage team access</div></div></div>
+      <div class="glass" style="padding:22px;margin-bottom:20px">
+        <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:16px">Add New User</div>
+        <div class="g3">
+          <div class="field"><label class="lbl">Email</label><input type="email" id="uEmail" placeholder="user@company.com"></div>
+          <div class="field"><label class="lbl">Password</label><input type="password" id="uPw" placeholder="min 8 chars"></div>
+          <div class="field"><label class="lbl">Role</label><select id="uRole"><option value="associate">Associate</option><option value="admin">Admin</option></select></div>
         </div>
+        <button class="btn btn-success btn-sm" style="margin-top:6px" onclick="createUser()">Add User</button>
+        <div class="alert" id="userAlert" style="margin-top:12px"></div>
       </div>
-      <div id="jobList"></div>
-    </div>
-
-    <!-- ── Admin area ─────────────────────────────────────────────────── -->
-    <div class="card card-wide" id="adminArea" style="display:none">
-      <div class="card-header">
-        <div class="card-icon card-icon-amber">🛠️</div>
-        <div>
-          <div class="card-title" style="color:#92400e">Admin Panel</div>
-          <div class="card-subtitle">Manage checks, ideal files, and users</div>
-        </div>
-      </div>
-
-      <div class="tab-bar">
-        <button class="tab-btn active" id="tab-ideals" onclick="switchTab('ideals')">📁 Ideal Files</button>
-        <button class="tab-btn" id="tab-create"  onclick="switchTab('create')">➕ Create Check</button>
-        <button class="tab-btn" id="tab-users"   onclick="switchTab('users')">👤 Users</button>
-      </div>
-
-      <!-- Tab: Ideal Files -->
-      <div class="tab-panel active" id="tp-ideals">
-        <div id="adminList"></div>
-      </div>
-
-      <!-- Tab: Create Check -->
-      <div class="tab-panel" id="tp-create">
-        <p style="font-size:13px;color:var(--t3);margin-bottom:18px">
-          Create a new audit check by defining its metadata and uploading an ideal baseline file.
-          It will immediately appear in the audit form for all users.
-        </p>
-
-        <div class="form-grid-2">
-          <div class="field">
-            <label>Check ID <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t4)">(slug, e.g. gl_setup)</span></label>
-            <input type="text" id="newId" placeholder="e.g. gl_ledger_setup"
-                   pattern="[a-z0-9_]+" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,'')">
-          </div>
-          <div class="field">
-            <label>Display Name</label>
-            <input type="text" id="newName" placeholder="e.g. GL Ledger Setup">
-          </div>
-        </div>
-
-        <div class="form-grid-2">
-          <div class="field">
-            <label>Process Type</label>
-            <select id="newProcType">
-              <option value="itac">Business Process (ITAC)</option>
-              <option value="itgc">ITGC</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>ERP Platform</label>
-            <select id="newERP">
-              <option value="oracle">Oracle Fusion</option>
-              <option value="sap">SAP</option>
-              <option value="generic">Generic / Other</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-grid-2">
-          <div class="field">
-            <label>Category</label>
-            <select id="newCategory">
-              <option value="configurations">Configuration Controls</option>
-              <option value="detailed">Detailed Controls</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Default Sheet Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t4)">(optional)</span></label>
-            <input type="text" id="newSheet" placeholder="e.g. GL_LEDGER">
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Description <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t4)">(optional)</span></label>
-          <input type="text" id="newDesc" placeholder="Brief description of this check">
-        </div>
-
-        <div class="field">
-          <label>Ideal Baseline File <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--t4)">.xlsx / .csv</span></label>
-          <input type="file" id="newIdealFile" accept=".xlsx,.xls,.csv">
-        </div>
-
-        <button class="btn btn-primary" style="max-width:240px" onclick="createCheck()">
-          ➕&nbsp; Create Check
-        </button>
-        <div class="status" id="createStatus"></div>
-      </div>
-
-      <!-- Tab: Users -->
-      <div class="tab-panel" id="tp-users">
-        <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:10px;align-items:end;margin-bottom:18px">
-          <div>
-            <label>Email</label>
-            <input type="email" id="newEmail" placeholder="user@company.com">
-          </div>
-          <div>
-            <label>Password</label>
-            <input type="password" id="newPw" placeholder="min 8 chars">
-          </div>
-          <div>
-            <label>Role</label>
-            <select id="newRole">
-              <option value="associate">Associate</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-          <button class="btn btn-up btn-sm" style="margin-bottom:1px" onclick="createUser()">Add User</button>
-        </div>
-        <div class="status" id="userStatus"></div>
-        <div id="userList" style="margin-top:16px"></div>
+      <div class="glass" style="padding:0;overflow:hidden">
+        <table class="utbl"><thead><tr><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody id="uTbody"></tbody></table>
       </div>
     </div>
 
   </main>
-  <footer>AuditForge v2.1 &nbsp;·&nbsp; Deterministic ERP Configuration Audit</footer>
 </div>
 
 <script>
 'use strict';
+let _tok=sessionStorage.getItem('af_tok'), _user=null, _checks=[], _jobs={}, _jf='all';
+const _sel={proc:null,erp:null,cat:null};
 
-// ── State ────────────────────────────────────────────────────────────────────
-let _token = sessionStorage.getItem('af_token');
-let _user  = null;
-let _jobs  = {};
-let _checks = [];
-const _sel = { processType: null, erp: null, category: null };
-let _step = 1;
-
-// ── Bootstrap ────────────────────────────────────────────────────────────────
-(async () => {
-  if (_token) {
-    try { await initApp(); return; } catch { /* expired */ }
-  }
+// ── Boot ──────────────────────────────────────────────────────────────────────
+(async()=>{
+  if(_tok){try{await boot();return}catch{_tok=null;sessionStorage.removeItem('af_tok')}}
   showLogin();
 })();
 
-// ── Auth ─────────────────────────────────────────────────────────────────────
-async function doLogin() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const pw    = document.getElementById('loginPw').value;
-  const btn   = document.getElementById('loginBtn');
-  const err   = document.getElementById('loginErr');
-  err.className = 'status'; err.textContent = '';
-  btn.disabled = true; btn.textContent = 'Signing in…';
-  const form = new URLSearchParams({ username: email, password: pw });
-  try {
-    const res = await fetch('/auth/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: form,
-    });
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      throw new Error(d.detail || 'Invalid email or password');
-    }
-    const data = await res.json();
-    _token = data.access_token;
-    sessionStorage.setItem('af_token', _token);
-    await initApp();
-  } catch (e) {
-    err.textContent = e.message;
-    err.className = 'status show error';
-    btn.disabled = false; btn.textContent = 'Sign in';
-  }
+function showLogin(){
+  document.getElementById('login').style.display='flex';
+  document.getElementById('app').style.display='none';
+  const b=document.getElementById('lBtn'); b.disabled=false; b.textContent='Sign in';
+  document.getElementById('lEmail').value='';
+  document.getElementById('lPw').value='';
+  setA('lErr','','');
 }
 
-function logout() {
-  _token = null; _user = null;
-  sessionStorage.removeItem('af_token');
-  Object.values(_jobs).forEach(j => clearInterval(j.timer));
-  _jobs = {};
+async function doLogin(){
+  const email=document.getElementById('lEmail').value.trim();
+  const pw=document.getElementById('lPw').value;
+  const btn=document.getElementById('lBtn');
+  setA('lErr','',''); btn.disabled=true; btn.textContent='Signing in…';
+  try{
+    const res=await fetch('/auth/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({username:email,password:pw})});
+    if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.detail||'Invalid credentials')}
+    _tok=(await res.json()).access_token;
+    sessionStorage.setItem('af_tok',_tok);
+    await boot();
+  }catch(e){setA('lErr','error',e.message);btn.disabled=false;btn.textContent='Sign in'}
+}
+
+async function boot(){
+  const p=_tok.split('.');
+  _user=JSON.parse(atob(p[1].replace(/-/g,'+').replace(/_/g,'/')));
+  // Check expiry
+  if(_user.exp&&_user.exp<Math.floor(Date.now()/1000)){throw new Error('Token expired')}
+  document.getElementById('sbAv').textContent=_user.sub.charAt(0).toUpperCase();
+  document.getElementById('sbEm').textContent=_user.sub.length>22?_user.sub.slice(0,20)+'…':_user.sub;
+  document.getElementById('sbRl').textContent=_user.role==='admin'?'Administrator':'Associate';
+  await loadChecks();
+  await loadJobHistory();
+  if(_user.role==='admin'){
+    document.getElementById('adminNav').style.display='block';
+    document.getElementById('noCheckHint').style.display='inline';
+  }
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='flex';
+  nav('audit');
+}
+
+function logout(){
+  _tok=null;_user=null;sessionStorage.removeItem('af_tok');
+  Object.values(_jobs).forEach(j=>clearInterval(j.timer));
+  _jobs={};_sel.proc=null;_sel.erp=null;_sel.cat=null;
+  // Reset stepper
+  [1,2,3,4].forEach(i=>{const s=document.getElementById('sn'+i);s.classList.remove('active','done');if(i===1)s.classList.add('active')});
+  [1,2,3,4].forEach(i=>{const p=document.getElementById('sp'+i);p.classList.toggle('active',i===1)});
+  document.getElementById('checkSel').innerHTML='<option value="">— select a check —</option>';
+  document.getElementById('actualFile').value='';
+  document.getElementById('runBtn').disabled=true;
+  setA('auditAlert','','');
   showLogin();
 }
 
-function showLogin() {
-  document.getElementById('loginBtn').disabled    = false;
-  document.getElementById('loginBtn').textContent = 'Sign in';
-  document.getElementById('loginEmail').value = '';
-  document.getElementById('loginPw').value    = '';
-  document.getElementById('loginErr').className   = 'status';
-  document.getElementById('loginErr').textContent = '';
-  document.getElementById('appWrap').style.display  = 'none';
-  document.getElementById('adminArea').style.display = 'none';
-  document.getElementById('jobPanel').style.display  = 'none';
-  document.getElementById('jobList').innerHTML = '';
-  document.getElementById('jobPanel').style.display = 'none';
-  resetAuditForm();
-  document.getElementById('loginWrap').style.display = 'flex';
-}
-
-function resetAuditForm() {
-  _sel.processType = null; _sel.erp = null; _sel.category = null;
-  _step = 1;
-  goStep(1);
-  document.getElementById('checkSel').selectedIndex = 0;
-  document.getElementById('actualFile').value = '';
-  document.getElementById('sheetName').value  = '';
-  document.getElementById('fuzzyThresh').value = '80';
-  document.getElementById('auditStatus').className = 'status';
-  document.getElementById('auditStatus').textContent = '';
-  document.getElementById('runBtn').disabled = true;
-}
-
-// ── App init ──────────────────────────────────────────────────────────────────
-async function initApp() {
-  const parts = _token.split('.');
-  _user = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
-
-  const avatar = _user.sub.charAt(0).toUpperCase();
-  document.getElementById('hdrAvatar').textContent = avatar;
-  document.getElementById('hdrEmail').textContent  = _user.sub.length > 20
-    ? _user.sub.slice(0, 18) + '…' : _user.sub;
-  const rolePill = document.getElementById('hdrRole');
-  rolePill.textContent = _user.role;
-  rolePill.className   = 'role-badge ' + (_user.role === 'admin' ? 'role-admin' : 'role-associate');
-
-  await loadChecks();
-  await loadJobHistory();
-
-  if (_user.role === 'admin') {
-    document.getElementById('adminArea').style.display = 'block';
-    document.getElementById('noChecksAdmin').style.display = 'inline';
-    await loadAdminPanel();
-    await loadUsers();
-  }
-
-  document.getElementById('loginWrap').style.display = 'none';
-  document.getElementById('appWrap').style.display   = 'flex';
+// ── Nav ───────────────────────────────────────────────────────────────────────
+const SCREENS=['audit','jobs','library','create','users'];
+function nav(id){
+  SCREENS.forEach(s=>{
+    document.getElementById('sc-'+s).classList.toggle('active',s===id);
+    const ni=document.getElementById('nav-'+s);
+    if(ni)ni.classList.toggle('active',s===id);
+  });
+  if(id==='library'){renderLib();loadIdealVers()}
+  if(id==='users')loadUsers();
+  if(id==='jobs')renderJobs();
 }
 
 // ── API ───────────────────────────────────────────────────────────────────────
-async function api(method, path, body) {
-  const opts = { method, headers: { Authorization: `Bearer ${_token}` } };
-  if (body instanceof FormData) {
-    opts.body = body;
-  } else if (body) {
-    opts.headers['Content-Type'] = 'application/json';
-    opts.body = JSON.stringify(body);
-  }
-  const res = await fetch(path, opts);
-  if (res.status === 401) { logout(); throw new Error('Session expired'); }
+async function api(method,path,body){
+  const opts={method,headers:{Authorization:`Bearer ${_tok}`}};
+  if(body instanceof FormData){opts.body=body}
+  else if(body){opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body)}
+  const res=await fetch(path,opts);
+  if(res.status===401){logout();throw new Error('Session expired')}
   return res;
 }
 
 // ── Checks ────────────────────────────────────────────────────────────────────
-async function loadChecks() {
-  const res = await fetch('/api/checks');
-  _checks = await res.json();
+async function loadChecks(){const r=await fetch('/api/checks');_checks=await r.json()}
+
+function checkName(id){
+  const c=_checks.find(c=>c.id===id);
+  return c?c.name:id; // show display name, fallback to id
 }
 
-// ── Step machine ──────────────────────────────────────────────────────────────
-function goStep(n) {
-  _step = n;
-  // Update panels
-  [1,2,3,4].forEach(i => {
-    document.getElementById('sp' + i).classList.toggle('active', i === n);
-  });
-  // Update stepper dots
-  [1,2,3,4].forEach(i => {
-    const el = document.getElementById('si' + i);
-    el.classList.remove('active','done');
-    if (i < n) el.classList.add('done');
-    if (i === n) el.classList.add('active');
+// ── Stepper ───────────────────────────────────────────────────────────────────
+function gostep(n){
+  [1,2,3,4].forEach(i=>{
+    document.getElementById('sp'+i).classList.toggle('active',i===n);
+    const sn=document.getElementById('sn'+i);
+    sn.classList.remove('active','done');
+    if(i<n)sn.classList.add('done');
+    if(i===n)sn.classList.add('active');
   });
 }
 
-function selectProcess(type) {
-  _sel.processType = type;
-  if (type === 'itgc') {
-    // ITGC: skip ERP/category steps — go straight to run
-    _sel.erp = 'generic'; _sel.category = 'configurations';
-    populateChecks();
-    buildTrail();
-    goStep(4);
-    // Update stepper to show steps 2+3 as done
-    document.getElementById('si2').classList.add('done');
-    document.getElementById('si3').classList.add('done');
-  } else {
-    goStep(2);
-  }
+function selProc(p){
+  _sel.proc=p;
+  if(p==='itgc'){_sel.erp='generic';_sel.cat='configurations';populateChecks();buildTrail();gostep(4);document.getElementById('sn2').classList.add('done');document.getElementById('sn3').classList.add('done')}
+  else gostep(2);
+}
+function selERP(e){
+  _sel.erp=e;
+  if(e==='generic'){_sel.cat='configurations';populateChecks();buildTrail();gostep(4);document.getElementById('sn3').classList.add('done')}
+  else gostep(3);
+}
+function selCat(c){_sel.cat=c;populateChecks();buildTrail();gostep(4)}
+
+function populateChecks(){
+  const fil=_checks.filter(c=>c.process_type===_sel.proc&&c.erp===_sel.erp&&c.category===_sel.cat);
+  const sel=document.getElementById('checkSel');
+  sel.innerHTML='<option value="">— select a check —</option>';
+  fil.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.name;o.dataset.sheet=c.default_sheet||'';sel.appendChild(o)});
+  document.getElementById('noCheckMsg').style.display=fil.length===0?'block':'none';
+  chkReady();
 }
 
-function selectERP(erp) {
-  _sel.erp = erp;
-  if (erp === 'generic') {
-    _sel.category = 'configurations';
-    populateChecks();
-    buildTrail();
-    goStep(4);
-    document.getElementById('si3').classList.add('done');
-  } else {
-    goStep(3);
-  }
+function buildTrail(){
+  const lp={itac:'Business Process (ITAC)',itgc:'ITGC'};
+  const le={oracle:'Oracle Fusion',sap:'SAP',generic:'Generic'};
+  const lc={configurations:'Configuration Controls',detailed:'Detailed Controls'};
+  const ec={oracle:'oracle',sap:'sap',itgc:'itgc',generic:'gen'};
+  const pc=_sel.proc==='itgc'?'itgc':'b';
+  document.getElementById('selTrail').innerHTML=`
+    <span class="tp tp-${pc}">${lp[_sel.proc]||''}</span>
+    <span class="tsep">›</span>
+    <span class="tp tp-${ec[_sel.erp]||'b'}">${le[_sel.erp]||''}</span>
+    <span class="tsep">›</span>
+    <span class="tp tp-b">${lc[_sel.cat]||''}</span>`;
 }
 
-function selectCategory(cat) {
-  _sel.category = cat;
-  populateChecks();
-  buildTrail();
-  goStep(4);
+function onCheckChange(){
+  const sel=document.getElementById('checkSel');
+  const opt=sel.options[sel.selectedIndex];
+  if(opt){const s=opt.dataset.sheet||'';document.getElementById('sheetName').value=s;document.getElementById('sheetHint').textContent=s?'Auto-filled — override if needed':'Leave blank for CSV or single-sheet files'}
+  chkReady();
+}
+function chkReady(){
+  const ok=document.getElementById('checkSel').value!==''&&document.getElementById('actualFile').files.length>0;
+  document.getElementById('runBtn').disabled=!ok;
 }
 
-function populateChecks() {
-  const sel = document.getElementById('checkSel');
-  const filtered = _checks.filter(c =>
-    c.process_type === _sel.processType &&
-    c.erp          === _sel.erp &&
-    c.category     === _sel.category
-  );
-  sel.innerHTML = '<option value="">— select a check —</option>';
-  filtered.forEach(c => {
-    const o = document.createElement('option');
-    o.value = c.id; o.textContent = c.name;
-    o.dataset.sheet = c.default_sheet || '';
-    o.dataset.desc  = c.description   || '';
-    sel.appendChild(o);
-  });
-  const none = document.getElementById('noChecksMsg');
-  none.style.display = filtered.length === 0 ? 'block' : 'none';
-  checkFormReady();
+// ── Submit ────────────────────────────────────────────────────────────────────
+async function submitAudit(){
+  const cid=document.getElementById('checkSel').value;
+  const cname=document.getElementById('checkSel').options[document.getElementById('checkSel').selectedIndex].textContent;
+  const sheet=document.getElementById('sheetName').value.trim();
+  const thresh=parseInt(document.getElementById('fuzzyT').value)||80;
+  const file=document.getElementById('actualFile').files[0];
+  const btn=document.getElementById('runBtn');
+  btn.disabled=true; setA('auditAlert','info',`Submitting <strong>${esc(cname)}</strong>…`);
+  const fd=new FormData();
+  fd.append('actual_file',file);fd.append('check_id',cid);fd.append('sheet_name',sheet);fd.append('fuzzy_threshold',thresh);
+  try{
+    const res=await api('POST','/api/audits',fd);
+    if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.detail||`HTTP ${res.status}`)}
+    const {job_id}=await res.json();
+    setA('auditAlert','success',`Job submitted — ID <code>${job_id.slice(0,8)}</code> — tracking in <strong>My Jobs</strong>`);
+    trackJob(job_id,cname);
+    document.getElementById('actualFile').value='';
+    document.getElementById('runBtn').disabled=true;
+  }catch(e){setA('auditAlert','error',esc(e.message));btn.disabled=false}
 }
 
-function buildTrail() {
-  const labels = {
-    processType: { itac: 'Business Process (ITAC)', itgc: 'ITGC' },
-    erp:         { oracle: 'Oracle Fusion', sap: 'SAP', generic: 'Generic' },
-    category:    { configurations: 'Configuration Controls', detailed: 'Detailed Controls' },
-  };
-  const erpClass = { oracle: 'oracle', sap: 'sap', generic: '' }[_sel.erp] || '';
-  const procClass = _sel.processType === 'itgc' ? 'itgc' : '';
-  document.getElementById('selTrail').innerHTML = `
-    <span class="trail-item ${procClass}">${labels.processType[_sel.processType] || ''}</span>
-    <span class="trail-sep">›</span>
-    <span class="trail-item ${erpClass}">${labels.erp[_sel.erp] || ''}</span>
-    <span class="trail-sep">›</span>
-    <span class="trail-item">${labels.category[_sel.category] || ''}</span>
-  `;
+// ── Jobs ──────────────────────────────────────────────────────────────────────
+function trackJob(jid,cname){
+  _jobs[jid]={name:cname,status:'queued',timer:null};
+  updateJBadge();renderJobs();
+  const t=setInterval(async()=>{
+    try{
+      const r=await api('GET',`/api/audits/${jid}`);if(!r.ok)return;
+      const d=await r.json();
+      _jobs[jid].status=d.status;_jobs[jid].error=d.error_message;_jobs[jid].finished=d.finished_at;
+      updateJBadge();renderJobs();
+      if(d.status==='done'||d.status==='failed')clearInterval(_jobs[jid].timer);
+    }catch{}
+  },2000);
+  _jobs[jid].timer=t;
 }
 
-function onCheckChange() {
-  const sel = document.getElementById('checkSel');
-  const opt = sel.options[sel.selectedIndex];
-  if (opt) {
-    document.getElementById('sheetName').value   = opt.dataset.sheet || '';
-    document.getElementById('sheetHint').textContent = opt.dataset.sheet
-      ? 'Auto-filled — override if needed'
-      : 'Leave blank for CSV or single-sheet files';
-  }
-  checkFormReady();
-}
-
-function checkFormReady() {
-  const hasCheck = document.getElementById('checkSel').value !== '';
-  const hasFile  = document.getElementById('actualFile').files.length > 0;
-  document.getElementById('runBtn').disabled = !(hasCheck && hasFile);
-}
-
-// ── Submit audit ──────────────────────────────────────────────────────────────
-async function submitAudit() {
-  const checkId   = document.getElementById('checkSel').value;
-  const checkName = document.getElementById('checkSel').options[
-    document.getElementById('checkSel').selectedIndex].textContent;
-  const sheet     = document.getElementById('sheetName').value.trim();
-  const threshold = parseInt(document.getElementById('fuzzyThresh').value) || 80;
-  const file      = document.getElementById('actualFile').files[0];
-  const btn       = document.getElementById('runBtn');
-  const st        = document.getElementById('auditStatus');
-
-  btn.disabled = true;
-  setStatus(st, 'info', `Submitting ${checkName}…`);
-
-  const form = new FormData();
-  form.append('actual_file', file);
-  form.append('check_id', checkId);
-  form.append('sheet_name', sheet);
-  form.append('fuzzy_threshold', threshold);
-
-  try {
-    const res = await api('POST', '/api/audits', form);
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      throw new Error(d.detail || `HTTP ${res.status}`);
-    }
-    const { job_id } = await res.json();
-    setStatus(st, 'ok', `Job submitted — tracking ${job_id.slice(0,8)}…`);
-    trackJob(job_id, checkName);
-    document.getElementById('actualFile').value = '';
-    document.getElementById('runBtn').disabled = true;
-  } catch (e) {
-    setStatus(st, 'error', escHtml(e.message));
-    btn.disabled = false;
-  }
-}
-
-// ── Job tracking ──────────────────────────────────────────────────────────────
-function trackJob(jobId, checkName) {
-  _jobs[jobId] = { checkName, status: 'queued', timer: null };
+function filterJ(f,el){
+  _jf=f;
+  document.querySelectorAll('.ft').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
   renderJobs();
-  const timer = setInterval(async () => {
-    try {
-      const res = await api('GET', `/api/audits/${jobId}`);
-      if (!res.ok) return;
-      const data = await res.json();
-      _jobs[jobId].status = data.status;
-      _jobs[jobId].error  = data.error_message;
-      renderJobs();
-      if (data.status === 'done' || data.status === 'failed')
-        clearInterval(_jobs[jobId].timer);
-    } catch { /* retry */ }
-  }, 2000);
-  _jobs[jobId].timer = timer;
 }
 
-function renderJobs() {
-  const panel = document.getElementById('jobPanel');
-  const list  = document.getElementById('jobList');
-  if (Object.keys(_jobs).length === 0) { panel.style.display = 'none'; return; }
-  panel.style.display = 'block';
-  list.innerHTML = Object.entries(_jobs).reverse().map(([id, j]) => {
-    const badgeClass = { queued:'badge-queued', running:'badge-running pulse',
-                         done:'badge-done', failed:'badge-failed' }[j.status] || 'badge-queued';
-    const dlBtn  = j.status === 'done'
-      ? `<button class="btn btn-dl btn-sm" onclick="downloadReport('${id}','${escHtml(j.checkName)}')">⬇ Download</button>` : '';
-    const retry  = j.status === 'failed'
-      ? `<button class="btn btn-ghost btn-sm" onclick="retryJob('${id}','${escHtml(j.checkName)}')">↺ Retry</button>` : '';
-    const errTip = j.status === 'failed' && j.error
-      ? `<div class="job-err">${escHtml(j.error)}</div>` : '';
-    return `<div class="job-row">
-      <div class="job-info">
-        <div class="job-check">${escHtml(j.checkName)}</div>
-        <div class="job-meta">${id.slice(0,8)}…</div>
-        ${errTip}
+function renderJobs(){
+  const list=document.getElementById('jobsList');
+  updateJBadge();
+  const all=Object.entries(_jobs).reverse();
+  const rows=_jf==='all'?all:all.filter(([,j])=>j.status===_jf);
+  if(rows.length===0){
+    list.innerHTML=`<div class="empty"><div class="eico">${icSVG('list','rgba(255,255,255,0.2)',48)}</div><div class="etxt">${_jf==='all'?'No jobs yet':'No '+_jf+' jobs'}</div><div class="esub">${_jf==='all'?'Run an audit from <strong>New Audit</strong>':''}</div></div>`;
+    return;
+  }
+  const bc={queued:'b-yellow pulse',running:'b-cyan pulse',done:'b-green',failed:'b-red'};
+  list.innerHTML=rows.map(([id,j])=>{
+    const chk=_checks.find(c=>c.id===j.name)||{};
+    const erpC={oracle:'rgba(251,146,60,.18)',sap:'rgba(96,165,250,.18)',itgc:'rgba(52,211,153,.18)'}[chk.erp]||'var(--g1)';
+    const erpIcon={oracle:oraIcon(),sap:sapIcon(),itgc:lockIcon(),generic:fileIcon()}[chk.erp||'generic']||fileIcon();
+    const dl=j.status==='done'?`<button class="btn btn-success btn-sm" onclick="dlRpt('${id}','${esc(j.name)}')">${dlIcon()} Download</button>`:'';
+    const retry=j.status==='failed'?`<button class="btn btn-ghost btn-sm" onclick="retryJob('${id}','${esc(j.name)}')">${retryIcon()} Retry</button>`:'';
+    const err=j.status==='failed'&&j.error?`<div class="jerr">${esc(j.error)}</div>`:'';
+    const ts=j.finished?'· '+new Date(j.finished).toLocaleString():'';
+    return `<div class="jcard">
+      <div class="jico" style="background:${erpC}">${erpIcon}</div>
+      <div class="jbody">
+        <div class="jname">${esc(j.name)}</div>
+        <div class="jmeta">${id.slice(0,8)}… ${ts}</div>
+        ${err}
       </div>
-      <div class="job-actions">
-        <span class="badge ${badgeClass}">${j.status}</span>
-        ${dlBtn}${retry}
+      <div class="jacts">
+        <span class="badge ${bc[j.status]||'b-yellow'}">${j.status}</span>
+        ${dl}${retry}
       </div>
     </div>`;
   }).join('');
 }
 
-async function downloadReport(jobId, checkName) {
-  try {
-    const res = await api('GET', `/api/audits/${jobId}/download`);
-    if (!res.ok) throw new Error('Download failed');
-    const blob = await res.blob();
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `AuditForge_${checkName.replace(/\s+/g,'_')}_${jobId.slice(0,8)}.xlsx`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  } catch (e) { alert(e.message); }
+function updateJBadge(){
+  const n=Object.values(_jobs).filter(j=>j.status==='queued'||j.status==='running').length;
+  const el=document.getElementById('jBadge');el.textContent=n;el.style.display=n>0?'inline':'none';
 }
 
-async function retryJob(jobId, checkName) {
-  try {
-    const res = await api('POST', `/api/audits/${jobId}/retry`);
-    if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.detail || 'Retry failed'); }
-    const { job_id } = await res.json();
-    delete _jobs[jobId];
-    trackJob(job_id, checkName);
-  } catch (e) { alert(e.message); }
-}
-
-async function loadJobHistory() {
-  try {
-    const res = await api('GET', '/api/audits');
-    if (!res.ok) return;
-    const jobs = await res.json();
-    jobs.forEach(j => {
-      if (_jobs[j.id]) return;
-      _jobs[j.id] = { checkName: j.check_id, status: j.status, error: j.error_message, timer: null };
-      if (j.status === 'queued' || j.status === 'running') trackJob(j.id, j.check_id);
+async function loadJobHistory(){
+  try{
+    const r=await api('GET','/api/audits');if(!r.ok)return;
+    const jobs=await r.json();
+    jobs.forEach(j=>{
+      if(_jobs[j.id])return;
+      // Resolve check name from loaded checks, fallback to check_id
+      const name=checkName(j.check_id);
+      _jobs[j.id]={name,status:j.status,error:j.error_message,timer:null,finished:j.finished_at};
+      if(j.status==='queued'||j.status==='running')trackJob(j.id,name);
     });
-    renderJobs();
-  } catch { /* non-fatal */ }
+    renderJobs();updateJBadge();
+  }catch{}
 }
 
-// ── Admin tabs ────────────────────────────────────────────────────────────────
-function switchTab(name) {
-  ['ideals','create','users'].forEach(t => {
-    document.getElementById('tab-' + t).classList.toggle('active', t === name);
-    document.getElementById('tp-' + t).classList.toggle('active', t === name);
-  });
+async function dlRpt(jid,name){
+  try{
+    const r=await api('GET',`/api/audits/${jid}/download`);if(!r.ok)throw new Error('Download failed');
+    const a=document.createElement('a');a.href=URL.createObjectURL(await r.blob());
+    a.download=`AuditForge_${name.replace(/\s+/g,'_')}_${jid.slice(0,8)}.xlsx`;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+  }catch(e){alert(e.message)}
 }
 
-// ── Admin: Ideal Files ────────────────────────────────────────────────────────
-async function loadAdminPanel() {
-  const res = await api('GET', '/api/ideals');
-  const ideals = res.ok ? await res.json() : [];
-  const byCheck = {};
-  ideals.forEach(i => byCheck[i.check_id] = i);
+async function retryJob(jid,name){
+  try{
+    const r=await api('POST',`/api/audits/${jid}/retry`);
+    if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.detail||'Retry failed')}
+    const {job_id}=await r.json();delete _jobs[jid];trackJob(job_id,name);
+  }catch(e){alert(e.message)}
+}
 
-  document.getElementById('adminList').innerHTML = _checks.map(c => {
-    const active  = byCheck[c.id];
-    const version = active ? `v${active.version}` : 'bundled default';
-    const hash    = active ? active.content_hash.slice(0,10) + '…' : '—';
-    const erpPill = `<span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:6px;
-      background:${c.erp==='oracle'?'var(--oracle-light)':c.erp==='sap'?'var(--sap-light)':'var(--generic-light)'};
-      color:${c.erp==='oracle'?'var(--oracle)':c.erp==='sap'?'var(--sap)':'var(--generic)'};
-      border:1px solid ${c.erp==='oracle'?'var(--oracle-border)':c.erp==='sap'?'var(--sap-border)':'var(--generic-border)'}
-    ">${c.erp.toUpperCase()}</span>`;
-    return `<div class="ideal-row">
-      <div>
-        <div class="ideal-name">${escHtml(c.name)} ${erpPill}</div>
-        <div class="ideal-meta">${c.default_sheet||'CSV/auto'} &nbsp;·&nbsp; ${version}
-          &nbsp;·&nbsp; <span style="font-family:monospace;font-size:10px">${hash}</span></div>
+// ── Library ───────────────────────────────────────────────────────────────────
+function renderLib(){
+  const G={
+    oracle:{label:'Oracle Fusion',desc:'Oracle Fusion Cloud ERP configuration checks',cls:'oracle',ico:oraIcon(22),checks:[]},
+    sap:{label:'SAP',desc:'SAP ECC / S/4HANA application control checks',cls:'sap',ico:sapIcon(22),checks:[]},
+    itgc:{label:'ITGC',desc:'IT General Controls checks',cls:'itgc',ico:lockIcon(22),checks:[]},
+    generic:{label:'Generic',desc:'Custom and generic checks',cls:'gen',ico:fileIcon(22),checks:[]},
+  };
+  _checks.forEach(c=>{const k=c.process_type==='itgc'?'itgc':(c.erp||'generic');if(G[k])G[k].checks.push(c)});
+  const html=Object.entries(G).filter(([,g])=>g.checks.length>0).map(([k,g])=>`
+    <div class="erp-sec">
+      <div class="erp-hdr">
+        <div class="erp-ico erp-ico-${k}">${g.ico}</div>
+        <div style="flex:1"><div class="erp-title">${g.label}</div><div class="erp-desc">${g.desc}</div></div>
+        <span class="erp-count">${g.checks.length} check${g.checks.length!==1?'s':''}</span>
       </div>
-      <button class="btn btn-dl btn-sm" onclick="downloadIdeal('${c.id}','${escHtml(c.name)}')">⬇ Download</button>
-      <div class="upload-wrap">
-        <input type="file" id="upf-${c.id}" accept=".xlsx,.xls,.csv"
-               onchange="document.getElementById('upb-${c.id}').disabled=!this.files.length">
-        <button class="btn btn-up btn-sm" id="upb-${c.id}" disabled
-                onclick="uploadIdeal('${c.id}')">↑ Upload</button>
-      </div>
-      <span class="up-st" id="ups-${c.id}"></span>
-    </div>`;
-  }).join('');
+      <div class="cc-grid">${g.checks.map(c=>ccHtml(c,k)).join('')}</div>
+    </div>`).join('');
+  document.getElementById('libContent').innerHTML=html||`<div class="empty"><div class="eico">${icSVG('grid','rgba(255,255,255,0.2)',48)}</div><div class="etxt">No checks yet</div><div class="esub">Use <strong>Create Check</strong> to add one</div></div>`;
 }
 
-async function downloadIdeal(checkId, name) {
-  try {
-    const res = await api('GET', `/api/ideals/${checkId}/download`);
-    if (!res.ok) throw new Error('Download failed');
-    const blob = await res.blob();
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = `${checkId}_ideal.xlsx`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  } catch (e) { alert(e.message); }
+function ccHtml(c,k){
+  const cb=c.category==='configurations'?'b-config':'b-detail';
+  const cl=c.category==='configurations'?'Configuration':'Detailed';
+  return `<div class="ccard">
+    <div class="ccard-top"><div class="ccard-name">${esc(c.name)}</div><span class="badge ${cb}">${cl}</span></div>
+    <div class="ccard-desc">${esc(c.description||'—')}</div>
+    <div class="ccard-meta">
+      ${c.default_sheet?`<span class="ccard-sheet">${esc(c.default_sheet)}</span>`:''}
+      <span class="ccard-ver" id="ccv-${c.id}">bundled</span>
+    </div>
+    <div class="ccard-acts">
+      <button class="btn btn-ghost btn-sm" onclick="dlIdeal('${c.id}','${esc(c.name)}')">${dlIcon()} Ideal</button>
+      <button class="btn btn-ghost btn-sm" onclick="togUpl('${c.id}')">${upIcon()} Update</button>
+    </div>
+    <div class="upl-row" id="upl-${c.id}" style="display:none">
+      <input type="file" id="uf-${c.id}" accept=".xlsx,.xls,.csv" onchange="document.getElementById('ub-${c.id}').disabled=!this.files.length">
+      <button class="btn btn-success btn-sm" id="ub-${c.id}" disabled onclick="uploadIdeal('${c.id}')">${upIcon()} Upload</button>
+      <span class="ust" id="us-${c.id}"></span>
+    </div>
+  </div>`;
 }
 
-async function uploadIdeal(checkId) {
-  const fi  = document.getElementById(`upf-${checkId}`);
-  const btn = document.getElementById(`upb-${checkId}`);
-  const st  = document.getElementById(`ups-${checkId}`);
-  if (!fi.files.length) return;
-  btn.disabled = true; st.textContent = '…'; st.className = 'up-st';
-  const form = new FormData();
-  form.append('file', fi.files[0]);
-  try {
-    const res = await api('POST', `/api/ideals/${checkId}`, form);
-    if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.detail || 'Upload failed'); }
-    st.textContent = '✓ Saved'; st.className = 'up-st ok';
-    fi.value = '';
-    await loadAdminPanel();
-  } catch (e) {
-    st.textContent = e.message; st.className = 'up-st err'; btn.disabled = false;
-  }
+function togUpl(id){const el=document.getElementById('upl-'+id);el.style.display=el.style.display==='none'?'flex':'none'}
+
+async function loadIdealVers(){
+  try{
+    const r=await api('GET','/api/ideals');if(!r.ok)return;
+    const ideals=await r.json();
+    ideals.forEach(i=>{const el=document.getElementById('ccv-'+i.check_id);if(el){el.textContent='v'+i.version;el.style.color='var(--itgc)'}});
+  }catch{}
 }
 
-// ── Admin: Create Check ───────────────────────────────────────────────────────
-async function createCheck() {
-  const id       = document.getElementById('newId').value.trim();
-  const name     = document.getElementById('newName').value.trim();
-  const procType = document.getElementById('newProcType').value;
-  const erp      = document.getElementById('newERP').value;
-  const category = document.getElementById('newCategory').value;
-  const sheet    = document.getElementById('newSheet').value.trim();
-  const desc     = document.getElementById('newDesc').value.trim();
-  const file     = document.getElementById('newIdealFile').files[0];
-  const st       = document.getElementById('createStatus');
+async function dlIdeal(id,name){
+  try{const r=await api('GET',`/api/ideals/${id}/download`);if(!r.ok)throw new Error('Download failed');const a=document.createElement('a');a.href=URL.createObjectURL(await r.blob());a.download=`${id}_ideal.xlsx`;document.body.appendChild(a);a.click();document.body.removeChild(a)}
+  catch(e){alert(e.message)}
+}
 
-  if (!id)   { setStatus(st,'error','Check ID is required (e.g. gl_ledger_setup)'); return; }
-  if (!name) { setStatus(st,'error','Display name is required'); return; }
-  if (!file) { setStatus(st,'error','Ideal baseline file is required'); return; }
+async function uploadIdeal(id){
+  const fi=document.getElementById('uf-'+id),btn=document.getElementById('ub-'+id),st=document.getElementById('us-'+id);
+  if(!fi.files.length)return;
+  btn.disabled=true;st.textContent='…';st.className='ust';
+  const fd=new FormData();fd.append('file',fi.files[0]);
+  try{
+    const r=await api('POST',`/api/ideals/${id}`,fd);
+    if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.detail||'Upload failed')}
+    const row=await r.json();st.textContent='v'+row.version;st.className='ust ok';
+    const ve=document.getElementById('ccv-'+id);if(ve){ve.textContent='v'+row.version;ve.style.color='var(--itgc)'}
+    fi.value='';
+  }catch(e){st.textContent=e.message;st.className='ust err';btn.disabled=false}
+}
 
-  setStatus(st,'info','Creating check…');
-  const form = new FormData();
-  form.append('check_id',    id);
-  form.append('name',        name);
-  form.append('process_type',procType);
-  form.append('erp',         erp);
-  form.append('category',    category);
-  form.append('default_sheet', sheet);
-  form.append('description', desc);
-  form.append('file',        file);
-
-  try {
-    const res = await api('POST', '/api/ideals/admin/checks', form);
-    if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.detail || `HTTP ${res.status}`); }
-    const created = await res.json();
-    setStatus(st, 'ok', `✓ Check "${created.name}" created successfully`);
-    // Clear form
-    ['newId','newName','newSheet','newDesc'].forEach(f => document.getElementById(f).value = '');
-    document.getElementById('newIdealFile').value = '';
-    // Reload checks + admin panel
+// ── Create Check ──────────────────────────────────────────────────────────────
+async function createCheck(){
+  const id=document.getElementById('nId').value.trim(),name=document.getElementById('nName').value.trim();
+  const proc=document.getElementById('nProc').value,erp=document.getElementById('nERP').value,cat=document.getElementById('nCat').value;
+  const sheet=document.getElementById('nSheet').value.trim(),desc=document.getElementById('nDesc').value.trim();
+  const file=document.getElementById('nFile').files[0];
+  if(!id){setA('createAlert','error','Check ID is required');return}
+  if(!name){setA('createAlert','error','Display name is required');return}
+  if(!file){setA('createAlert','error','Ideal baseline file is required');return}
+  setA('createAlert','info','Creating check…');
+  const fd=new FormData();
+  fd.append('check_id',id);fd.append('name',name);fd.append('process_type',proc);
+  fd.append('erp',erp);fd.append('category',cat);fd.append('default_sheet',sheet);fd.append('description',desc);fd.append('file',file);
+  try{
+    const r=await api('POST','/api/ideals/admin/checks',fd);
+    if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.detail||`HTTP ${r.status}`)}
+    const c=await r.json();
+    setA('createAlert','success',`Check <strong>${esc(c.name)}</strong> created — visible in New Audit and Checks Library`);
+    ['nId','nName','nSheet','nDesc'].forEach(f=>document.getElementById(f).value='');
+    document.getElementById('nFile').value='';
     await loadChecks();
-    await loadAdminPanel();
-  } catch (e) {
-    setStatus(st, 'error', escHtml(e.message));
-  }
+  }catch(e){setA('createAlert','error',esc(e.message))}
 }
 
-// ── Admin: Users ──────────────────────────────────────────────────────────────
-async function loadUsers() {
-  const res = await api('GET', '/api/users');
-  const users = res.ok ? await res.json() : [];
-  document.getElementById('userList').innerHTML = users.length === 0
-    ? '<p style="color:var(--t4);font-size:13px">No users yet.</p>'
-    : users.map(u => `<div class="user-row">
-        <div class="user-email-cell">${escHtml(u.email)}</div>
-        <span class="role-badge ${u.role==='admin'?'role-admin':'role-associate'}">${u.role}</span>
-        <span style="font-size:12px;color:${u.is_active?'var(--success)':'var(--t4)'}">
-          <span class="active-dot ${u.is_active?'on':'off'}"></span>
-          ${u.is_active?'Active':'Inactive'}
-        </span>
-        ${u.is_active
-          ? `<button class="btn btn-danger btn-sm" onclick="deactivateUser('${u.id}','${escHtml(u.email)}')">Deactivate</button>`
-          : '<span></span>'}
-      </div>`).join('');
+// ── Users ─────────────────────────────────────────────────────────────────────
+async function loadUsers(){
+  const r=await api('GET','/api/users');const users=r.ok?await r.json():[];
+  const tb=document.getElementById('uTbody');
+  if(!users.length){tb.innerHTML=`<tr><td colspan="4" style="text-align:center;color:var(--t4);padding:24px">No users yet</td></tr>`;return}
+  tb.innerHTML=users.map(u=>`<tr>
+    <td class="uem">${esc(u.email)}</td>
+    <td><span class="badge ${u.role==='admin'?'b-yellow':'b-blue'}">${u.role}</span></td>
+    <td style="font-size:12px"><span class="udot" style="background:${u.is_active?'var(--green)':'var(--t4)'}"></span>${u.is_active?'Active':'Inactive'}</td>
+    <td style="text-align:right">${u.is_active?`<button class="btn btn-danger btn-sm" onclick="deactivate('${u.id}','${esc(u.email)}')">Deactivate</button>`:''}</td>
+  </tr>`).join('');
 }
 
-async function createUser() {
-  const email = document.getElementById('newEmail').value.trim();
-  const pw    = document.getElementById('newPw').value;
-  const role  = document.getElementById('newRole').value;
-  const st    = document.getElementById('userStatus');
-  if (!email||!pw) { setStatus(st,'error','Email and password are required.'); return; }
-  if (pw.length<8) { setStatus(st,'error','Password must be at least 8 characters.'); return; }
-  setStatus(st,'info','Creating…');
-  try {
-    const res = await api('POST', '/api/users', { email, password: pw, role });
-    if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.detail || `HTTP ${res.status}`); }
-    const u = await res.json();
-    setStatus(st,'ok',`✓ Created ${u.email} (${u.role})`);
-    document.getElementById('newEmail').value = '';
-    document.getElementById('newPw').value    = '';
+async function createUser(){
+  const email=document.getElementById('uEmail').value.trim(),pw=document.getElementById('uPw').value,role=document.getElementById('uRole').value;
+  if(!email||!pw){setA('userAlert','error','Email and password required');return}
+  if(pw.length<8){setA('userAlert','error','Password must be at least 8 characters');return}
+  setA('userAlert','info','Creating…');
+  try{
+    const r=await api('POST','/api/users',{email,password:pw,role});
+    if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.detail||`HTTP ${r.status}`)}
+    const u=await r.json();setA('userAlert','success',`Created ${esc(u.email)} (${u.role})`);
+    document.getElementById('uEmail').value='';document.getElementById('uPw').value='';
     await loadUsers();
-  } catch (e) { setStatus(st,'error',escHtml(e.message)); }
+  }catch(e){setA('userAlert','error',esc(e.message))}
 }
 
-async function deactivateUser(id, email) {
-  if (!confirm(`Deactivate ${email}? They will no longer be able to log in.`)) return;
-  const st = document.getElementById('userStatus');
-  try {
-    const res = await api('DELETE', `/api/users/${id}`);
-    if (!res.ok && res.status !== 204) { const d = await res.json().catch(() => ({})); throw new Error(d.detail || `HTTP ${res.status}`); }
-    setStatus(st,'warn',`${email} deactivated.`);
-    await loadUsers();
-  } catch (e) { setStatus(st,'error',escHtml(e.message)); }
+async function deactivate(id,email){
+  if(!confirm(`Deactivate ${email}?`))return;
+  try{
+    const r=await api('DELETE',`/api/users/${id}`);
+    if(!r.ok&&r.status!==204){const d=await r.json().catch(()=>({}));throw new Error(d.detail||'Failed')}
+    setA('userAlert','warn',`${esc(email)} deactivated`);await loadUsers();
+  }catch(e){setA('userAlert','error',esc(e.message))}
 }
 
-// ── Utils ─────────────────────────────────────────────────────────────────────
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// ── SVG Icons ─────────────────────────────────────────────────────────────────
+function oraIcon(s=18){return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#fb923c" stroke-width="1.6"/><ellipse cx="12" cy="12" rx="5" ry="10" stroke="#fb923c" stroke-width="1.2"/><line x1="2" y1="12" x2="22" y2="12" stroke="#fb923c" stroke-width="1.2"/></svg>`}
+function sapIcon(s=18){return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" stroke="#60a5fa" stroke-width="1.6"/><path d="M6 17V10l4.5 5.5 4.5-5.5v7M17 10v7" stroke="#60a5fa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`}
+function lockIcon(s=18){return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="1.6"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4" stroke-linecap="round"/></svg>`}
+function fileIcon(s=18){return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="1.6"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>`}
+function dlIcon(){return `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/></svg>`}
+function upIcon(){return `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke-linecap="round" stroke-linejoin="round"/></svg>`}
+function retryIcon(){return `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10" stroke-linecap="round" stroke-linejoin="round"/></svg>`}
+function icSVG(type,col,s){
+  if(type==='list')return `<svg width="${s}" height="${s}" fill="none" stroke="${col}" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  if(type==='grid')return `<svg width="${s}" height="${s}" fill="none" stroke="${col}" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`;
+  return '';
 }
-function setStatus(el, type, msg) {
-  el.innerHTML = msg; el.className = `status show ${type}`;
+
+// ── Util ──────────────────────────────────────────────────────────────────────
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function setA(id,type,msg){
+  const el=document.getElementById(id);if(!el)return;
+  if(!type){el.className='alert';el.innerHTML='';return}
+  el.innerHTML=msg;el.className=`alert a-${type} show`;
 }
 </script>
 </body>
