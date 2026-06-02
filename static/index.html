@@ -675,7 +675,9 @@ function logout(){
 
 // ── Nav ───────────────────────────────────────────────────────────────────────
 const SCREENS=['audit','jobs','library','create','users'];
+const ADMIN_SCREENS=['library','create','users'];
 function nav(id){
+  if(ADMIN_SCREENS.includes(id)&&_user?.role!=='admin')return;
   SCREENS.forEach(s=>{
     document.getElementById('sc-'+s).classList.toggle('active',s===id);
     const ni=document.getElementById('nav-'+s);
