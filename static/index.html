@@ -4,39 +4,66 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AuditForge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
 /* ─────────────────────────────────────────────────────────────────────────────
    DESIGN SYSTEM
 ───────────────────────────────────────────────────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --mesh:#0c0c1e;
-  --g0:rgba(255,255,255,0.04); --g1:rgba(255,255,255,0.08);
-  --g2:rgba(255,255,255,0.13); --g3:rgba(255,255,255,0.20);
-  --gb:rgba(255,255,255,0.13); --gb2:rgba(255,255,255,0.24);
-  --t1:rgba(255,255,255,0.95); --t2:rgba(255,255,255,0.72);
-  --t3:rgba(255,255,255,0.48); --t4:rgba(255,255,255,0.28);
-  --blue:#818cf8;  --blue-g:rgba(129,140,248,0.26);
-  --oracle:#fb923c;--oracle-g:rgba(251,146,60,0.22);
-  --sap:#60a5fa;   --sap-g:rgba(96,165,250,0.22);
-  --itgc:#34d399;  --itgc-g:rgba(52,211,153,0.22);
-  --gen:#c084fc;   --gen-g:rgba(192,132,252,0.22);
-  --green:#4ade80; --yellow:#fbbf24; --red:#f87171; --cyan:#67e8f9;
+  /* ── Grant Thornton brand colours ── */
+  --mesh:#0A0612;                      /* deepest GT dark */
+
+  /* Glass surfaces — purple-tinted white alpha */
+  --g0:rgba(255,255,255,0.04);
+  --g1:rgba(255,255,255,0.07);
+  --g2:rgba(255,255,255,0.12);
+  --g3:rgba(255,255,255,0.18);
+  --gb:rgba(255,255,255,0.12);
+  --gb2:rgba(255,255,255,0.22);
+
+  /* Text — warm white for readability */
+  --t1:#F0EDF5;                        /* near-white, slight purple warmth */
+  --t2:rgba(240,237,245,0.75);
+  --t3:rgba(240,237,245,0.50);
+  --t4:rgba(240,237,245,0.30);
+
+  /* GT Core Purple PMS 268C = #582C83 */
+  --blue:#8B5CF6;       --blue-g:rgba(139,92,246,0.28);   /* GT purple mid */
+
+  /* GT Teal PMS 7710C = #00718F */
+  --sap:#00A8C8;        --sap-g:rgba(0,168,200,0.24);     /* GT teal bright */
+
+  /* Oracle — GT warm orange from secondary palette */
+  --oracle:#E8650A;     --oracle-g:rgba(232,101,10,0.24);
+
+  /* ITGC — GT green from secondary palette */
+  --itgc:#00C389;       --itgc-g:rgba(0,195,137,0.24);
+
+  /* Generic — GT lighter purple */
+  --gen:#B57BEE;        --gen-g:rgba(181,123,238,0.24);
+
+  /* Status */
+  --green:#00C389;  --yellow:#F5A623;  --red:#E84040;  --cyan:#00CCE8;
+
   --r:12px; --rs:8px;
-  --blur:blur(20px);
-  --sh:0 8px 32px rgba(0,0,0,0.40);
-  --sh-sm:0 4px 16px rgba(0,0,0,0.30);
+  --blur:blur(22px);
+  --sh:0 8px 40px rgba(0,0,0,0.50);
+  --sh-sm:0 4px 20px rgba(0,0,0,0.35);
 }
 body{
-  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+  /* GT dark mode: deep purple core + teal accent blobs */
+  font-family:'Plus Jakarta Sans','Segoe UI',system-ui,-apple-system,sans-serif;
   background:
-    radial-gradient(ellipse 90% 70% at 15% 40%,rgba(99,102,241,.45) 0%,transparent 55%),
-    radial-gradient(ellipse 70% 70% at 85% 20%,rgba(168,85,247,.35) 0%,transparent 55%),
-    radial-gradient(ellipse 60% 60% at 50% 95%,rgba(59,130,246,.40) 0%,transparent 55%),
-    radial-gradient(ellipse 50% 50% at 80% 80%,rgba(236,72,153,.25) 0%,transparent 50%),
+    radial-gradient(ellipse 85% 65% at 10% 35%, rgba(88,44,131,.55) 0%,transparent 55%),
+    radial-gradient(ellipse 60% 60% at 90% 15%, rgba(0,113,143,.40) 0%,transparent 55%),
+    radial-gradient(ellipse 55% 55% at 55% 95%, rgba(88,44,131,.38) 0%,transparent 55%),
+    radial-gradient(ellipse 45% 45% at 80% 75%, rgba(0,168,200,.22) 0%,transparent 50%),
     var(--mesh);
   background-attachment:fixed;
-  color:var(--t1); min-height:100vh; font-size:14px; line-height:1.5;
+  color:var(--t1); min-height:100vh; font-size:14px; line-height:1.55;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
 }
 
 /* Glass primitives */
@@ -49,7 +76,7 @@ input[type=text],input[type=email],input[type=password],input[type=number],selec
   display:block;width:100%;padding:10px 13px;
   background:var(--g1);backdrop-filter:var(--blur);
   border:1px solid var(--gb);border-radius:var(--rs);
-  color:var(--t1);font-size:13px;font-family:inherit;
+  color:var(--t1);font-size:13.5px;font-family:inherit;font-weight:500;
   transition:background .15s,border-color .15s,box-shadow .15s;
   appearance:none;-webkit-appearance:none;
 }
