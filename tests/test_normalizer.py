@@ -14,8 +14,10 @@ import pandas as pd
 import pytest
 
 from engine.normalizer import (
+    check_range,
     detect_ideal_columns,
     is_capture,
+    is_range,
     normalize_value,
     strip_header,
 )
@@ -260,3 +262,98 @@ class TestDetectIdealColumns:
         name_col, val_col = detect_ideal_columns(df)
         assert name_col == "config_name"
         assert val_col == "ideal_value"
+
+
+class TestIsRange:
+    @pytest.mark.parametrize("v", ["<=5", ">=1", "<10", ">0", "<=5.5", ">=0.5"])
+    def test_operator_forms_detected(self, v):
+        assert is_range(v), f"{v!r} should be detected as a range"
+
+    @pytest.mark.parametrize("v", ["1-5", "0-100", "0.5-2.5", "1–5"])
+    def test_dash_range_forms_detected(self, v):
+        assert is_range(v), f"{v!r} should be detected as a dash range"
+
+    @pytest.mark.parametrize(
+        "v", ["Y", "N", "5", "PO", "Capture", "", "Date", "<=", "abc"]
+    )
+    def test_non_range_values_not_detected(self, v):
+        assert not is_range(v), f"{v!r} should NOT be detected as a range"
+
+    def test_whitespace_stripped(self):
+        assert is_range("  <=5  ")
+        assert is_range(" 1-10 ")
+
+
+class TestCheckRange:
+    # ── less-than-or-equal ──────────────────────────────────────────────────
+    def test_lte_pass(self):
+        assert check_range("5", "<=5")
+        assert check_range("3", "<=5")
+        assert check_range("0", "<=5")
+
+    def test_lte_fail(self):
+        assert not check_range("6", "<=5")
+        assert not check_range("10", "<=5")
+
+    def test_lte_float_actual(self):
+        assert check_range("5.0", "<=5")  # Oracle float export
+        assert check_range("4.99", "<=5")
+        assert not check_range("5.01", "<=5")
+
+    # ── less-than ───────────────────────────────────────────────────────────
+    def test_lt_pass(self):
+        assert check_range("4", "<5")
+        assert not check_range("5", "<5")
+
+    # ── greater-than-or-equal ───────────────────────────────────────────────
+    def test_gte_pass(self):
+        assert check_range("1", ">=1")
+        assert check_range("10", ">=1")
+
+    def test_gte_fail(self):
+        assert not check_range("0", ">=1")
+
+    # ── greater-than ────────────────────────────────────────────────────────
+    def test_gt_pass(self):
+        assert check_range("1", ">0")
+        assert not check_range("0", ">0")
+
+    # ── dash range ──────────────────────────────────────────────────────────
+    def test_dash_range_inside(self):
+        assert check_range("1", "1-5")
+        assert check_range("3", "1-5")
+        assert check_range("5", "1-5")
+
+    def test_dash_range_outside(self):
+        assert not check_range("0", "1-5")
+        assert not check_range("6", "1-5")
+
+    def test_dash_range_float_actual(self):
+        assert check_range("2.5", "1-5")
+        assert check_range("1.0", "1-5")  # Oracle float export
+
+    # ── non-numeric actuals ─────────────────────────────────────────────────
+    def test_non_numeric_actual_fails(self):
+        assert not check_range("N/A", "<=5")
+        assert not check_range(None, "<=5")
+        assert not check_range("", "<=5")
+
+    # ── Oracle AP Tolerance realistic cases ─────────────────────────────────
+    def test_max_quantity_ordered_compliant(self):
+        """MaxQuantityOrdered ideal='<=5': values 1,2,3,4,5 all pass."""
+        for v in ["1", "2", "3", "4", "5", "5.0"]:
+            assert check_range(v, "<=5"), f"{v} should satisfy <=5"
+
+    def test_max_quantity_ordered_gap(self):
+        """MaxQuantityOrdered ideal='<=5': values above 5 are gaps."""
+        for v in ["6", "10", "15", "100"]:
+            assert not check_range(v, "<=5"), f"{v} should violate <=5"
+
+    def test_tolerance_range_compliant(self):
+        assert check_range("3", "1-10")
+        assert check_range("10", "1-10")
+        assert check_range("1", "1-10")
+
+    def test_tolerance_range_gap(self):
+        assert not check_range("0", "1-10")
+        assert not check_range("11", "1-10")

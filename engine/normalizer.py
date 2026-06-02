@@ -8,6 +8,52 @@ containing a known capture phrase skips comparison and is extracted as-is.
 import re
 import pandas as pd
 
+# Matches range expressions written in the ideal file:
+#   <=5   >=1   <10   >0     (operator + number)
+#   1-5   0.5-2.5            (low–high dash range)
+_RANGE_RE = re.compile(
+    r"^(<=?|>=?)\s*(\d+(?:\.\d+)?)$"
+    r"|^(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)$"
+)
+
+
+def is_range(ideal_value: str) -> bool:
+    """True when ideal_value is a numeric range expression (<=5, >=1, 1-5, <10)."""
+    return bool(_RANGE_RE.match(ideal_value.strip()))
+
+
+def check_range(actual_raw, ideal_range: str) -> bool:
+    """Return True if actual_raw satisfies the range constraint.
+
+    Converts actual to float via normalize_value first so Oracle float
+    exports like '5.0' compare correctly against ideal '<=5'.
+    Returns False if actual cannot be parsed as a number.
+    """
+    norm = normalize_value(actual_raw)
+    try:
+        actual = float(norm)
+    except (ValueError, TypeError):
+        return False
+
+    m = _RANGE_RE.match(ideal_range.strip())
+    if not m:
+        return False
+
+    if m.group(1):  # operator form
+        op, limit = m.group(1), float(m.group(2))
+        if op == "<=":
+            return actual <= limit
+        if op == "<":
+            return actual < limit
+        if op == ">=":
+            return actual >= limit
+        return actual > limit  # >
+
+    # dash range: lo-hi
+    lo, hi = float(m.group(3)), float(m.group(4))
+    return lo <= actual <= hi
+
+
 # Single-word type descriptors in an ideal value mean "capture this field, don't compare".
 _CAPTURE_EXACT: set[str] = {
     "date",

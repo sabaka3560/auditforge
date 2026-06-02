@@ -10,7 +10,7 @@ Public API:
 
 import pandas as pd
 
-from .normalizer import is_capture, normalize_value
+from .normalizer import check_range, is_capture, is_range, normalize_value
 from .types import AuditRow, MappingResult
 
 
@@ -49,6 +49,29 @@ def compare(
                         "Actual config captured",
                     )
                 )
+            elif is_range(m.ideal_value):
+                # Range comparison: ideal like "<=5", ">=1", "1-5", ">0"
+                if check_range(raw, m.ideal_value):
+                    controls_in_place.append(
+                        AuditRow(
+                            bu,
+                            m.ideal_name,
+                            display,
+                            m.ideal_value,
+                            "Controls in place",
+                        )
+                    )
+                else:
+                    control_gaps.append(
+                        AuditRow(
+                            bu,
+                            m.ideal_name,
+                            display,
+                            m.ideal_value,
+                            "Controls gaps",
+                            m.options,
+                        )
+                    )
             elif normalize_value(raw) == normalize_value(m.ideal_value):
                 controls_in_place.append(
                     AuditRow(
