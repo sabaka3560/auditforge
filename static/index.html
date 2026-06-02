@@ -223,6 +223,125 @@ details summary:hover{color:var(--t1)}
 .sb-nav::-webkit-scrollbar{width:3px}
 .sb-nav::-webkit-scrollbar-track{background:transparent}
 .sb-nav::-webkit-scrollbar-thumb{background:var(--gb);border-radius:2px}
+
+/* ═══ LIGHT MODE OVERRIDES ════════════════════════════════════════════════
+   Every hardcoded color that wouldn't respond to var() is overridden here.
+   Toggle: html.light class on <html> element.
+═══════════════════════════════════════════════════════════════════════════ */
+html.light{
+  --mesh:#EDE8F5;
+  --g0:rgba(255,255,255,.50); --g1:rgba(255,255,255,.70);
+  --g2:rgba(255,255,255,.85); --g3:rgba(255,255,255,.95);
+  --gb:rgba(88,44,131,.15);   --gb2:rgba(88,44,131,.28);
+  --t1:#1A0A2E; --t2:#3A1B5E; --t3:#6B48A0; --t4:#9B7BB8;
+  --blue:#582C83;    --blue-g:rgba(88,44,131,.16);
+  --oracle:#C4500A;  --oracle-g:rgba(196,80,10,.15);
+  --sap:#005F7A;     --sap-g:rgba(0,95,122,.15);
+  --itgc:#007856;    --itgc-g:rgba(0,120,86,.15);
+  --gen:#6B22B8;     --gen-g:rgba(107,34,184,.15);
+  --green:#057A50; --yellow:#A06800; --red:#B82020; --cyan:#005F7A;
+  --sh:0 8px 40px rgba(88,44,131,.16); --sh-sm:0 4px 20px rgba(88,44,131,.10);
+}
+html.light body{
+  background:
+    radial-gradient(ellipse 85% 65% at 10% 35%,rgba(88,44,131,.18) 0%,transparent 55%),
+    radial-gradient(ellipse 60% 60% at 90% 15%,rgba(0,113,143,.14) 0%,transparent 55%),
+    radial-gradient(ellipse 55% 55% at 55% 95%,rgba(88,44,131,.14) 0%,transparent 55%),
+    radial-gradient(ellipse 45% 45% at 80% 75%,rgba(0,168,200,.10) 0%,transparent 50%),
+    var(--mesh);
+}
+/* Dropdown panel — dark hardcoded value needs override */
+html.light .gsel-drop{background:rgba(248,244,254,.97);box-shadow:0 16px 48px rgba(88,44,131,.22),inset 0 0 0 1px rgba(88,44,131,.08)}
+html.light .gsel-opt{color:var(--t2)}
+html.light .gsel-opt:hover{background:rgba(88,44,131,.07);color:var(--t1)}
+html.light .gsel-opt.active{background:rgba(88,44,131,.13);color:var(--blue)}
+html.light .gsel-opt.ph{color:var(--t4)}
+/* Inputs */
+html.light input[type=text],html.light input[type=email],
+html.light input[type=password],html.light input[type=number],html.light textarea{background:rgba(255,255,255,.75);color:var(--t1)}
+html.light input::placeholder,html.light textarea::placeholder{color:var(--t4)}
+html.light input:focus,html.light select:focus,html.light textarea:focus{background:rgba(255,255,255,.95)}
+html.light input[type=file]{color:var(--t3)}
+html.light input[type=file]::file-selector-button{background:rgba(88,44,131,.10);border-color:rgba(88,44,131,.22);color:var(--blue)}
+/* Badges — light bg needs darker readable text */
+html.light .b-blue  {background:rgba(88,44,131,.10);color:#3D1869;border-color:rgba(88,44,131,.22)}
+html.light .b-oracle{background:rgba(196,80,10,.10);color:#7A3000;border-color:rgba(196,80,10,.22)}
+html.light .b-sap   {background:rgba(0,95,122,.10);color:#004050;border-color:rgba(0,95,122,.22)}
+html.light .b-itgc  {background:rgba(0,120,86,.10);color:#004832;border-color:rgba(0,120,86,.22)}
+html.light .b-gen   {background:rgba(107,34,184,.10);color:#481285;border-color:rgba(107,34,184,.22)}
+html.light .b-green {background:rgba(5,122,80,.10);color:#023C28;border-color:rgba(5,122,80,.22)}
+html.light .b-yellow{background:rgba(160,104,0,.10);color:#5C3800;border-color:rgba(160,104,0,.22)}
+html.light .b-red   {background:rgba(184,32,32,.10);color:#5C0000;border-color:rgba(184,32,32,.22)}
+html.light .b-cyan  {background:rgba(0,95,122,.10);color:#004050;border-color:rgba(0,95,122,.22)}
+html.light .b-config{background:rgba(88,44,131,.10);color:#3D1869;border-color:rgba(88,44,131,.22)}
+html.light .b-detail{background:rgba(107,34,184,.10);color:#481285;border-color:rgba(107,34,184,.22)}
+/* Alerts */
+html.light .a-info   {background:rgba(0,95,122,.08);color:#003F56;border-color:rgba(0,95,122,.20)}
+html.light .a-success{background:rgba(5,122,80,.08);color:#023C28;border-color:rgba(5,122,80,.20)}
+html.light .a-warn   {background:rgba(160,104,0,.08);color:#5C3800;border-color:rgba(160,104,0,.20)}
+html.light .a-error  {background:rgba(184,32,32,.08);color:#5C0000;border-color:rgba(184,32,32,.20)}
+/* Buttons */
+html.light .btn-primary{border-color:rgba(88,44,131,.50)}
+html.light .btn-primary:hover:not(:disabled){background:#4A2070;box-shadow:0 6px 28px rgba(88,44,131,.40)}
+html.light .btn-success{background:rgba(5,122,80,.12);color:var(--green);border-color:rgba(5,122,80,.28)}
+html.light .btn-success:hover:not(:disabled){background:rgba(5,122,80,.22)}
+html.light .btn-danger{background:rgba(184,32,32,.10);color:var(--red);border-color:rgba(184,32,32,.25)}
+html.light .btn-danger:hover:not(:disabled){background:rgba(184,32,32,.20)}
+/* Sidebar */
+html.light .sidebar{background:rgba(255,255,255,.55);border-right-color:rgba(88,44,131,.14)}
+html.light .sb-logo-text{color:var(--t1)}
+html.light .sb-sec{color:rgba(88,44,131,.55)}
+html.light .sb-item{color:var(--t3)}
+html.light .sb-item:hover{background:rgba(88,44,131,.07);color:var(--t1)}
+html.light .sb-item.active{background:rgba(88,44,131,.13);color:var(--blue);border-color:rgba(88,44,131,.24)}
+html.light .sb-badge{background:rgba(88,44,131,.10);color:var(--t2);border-color:rgba(88,44,131,.18)}
+html.light .sb-user{border-top-color:rgba(88,44,131,.14)}
+html.light .sb-out{color:var(--t3)}
+html.light .sb-out:hover{color:var(--red)}
+/* Scrollbar */
+html.light .main::-webkit-scrollbar-thumb{background:rgba(88,44,131,.22)}
+html.light .main::-webkit-scrollbar-thumb:hover{background:rgba(88,44,131,.38)}
+/* Stepper */
+html.light .sdot{background:rgba(255,255,255,.85);border-color:rgba(88,44,131,.22);color:var(--t3)}
+/* Filter tabs */
+html.light .ft{background:rgba(255,255,255,.65);color:var(--t3);border-color:rgba(88,44,131,.14)}
+html.light .ft:hover{background:rgba(255,255,255,.85);color:var(--t1)}
+html.light .ft.on{background:rgba(88,44,131,.12);color:var(--blue);border-color:rgba(88,44,131,.24)}
+/* Job cards */
+html.light .jcard{background:rgba(255,255,255,.65);border-color:rgba(88,44,131,.12)}
+html.light .jcard:hover{background:rgba(255,255,255,.85)}
+/* Option cards */
+html.light .opt{background:rgba(255,255,255,.65);border-color:rgba(88,44,131,.18)}
+html.light .opt:hover{background:rgba(255,255,255,.85)}
+html.light .opt-tag{background:rgba(88,44,131,.08);color:var(--t3);border-color:rgba(88,44,131,.16)}
+/* Trail */
+html.light .trail{background:rgba(255,255,255,.55);border-color:rgba(88,44,131,.12)}
+html.light .tp-b    {background:rgba(88,44,131,.12);color:#3D1869;border-color:rgba(88,44,131,.24)}
+html.light .tp-oracle{background:rgba(196,80,10,.10);color:#7A3000;border-color:rgba(196,80,10,.22)}
+html.light .tp-sap  {background:rgba(0,95,122,.10);color:#004050;border-color:rgba(0,95,122,.22)}
+html.light .tp-itgc {background:rgba(0,120,86,.10);color:#004832;border-color:rgba(0,120,86,.22)}
+html.light .tp-gen  {background:rgba(107,34,184,.10);color:#481285;border-color:rgba(107,34,184,.22)}
+/* Library cards */
+html.light .ccard{background:rgba(255,255,255,.65);border-color:rgba(88,44,131,.12)}
+html.light .ccard:hover{background:rgba(255,255,255,.85);border-color:rgba(88,44,131,.24)}
+html.light .ccard-sheet{background:rgba(88,44,131,.07);border-color:rgba(88,44,131,.14);color:var(--t3)}
+html.light .erp-hdr{border-bottom-color:rgba(88,44,131,.14)}
+html.light .erp-count{background:rgba(255,255,255,.70);border-color:rgba(88,44,131,.14);color:var(--t3)}
+/* Upload inline */
+html.light .upl-row{background:rgba(88,44,131,.05);border-color:rgba(88,44,131,.20)}
+/* Users table */
+html.light .utbl th{border-bottom-color:rgba(88,44,131,.14)}
+html.light .utbl td{border-bottom-color:rgba(88,44,131,.10)}
+html.light .utbl tr:hover td{background:rgba(88,44,131,.04)}
+/* Sidebar item active opt highlight */
+html.light .gsel-btn{background:rgba(255,255,255,.70)}
+html.light .gsel-btn:hover{background:rgba(255,255,255,.90)}
+html.light .gsel-btn.open{background:rgba(255,255,255,.95);border-color:var(--blue)}
+/* Theme toggle button */
+.theme-btn{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:var(--rs);color:var(--t3);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;border:1px solid transparent;background:none;font-family:inherit;width:100%;margin-bottom:2px}
+.theme-btn:hover{background:var(--g2);color:var(--t1)}
+.theme-btn .si{width:18px;height:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+
 .screen{display:none;animation:fadeUp .2s ease}
 .screen.active{display:block}
 .pg-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:12px}
@@ -390,6 +509,15 @@ details summary:hover{color:var(--t1)}
         </div>
       </div>
     </nav>
+    <div style="padding:4px 10px 8px">
+      <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">
+        <span class="si" id="themeIcon">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke-linecap="round"/></svg>
+        </span>
+        <span id="themeLbl">Light Mode</span>
+      </button>
+    </div>
+
     <div class="sb-user">
       <div class="sb-avatar" id="sbAv">A</div>
       <div class="sb-uinfo"><div class="sb-uemail" id="sbEm"></div><div class="sb-urole" id="sbRl"></div></div>
@@ -897,7 +1025,7 @@ function renderJobs(){
   const all=Object.entries(_jobs).reverse();
   const rows=_jf==='all'?all:all.filter(([,j])=>j.status===_jf);
   if(rows.length===0){
-    list.innerHTML=`<div class="empty"><div class="eico">${icSVG('list','rgba(255,255,255,0.2)',48)}</div><div class="etxt">${_jf==='all'?'No jobs yet':'No '+_jf+' jobs'}</div><div class="esub">${_jf==='all'?'Run an audit from <strong>New Audit</strong>':''}</div></div>`;
+    list.innerHTML=`<div class="empty"><div class="eico">${icSVG('list',''+_emptyIconCol()+'',48)}</div><div class="etxt">${_jf==='all'?'No jobs yet':'No '+_jf+' jobs'}</div><div class="esub">${_jf==='all'?'Run an audit from <strong>New Audit</strong>':''}</div></div>`;
     return;
   }
   const bc={queued:'b-yellow pulse',running:'b-cyan pulse',done:'b-green',failed:'b-red'};
@@ -983,7 +1111,7 @@ function renderLib(){
       </div>
       <div class="cc-grid">${g.checks.map(c=>ccHtml(c,k)).join('')}</div>
     </div>`).join('');
-  document.getElementById('libContent').innerHTML=html||`<div class="empty"><div class="eico">${icSVG('grid','rgba(255,255,255,0.2)',48)}</div><div class="etxt">No checks yet</div><div class="esub">Use <strong>Create Check</strong> to add one</div></div>`;
+  document.getElementById('libContent').innerHTML=html||`<div class="empty"><div class="eico">${icSVG('grid',''+_emptyIconCol()+'',48)}</div><div class="etxt">No checks yet</div><div class="esub">Use <strong>Create Check</strong> to add one</div></div>`;
 }
 
 function ccHtml(c,k){
@@ -1110,6 +1238,25 @@ function icSVG(type,col,s){
   if(type==='grid')return `<svg width="${s}" height="${s}" fill="none" stroke="${col}" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`;
   return '';
 }
+
+// ── Theme ──────────────────────────────────────────────────────────────────────
+const SUN_ICON=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke-linecap="round"/></svg>`;
+const MOON_ICON=`<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+function toggleTheme(){
+  const light=document.documentElement.classList.toggle('light');
+  localStorage.setItem('af_theme',light?'light':'dark');
+  _setThemeBtn(light);
+}
+function _setThemeBtn(light){
+  const icon=document.getElementById('themeIcon');
+  const lbl=document.getElementById('themeLbl');
+  if(icon)icon.innerHTML=light?MOON_ICON:SUN_ICON;
+  if(lbl)lbl.textContent=light?'Dark Mode':'Light Mode';
+}
+// Run once immediately (before render) so no flash
+(()=>{if(localStorage.getItem('af_theme')==='light'){document.documentElement.classList.add('light');_setThemeBtn(true);}})();
+function _emptyIconCol(){return document.documentElement.classList.contains('light')?'rgba(88,44,131,.28)':'rgba(255,255,255,.2)'}
 
 // ── Util ──────────────────────────────────────────────────────────────────────
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
